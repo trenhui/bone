@@ -63,3 +63,20 @@ describe('EvidenceUploadPage · 影像清晰度三态', () => {
     expect(incomplete.className).toContain('ant-tag-orange');
   });
 });
+
+describe('EvidenceUploadPage · 材料类型扩展与自动分类入口', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (evidenceApi.list as ReturnType<typeof vi.fn>).mockResolvedValue(ok([]));
+  });
+
+  it('分类树包含身份证/银行卡等新类型，上传下拉默认自动识别', async () => {
+    render(<EvidenceUploadPage embeddedClaimId="c-1" />);
+
+    expect(screen.getByTestId('evidence-cat-ID_CARD').textContent).toContain('身份证');
+    expect(screen.getByTestId('evidence-cat-BANK_CARD').textContent).toContain('银行卡');
+    expect(screen.getByTestId('evidence-cat-POLICY').textContent).toContain('保单');
+    expect(screen.getByTestId('evidence-cat-OTHER').textContent).toContain('其他');
+    expect(screen.getByText('自动识别（按影像内容）')).toBeTruthy();
+  });
+});

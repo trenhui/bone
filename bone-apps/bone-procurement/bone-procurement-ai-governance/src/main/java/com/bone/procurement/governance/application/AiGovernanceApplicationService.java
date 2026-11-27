@@ -7,10 +7,18 @@ import com.bone.procurement.governance.domain.gateway.HumanDecisionLedger;
 import com.bone.procurement.governance.domain.model.capability.AiCapability;
 import com.bone.procurement.governance.domain.model.capability.CapabilityCode;
 import com.bone.procurement.governance.domain.model.capability.CapabilityNotFoundException;
+import com.bone.procurement.governance.domain.model.capability.DriftSignal;
+import com.bone.procurement.governance.domain.model.capability.DriftThresholds;
 import com.bone.procurement.governance.domain.model.capability.GovernanceDecision;
 import com.bone.procurement.governance.domain.model.capability.GovernanceTraceEntry;
 import com.bone.procurement.governance.domain.model.capability.HumanFinalDecision;
+import com.bone.procurement.governance.domain.model.capability.OversightSignal;
+import com.bone.procurement.governance.domain.model.capability.OversightVerdict;
+import com.bone.procurement.governance.domain.model.capability.PostureVerdict;
 import com.bone.procurement.governance.domain.service.CapabilityGovernancePolicy;
+import com.bone.procurement.governance.domain.service.GovernancePosturePolicy;
+import com.bone.procurement.governance.domain.service.GovernancePosturePolicy.PostureItemVerdict;
+import com.bone.procurement.governance.domain.service.OversightThresholds;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +45,7 @@ public class AiGovernanceApplicationService {
   private final GovernanceTracePort tracePort;
   private final GovernanceActorPort actorPort;
   private final CapabilityGovernancePolicy policy = new CapabilityGovernancePolicy();
+  private final GovernancePosturePolicy posturePolicy = new GovernancePosturePolicy();
 
   public AiGovernanceApplicationService(
       CapabilityRegistry registry,
@@ -151,6 +160,106 @@ public class AiGovernanceApplicationService {
   /** 查询：override 回流计数（drift 告警输入）。 */
   public long countOverrides(String codeValue) {
     return ledger.countOverrides(new CapabilityCode(codeValue));
+  }
+
+  /**
+   * 查询：漂移信号（只读，fail-closed）。
+   *
+   * <p>样本数取追溯链中人工终决事件数（每次终决都会留痕），推翻数取台账真实计数；阈值未配置 / 样本不足 / 计数非法一律
+   * UNDETERMINED。本方法不写追溯链、不改能力状态、不声明模型效果达标。
+   */
+  public DriftSignal driftSignal(String codeValue, DriftThresholds thresholds) {
+    CapabilityCode code = new CapabilityCode(codeValue);
+    if (!registry.exists(code)) {
+      throw new CapabilityNotFoundException(code.value());
+    }
+    long sampleSize =
+        tracePort.listByCapability(code.value()).stream()
+            .filter(
+                entry ->
+                    "HUMAN_FINAL_DECISION".equals(entry.eventType())
+                        || "HUMAN_OVERRIDE".equals(entry.eventType()))
+            .count();
+    long overrideCount = ledger.countOverrides(code);
+    return DriftSignal.evaluate(code.value(), sampleSize, overrideCount, thresholds, Instant.now());
+  }
+
+  /**
+   * 人类监督有效性只读观测：基于人工终决台账真实计数，识别橡皮图章复核 / 无理由推翻 / 未回流评测。 只读无副作用——不写追溯链、不改能力状态、不落库；阈值由服务端提供，不接受客户端注入。
+   */
+  public OversightMetricsView oversightSignal(String codeValue, OversightThresholds thresholds) {
+    CapabilityCode code = new CapabilityCode(codeValue);
+    if (!registry.exists(code)) {
+      throw new CapabilityNotFoundException(code.value());
+    }
+    List<HumanFinalDecision> decisions = ledger.findByCapability(code);
+    long sampleSize = decisions.size();
+    // 阈值未配置时不能把「耗时过短计数」算成样本总量——判词虽为 UNDETERMINED，
+    // 但计数会随投影外泄，形成「100% 橡皮图章」的误导性结论（spec 要求不返回质量结论）。
+    long fastReviewCount =
+        thresholds.reviewDurationFloorMs() == null
+            ? 0L
+            : decisions.stream()
+                .filter(d -> d.reviewDurationMs() < thresholds.reviewDurationFloorMs())
+                .count();
+    long unreasonedOverrideCount =
+        decisions.stream()
+            .filter(HumanFinalDecision::isOverride)
+            .filter(d -> d.reason() == null || d.reason().isBlank())
+            .count();
+    long feedbackNotRaisedCount =
+        decisions.stream()
+            .filter(HumanFinalDecision::isOverride)
+            .filter(d -> !d.evaluationFeedbackRaised())
+            .count();
+    OversightSignal signal =
+        OversightSignal.evaluate(
+            code.value(),
+            sampleSize,
+            fastReviewCount,
+            unreasonedOverrideCount,
+            feedbackNotRaisedCount,
+            thresholds,
+            Instant.now());
+    return OversightMetricsView.from(signal);
+  }
+
+  /**
+   * 治理态势聚合（只读）：复用既有裁决 / 漂移 / 监督信号，按领域策略确定性汇总。
+   *
+   * <p>无副作用——不写追溯链、不改能力状态、不落库。阈值由服务端（owner 配置）提供，缺省即 UNDETERMINED；不接受客户端注入。 不声明模型效果达标，也不回传 reason
+   * 原文 / AI output / PII。
+   */
+  public GovernancePostureView posture(
+      DriftThresholds driftThresholds, OversightThresholds oversightThresholds) {
+    List<CapabilityView> capabilities = listCapabilities();
+    List<PostureItemVerdict> items = new java.util.ArrayList<>();
+    List<GovernancePostureView.CapabilityPostureEntry> entries = new java.util.ArrayList<>();
+    for (CapabilityView view : capabilities) {
+      GovernanceDecision decision =
+          registry
+              .find(new CapabilityCode(view.code()))
+              .map(policy::decide)
+              .orElseGet(() -> policy.denyUnknown(new CapabilityCode(view.code())));
+      DriftSignal drift = driftSignal(view.code(), driftThresholds);
+      OversightMetricsView oversight = oversightSignal(view.code(), oversightThresholds);
+      items.add(
+          new PostureItemVerdict(
+              decision.allowed(), drift.verdict(), OversightVerdict.valueOf(oversight.verdict())));
+      entries.add(
+          new GovernancePostureView.CapabilityPostureEntry(
+              view.code(),
+              view.displayName(),
+              view.state(),
+              decision.allowed(),
+              decision.reasonCode(),
+              drift.verdict().name(),
+              oversight.verdict(),
+              OversightVerdict.valueOf(oversight.verdict()).isActionable()
+                  || drift.verdict().isActionable()));
+    }
+    PostureVerdict verdict = posturePolicy.aggregate(items);
+    return GovernancePostureView.from(verdict, entries);
   }
 
   /** 审计追溯：按能力码查留痕。 */

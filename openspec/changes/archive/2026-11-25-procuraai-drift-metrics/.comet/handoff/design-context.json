@@ -1,0 +1,15 @@
+{
+  "change": "procuraai-drift-metrics",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf",
+  "files": [
+    { "path": "openspec/changes/procuraai-drift-metrics/proposal.md", "sha256": "443efb7756c45f10740b7f7b9f5c6283e34ab24c993c090a2d756abd8d67a78a" },
+    { "path": "openspec/changes/procuraai-drift-metrics/design.md", "sha256": "bedf12520ba3d21a53cbb809c008f35d4572a259c380e827f04de01ed0a4030d" },
+    { "path": "openspec/changes/procuraai-drift-metrics/tasks.md", "sha256": "992f81ea0e8071858ba8171f7b5c149c36399cf32c734fab9b8cf5c4a659c9e6" },
+    { "path": "openspec/changes/procuraai-drift-metrics/specs/procurement/ai-drift-metrics/spec.md", "sha256": "c063aed8de59be22d5931c0112ed14a724a7424a955ac32421654175952a7ed8" }
+  ]
+}

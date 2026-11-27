@@ -928,6 +928,11 @@ if ! python3 tools/check_procura_event_chain.py > /dev/null; then
   echo -e "${DIM}  复核：python3 tools/check_procura_event_chain.py${RESET}"
   exit_code=1
 fi
+if ! python3 tools/check_procura_business_aggregates.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI 业务聚合门禁失败（四表 / 迁移规范 / SDK 持久化 / 身份边界）${RESET}"
+  echo -e "${DIM}  复核：python3 tools/check_procura_business_aggregates.py${RESET}"
+  exit_code=1
+fi
 
 # 2026-11-22 新增（SynapClaim 命名规范 §8）：系统缩写 sclaim / 三级浏览器 URL /
 # 无遗留别名 / API 仍走 /api/v1。先跑 --self-test（6 条负向探针）证明判据能变红，

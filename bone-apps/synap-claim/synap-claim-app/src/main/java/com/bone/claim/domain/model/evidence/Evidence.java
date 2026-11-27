@@ -149,6 +149,18 @@ public class Evidence extends TenantAggregateRoot<Long> {
         verifyValid == null || verifyValid.isBlank() ? "UNKNOWN" : verifyValid);
   }
 
+  /** 重新归类材料类型（锁定后禁止修改；不触碰 OCR/验真/清晰度状态）。 */
+  public void reclassify(DocType next) {
+    requireUnlocked("证据已锁定，禁止修改材料类型");
+    if (next == null) {
+      throw new DomainException("材料类型不能为空");
+    }
+    if (!next.name().equals(this.docType)) {
+      this.docType = next.name();
+      this.updatedAt = java.time.Instant.now();
+    }
+  }
+
   /**
    * 回填解析结果。
    *

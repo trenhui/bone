@@ -53,4 +53,10 @@ python3 tools/check_procura_event_chain.py
 echo "[procura-gate] ContractReviewed 事件闭环注入式负向反证"
 python3 tools/check_procura_event_chain.py --self-test
 
-echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 十条 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"
+echo "[procura-gate] 持久业务聚合门禁（四表 / 迁移规范 / SDK 持久化 / 身份边界）"
+python3 tools/check_procura_business_aggregates.py
+
+echo "[procura-gate] 持久业务聚合注入式负向反证"
+python3 tools/check_procura_business_aggregates.py --self-test
+
+echo "[procura-gate] 本地全绿；CI blocking 结果以 ci.yml 的 ProcuraAI* 步骤为准（CI 绿 ≠ 可上线）"

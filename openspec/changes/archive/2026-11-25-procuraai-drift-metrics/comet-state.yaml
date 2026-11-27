@@ -1,0 +1,2668 @@
+# comet-execution: managed-run
+change_id: 228f6e2d-4ea8-4b04-a5d9-2a11f3cf5541
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: e6e84a86b8691e6d2ddd93180c59d317decc1275
+design_doc: openspec/changes/archive/2026-11-25-procuraai-drift-metrics/design.md
+plan: docs/superpowers/plans/procuraai-drift-metrics.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+branch_status: pending
+created_at: 2026-11-24
+verified_at: 2026-11-25
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-25-procuraai-drift-metrics/.comet/handoff/design-context.json
+handoff_hash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 4282603005e9b63a58532fa230e7082a1e7ca8ab469b2681b868d1e086b62d2b
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-drift-metrics
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 6dbd2bb149e74e95771f4c1d99c254e1b8ba7b7edb33871dab33888f96c25e45
+    input:
+      change: procuraai-drift-metrics
+      changeDir: openspec/changes/procuraai-drift-metrics
+      workspaceBaseline:
+        ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: e6e84a86b8691e6d2ddd93180c59d317decc1275
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-24
+      designDoc: openspec/changes/archive/2026-11-25-procuraai-drift-metrics/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-25-procuraai-drift-metrics/.comet/handoff/design-context.json
+      handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/procuraai-drift-metrics.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+      verifiedAt: 2026-11-25
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 24
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-f0a274036c7c53c878eadb6ef90c5001b1cc94f8dc753263f5994ab8aa680195
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:1
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 62a5b0327140f50697466cf42033e92ee71bad8fc1393f8d499aecf4aff6ffb9
+        outcome:
+          actionId: procuraai-drift-metrics:1
+          attempt: 1
+          claimToken: portable-f0a274036c7c53c878eadb6ef90c5001b1cc94f8dc753263f5994ab8aa680195
+          inputHash: 62a5b0327140f50697466cf42033e92ee71bad8fc1393f8d499aecf4aff6ffb9
+          outcomeId: f8bce6ce-6449-4c7b-a6a7-4e990e654c58
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ff9dd62214e34fbfb6956f43852dac4beb02fc0f45e16dca98396828403788ab
+            outcomeId: f8bce6ce-6449-4c7b-a6a7-4e990e654c58
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-b55874d3e5c580968ee680d9542cc9c9d1ad12415cc3473327f624dc47bc2d6e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:4
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 4ed4406e7fe5af8029826eb662db5c17f9458782d595fbc9ad36a9a2d3c06429
+        outcome:
+          actionId: procuraai-drift-metrics:4
+          attempt: 1
+          claimToken: portable-b55874d3e5c580968ee680d9542cc9c9d1ad12415cc3473327f624dc47bc2d6e
+          inputHash: 4ed4406e7fe5af8029826eb662db5c17f9458782d595fbc9ad36a9a2d3c06429
+          outcomeId: procuraai-drift-metrics:4:1:executor-result
+          output:
+            contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 555bd2e9c908f4885df55693a844bffd29bbf0b466b52b1beec2572617c71633
+            outcomeId: procuraai-drift-metrics:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-75729de4e4d9e0dde9793aa132cc08ec64d3cac5af2610419f08d64facfcba1f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:5
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 37ab1de6fcb3fab795cf12c35d1d9feb43a795050cf64281bea64f42b9f1b9af
+        outcome:
+          actionId: procuraai-drift-metrics:5
+          attempt: 1
+          claimToken: portable-75729de4e4d9e0dde9793aa132cc08ec64d3cac5af2610419f08d64facfcba1f
+          inputHash: 37ab1de6fcb3fab795cf12c35d1d9feb43a795050cf64281bea64f42b9f1b9af
+          outcomeId: 218690a6-a006-416c-a664-d0208992a59a
+          output:
+            handoffContext: openspec/changes/procuraai-drift-metrics/.comet/handoff/design-context.json
+            handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+            proposal: 采纳方案 A：领域纯函数裁决（DriftVerdict 三态 + DriftThresholds + DriftSignal +
+              DriftSignalPolicy），计数复用现有 tracePort/ledger 真实计数不新增端口不落库，阈值由调用方配置缺省
+              UNDETERMINED，只读端点复用 procurement:ai-governance:read
+              权限。关键取舍：样本数来自追溯事件偏保守不会误报触阈；不硬编码 owner 通过线；不改 DDL/CI
+              判据/evalset。风险：追溯留痕不完整会低估样本（偏保守）；阈值缺省不可判定是刻意诚实。无 Spec Patch，spec 与
+              design 与 Open 一致。
+            requirementsEvidence:
+              contentHash: 939b8909f4a4b99aa700081d4983f1cabe4641da94e68a444af5350be8a92093
+              ref: openspec/changes/procuraai-drift-metrics
+            sourceEvidence:
+              contentHash: e59844e3d298ff77a5e7e237719b1e4e24a2967db737f04e926edc071d9bfe24
+              ref: openspec/changes/procuraai-drift-metrics
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f9f51e4fbe38fc436851c99a2ff4e75c215c73b4af28100d296d20980b707974
+            outcomeId: 218690a6-a006-416c-a664-d0208992a59a
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-2b261973466ed15b8a7f5eac6929594dff8d5c98c3ef852bb375483fb52ab78a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:7
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 9deb9467cb69ccb5bbd1daf53053529f2256408a4e6a21de01627b2f98fa5d2e
+        outcome:
+          actionId: procuraai-drift-metrics:7
+          attempt: 1
+          claimToken: portable-2b261973466ed15b8a7f5eac6929594dff8d5c98c3ef852bb375483fb52ab78a
+          inputHash: 9deb9467cb69ccb5bbd1daf53053529f2256408a4e6a21de01627b2f98fa5d2e
+          outcomeId: 3743e7ff-f4e5-4624-9448-02ebeef047f9
+          output:
+            designDoc: openspec/changes/procuraai-drift-metrics/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3851f95fc8bca57b732563eb196dbad50885a4a0691a1f0b107365af6656de9d
+            outcomeId: 3743e7ff-f4e5-4624-9448-02ebeef047f9
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-fb702ce4e3f3653b5b4cbe1eb3e0079852c1d2442790fc883b5ae98b06968d8c
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:9
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 566a2ee1b20b2dd344e19b22c634973944a9cd3ac937d127501d80962d8f1d58
+        outcome:
+          actionId: procuraai-drift-metrics:9
+          attempt: 1
+          claimToken: portable-fb702ce4e3f3653b5b4cbe1eb3e0079852c1d2442790fc883b5ae98b06968d8c
+          inputHash: 566a2ee1b20b2dd344e19b22c634973944a9cd3ac937d127501d80962d8f1d58
+          outcomeId: c508ca0b-f685-4358-8e05-72dee15aa268
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2a5c4abf6b6ecaa0a96551aa31d85627220bd794854a9de053878d2d0546b162
+            outcomeId: c508ca0b-f685-4358-8e05-72dee15aa268
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-1e6b157f89a94cbf6fda58b05e5b3920357a88c9894a0ddc8f90df607a538265
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:11
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 920d855cb23555c22aa3809fb00213229149b0bdbd28ceeb1f17c298d6ad6d38
+        outcome:
+          actionId: procuraai-drift-metrics:11
+          attempt: 1
+          claimToken: portable-1e6b157f89a94cbf6fda58b05e5b3920357a88c9894a0ddc8f90df607a538265
+          inputHash: 920d855cb23555c22aa3809fb00213229149b0bdbd28ceeb1f17c298d6ad6d38
+          outcomeId: af710481-b344-4ff1-a8d2-174fca152034
+          output:
+            designEvidence:
+              contentHash: 72ed523de8eb38894b384fefbb5667ca86c694ea9c7012983e4637a79f6c8cb8
+              ref: openspec/changes/procuraai-drift-metrics/design.md
+            plan: docs/superpowers/plans/procuraai-drift-metrics.md
+            planEvidence:
+              contentHash: 07d87114f9cd2e86360a586ddd74953ad524cf783b0876133480be796a18620d
+              ref: docs/superpowers/plans/procuraai-drift-metrics.md
+            taskRevision: 992f81ea0e8071858ba8171f7b5c149c36399cf32c734fab9b8cf5c4a659c9e6
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ba84a1c46bdc41508071c565ef10f0a7fb86a47259891bf9cdfb7a0de7789dc1
+            outcomeId: af710481-b344-4ff1-a8d2-174fca152034
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-drift-metrics:13/1
+          token: portable-b0585e6f5e6adfbd7542df804bd705e20737132370afb6dab1b14e7c8a872cde
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:13
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: bbab0bd091a7f246101d82fea28ac1c877a482513fe4b9ae67d2fa2b0389534f
+        outcome:
+          actionId: procuraai-drift-metrics:13
+          attempt: 1
+          claimToken: portable-b0585e6f5e6adfbd7542df804bd705e20737132370afb6dab1b14e7c8a872cde
+          inputHash: bbab0bd091a7f246101d82fea28ac1c877a482513fe4b9ae67d2fa2b0389534f
+          outcomeId: b1922c97-d7f3-490a-a76e-de2b9fcbae6a
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e4bfe0a9b12e3b17de2dcad685a34af18e2f25e3038d1f3ad813e33b27dcb4cc
+            outcomeId: b1922c97-d7f3-490a-a76e-de2b9fcbae6a
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-38aab70907d3bea7ffcd17fa4bc14f22b6eb81683bb6dfb4e483e1164d344093
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:14
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: c71f2550c327e58d21e0379c61aee3a5359930284c474ce3698a27f7fd840aed
+        outcome:
+          actionId: procuraai-drift-metrics:14
+          attempt: 1
+          claimToken: portable-38aab70907d3bea7ffcd17fa4bc14f22b6eb81683bb6dfb4e483e1164d344093
+          inputHash: c71f2550c327e58d21e0379c61aee3a5359930284c474ce3698a27f7fd840aed
+          outcomeId: 73eec05f-bb71-4293-b56a-f1b48995800c
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/bone-procurement-ai-governance/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 54920f1cb485c1d40b135f911a1683a51f65459b554d7d5a19ffa7708077476d
+            cwd: .
+            environment: 7b90d21f66ee59ead5c2f2c073f4e39432c6636fe5171337db3e604feb2c2925
+            exitCode: 0
+            inputAfter: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+            inputBefore: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+            manifestHash: 29d1d33a0c38664b1515e9c9cb2a8cf85ddab95a7f83b32d5f06775a1897d986
+            manifestRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/30e9415d-0738-458b-93d5-9db18857a79b.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/833b04d6-94a9-46e6-bc7f-519662edfcbd.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f612906131b3c3944f50e712decd7a0cca6b64aed3d6770556e041a212174524
+            outcomeId: 73eec05f-bb71-4293-b56a-f1b48995800c
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-30aa04a3bd0d0c460fc28807b7d925e71c700f0b37bbc8159150cdec563db685
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:16
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 59e344829a49ea164a853660129095416a79fe899a2149ad3a350f6c6d938a02
+        outcome:
+          actionId: procuraai-drift-metrics:16
+          attempt: 1
+          claimToken: portable-30aa04a3bd0d0c460fc28807b7d925e71c700f0b37bbc8159150cdec563db685
+          inputHash: 59e344829a49ea164a853660129095416a79fe899a2149ad3a350f6c6d938a02
+          outcomeId: 8b43c5ab-763a-4b40-afa1-9b896d65e864
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4f74d01070b105666e05046fd1d98022ac1b64bb398bc78dafb8e91e861b4ce0
+            outcomeId: 8b43c5ab-763a-4b40-afa1-9b896d65e864
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-10a513394c853bff2109f07745dcb7aafe4037dc0ed396dae2403bcb40f7680d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:18
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 2748a3c0af774ee4962e00ddec47e7bb5c1c884a59cf88a58741c7dbf1b853dc
+        outcome:
+          actionId: procuraai-drift-metrics:18
+          attempt: 2
+          claimToken: portable-10a513394c853bff2109f07745dcb7aafe4037dc0ed396dae2403bcb40f7680d
+          inputHash: 2748a3c0af774ee4962e00ddec47e7bb5c1c884a59cf88a58741c7dbf1b853dc
+          outcomeId: ca3043aa-bb50-40cb-95fc-707b062c12a7
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/bone-procurement-ai-governance/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: e82f546a9566af35e7c21f090642b14d06fb43ee25ce95e2aa454f5bf835665d
+            cwd: .
+            deliveryInputs:
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java: git:fad701904337fe9f16aaa2ebda1eed6fe326b752
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceApplicationService.java: git:6e2d08577777ad399ed2af0e5940ef5075fb0003
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceProperties.java: git:6daa849dc366c189f7f5a7842dddf4128e8dc618
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/DriftMetricsView.java: git:2afbc7a5b1bd47ce9310e789bf3284a28d898654
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftSignal.java: git:77200525ebaa3f302266a33e7525167e7c23d7fb
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftThresholds.java: git:466a86fc03a4dd6b082e2212a58a45cec68daf70
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftVerdict.java: git:d0a3b107eee1499ebe13a8da2bf9b1f23d9ac421
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/service/DriftSignalPolicy.java: git:86c9f5d327acb11f4baf64faeba04f1b30bda0a6
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/AiGovernanceToggleTest.java: git:180ab07225cc1477e5664cea8c6d6b7386545950
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/adapter/web/AiGovernanceControllerContractTest.java: git:f7d5ce864896b9d1ba4125a94ae809c42f5f2eef
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/application/DriftMetricsApplicationTest.java: git:86924ecdf89be6690f10e9840c5cabe7933a5fdc
+              bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/domain/model/capability/DriftSignalTest.java: git:77bf544846f510fb56ec2b57ecdb63639f761cfb
+            environment: 7b90d21f66ee59ead5c2f2c073f4e39432c6636fe5171337db3e604feb2c2925
+            exitCode: 0
+            inputAfter: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+            inputBefore: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+            manifestHash: 29d1d33a0c38664b1515e9c9cb2a8cf85ddab95a7f83b32d5f06775a1897d986
+            manifestRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/66281f62-d949-4a30-aebe-a1e6e162a2a1.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/092d73d5-b412-415d-a6f5-86da4212aede.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cf04275678e48fad0da71017ce2ef9cac0636bfe6751618e5cf2fb185b7301bb
+            outcomeId: ca3043aa-bb50-40cb-95fc-707b062c12a7
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: not-executed 仅指该 Action 的 SDK 收据记账未落地（/tmp/drift-verify-guard.log 显示
+                mvn test 命令真实执行完成、输入核对完成，但收据写入阶段被
+                SAFE_DELETE_BULK_CONFIRM_REQUIRED 中断，record.status=started
+                无完成回执）；不代表检查命令物理未执行。重试将通过 comet check run verify 真实重跑取合法收据。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-9a98c87b65c4613f4c7943ee51ea34ad12420547eda031f8b75b6f982c320c0b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:20
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 98bfa04642035484ae620e97c01dff7b6188725c53c75668c8578d7da54d815e
+        outcome:
+          actionId: procuraai-drift-metrics:20
+          attempt: 1
+          claimToken: portable-9a98c87b65c4613f4c7943ee51ea34ad12420547eda031f8b75b6f982c320c0b
+          inputHash: 98bfa04642035484ae620e97c01dff7b6188725c53c75668c8578d7da54d815e
+          outcomeId: ca39d7cd-03d0-48db-b096-5b1034e4ff90
+          output:
+            remote: origin
+            summary: 漂移信号三态判词 + 治理指标只读观测（金监 §6/§9）：领域纯函数裁决 + 复用现有 ledger/trace 真实计数 +
+              只读端点（阈值只由服务端配置、默认 UNDETERMINED）；106 例测试全绿、采购聚合 10 模块 SUCCESS、6 项
+              procuraAI 门禁不退化；独立审查 I1 已修复；不改 DDL/CI 判据/evalset，不声明模型达标。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 55ce5f34fe49711d7bfc032db1cde7ebc4034be71596e24f74ce1ec1e3bc88bb
+            outcomeId: ca39d7cd-03d0-48db-b096-5b1034e4ff90
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-535b568cf70d3933a278b0b93e012d8ba0d575674032eb672c2e0bf4a9296199
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:22
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 069ddda453116f6a4e3b3d79e24e1ea5b57076efbe558f324f209b4a3031d9fb
+        outcome:
+          actionId: procuraai-drift-metrics:22
+          attempt: 1
+          claimToken: portable-535b568cf70d3933a278b0b93e012d8ba0d575674032eb672c2e0bf4a9296199
+          inputHash: 069ddda453116f6a4e3b3d79e24e1ea5b57076efbe558f324f209b4a3031d9fb
+          outcomeId: 9023e8c4-01fa-4fe7-ba34-83b9a506f0f1
+          output:
+            baseCommit: e6e84a86b8691e6d2ddd93180c59d317decc1275
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7d25f80fb393adc240c3212d21821b3154e01b4b7329880f74b9317cf29b96a2
+            outcomeId: 9023e8c4-01fa-4fe7-ba34-83b9a506f0f1
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-archive
+          token: portable-9aba37a20b3c1247bfc2a28bb1ff095918ed518636dbc36af1ac4e8dad9d2bbb
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-drift-metrics:23
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 91a57fd73f9b02dc7b77ec2c0c2e1f83974c0a6aad3308cc780a3f3c3ac805ac
+        outcome:
+          actionId: procuraai-drift-metrics:23
+          artifacts:
+            - sha256: 13554884833823ee09c21cfc1deec86494663daf4f30bf3edd3912595788987a
+              uri: openspec/changes/archive/2026-11-25-procuraai-drift-metrics/.comet/archive-manifest.json
+          attempt: 2
+          claimToken: portable-9aba37a20b3c1247bfc2a28bb1ff095918ed518636dbc36af1ac4e8dad9d2bbb
+          inputHash: 91a57fd73f9b02dc7b77ec2c0c2e1f83974c0a6aad3308cc780a3f3c3ac805ac
+          outcomeId: 4dd5b75c-f3c7-4536-a840-7bb03ad0e838
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-25-procuraai-drift-metrics
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5280199474e859463f3840282070a7e412a28a1b72a922be941ffcc0659994ba
+            outcomeId: 4dd5b75c-f3c7-4536-a840-7bb03ad0e838
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 原执行器已停止（pgrep 未发现 comet guard/archive/runtime
+                进程）；/tmp/drift-archive-guard.log 显示仅在输入一致性扫描阶段运行至 117 秒后被
+                SIGTERM，未见归档完成记录；磁盘证据：openspec/changes/procuraai-drift-metrics
+                仍在活跃目录，archive 下无该
+                change，openspec/specs/procurement/ai-drift-metrics 不存在；git
+                工作区无归档或提交产物。故本次 SDK 归档 Action 尚未完成，未在磁盘或 Git 产生归档副作用；retry 仅恢复
+                SDK Action 记账，不代表前置扫描从未发生。
+            resolution: not-executed
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-drift-metrics:24
+        input:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs: {}
+        inputHash: 2f3275f51e643fc846ada91fcc7d78ed0cf76461a8aae772f41c41de8f119b20
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-drift-metrics
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      procuraai-drift-metrics:1:
+        results: {}
+        sequence: 1
+      procuraai-drift-metrics:11:
+        results: {}
+        sequence: 11
+      procuraai-drift-metrics:13:
+        results: {}
+        sequence: 13
+      procuraai-drift-metrics:14:
+        results: {}
+        sequence: 14
+      procuraai-drift-metrics:16:
+        results: {}
+        sequence: 16
+      procuraai-drift-metrics:18:
+        results: {}
+        sequence: 18
+      procuraai-drift-metrics:20:
+        results: {}
+        sequence: 20
+      procuraai-drift-metrics:22:
+        results: {}
+        sequence: 22
+      procuraai-drift-metrics:23:
+        results: {}
+        sequence: 23
+      procuraai-drift-metrics:24:
+        results: {}
+        sequence: 24
+      procuraai-drift-metrics:4:
+        results: {}
+        sequence: 4
+      procuraai-drift-metrics:5:
+        results: {}
+        sequence: 5
+      procuraai-drift-metrics:7:
+        results: {}
+        sequence: 7
+      procuraai-drift-metrics:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-drift-metrics:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+              ref: openspec/changes/procuraai-drift-metrics
+        proposalHash: 467189200e8651edfd2478d8a1697c7cd41a770de44dbcf97a177e1368d0dc08
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+          choice: approved
+          proposalHash: 467189200e8651edfd2478d8a1697c7cd41a770de44dbcf97a177e1368d0dc08
+      - id: procuraai-drift-metrics:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-drift-metrics/.comet/handoff/design-context.json
+              handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+              proposal: 采纳方案 A：领域纯函数裁决（DriftVerdict 三态 + DriftThresholds + DriftSignal +
+                DriftSignalPolicy），计数复用现有 tracePort/ledger
+                真实计数不新增端口不落库，阈值由调用方配置缺省 UNDETERMINED，只读端点复用
+                procurement:ai-governance:read 权限。关键取舍：样本数来自追溯事件偏保守不会误报触阈；不硬编码
+                owner 通过线；不改 DDL/CI
+                判据/evalset。风险：追溯留痕不完整会低估样本（偏保守）；阈值缺省不可判定是刻意诚实。无 Spec Patch，spec
+                与 design 与 Open 一致。
+              requirementsEvidence:
+                contentHash: 939b8909f4a4b99aa700081d4983f1cabe4641da94e68a444af5350be8a92093
+                ref: openspec/changes/procuraai-drift-metrics
+              sourceEvidence:
+                contentHash: e59844e3d298ff77a5e7e237719b1e4e24a2967db737f04e926edc071d9bfe24
+                ref: openspec/changes/procuraai-drift-metrics
+        proposalHash: f4d5ac744f40bf7d0f5330c3c74f370c7e61d1fbf505248e8efb3e832e5152f4
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-f4d5ac744f40bf7d0f5330c3c74f370c7e61d1fbf505248e8efb3e832e5152f4-approved
+          choice: approved
+          proposalHash: f4d5ac744f40bf7d0f5330c3c74f370c7e61d1fbf505248e8efb3e832e5152f4
+      - id: procuraai-drift-metrics:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: ed45e8eb7e8b48c1a8f71ee66a312162d25cc10b295bd93271ef42fc7e1cd182
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-ed45e8eb7e8b48c1a8f71ee66a312162d25cc10b295bd93271ef42fc7e1cd182-approved
+          choice: approved
+          proposalHash: ed45e8eb7e8b48c1a8f71ee66a312162d25cc10b295bd93271ef42fc7e1cd182
+      - id: procuraai-drift-metrics:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 漂移信号三态判词 + 治理指标只读观测（金监 §6/§9）：领域纯函数裁决 + 复用现有 ledger/trace 真实计数 +
+                只读端点（阈值只由服务端配置、默认 UNDETERMINED）；106 例测试全绿、采购聚合 10 模块 SUCCESS、6 项
+                procuraAI 门禁不退化；独立审查 I1 已修复；不改 DDL/CI 判据/evalset，不声明模型达标。
+              targetBranch: dev
+        proposalHash: de2595b08a27ad57bbfe8eb3ac85186f7e7936f30315455cb48b24f1acf79667
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-de2595b08a27ad57bbfe8eb3ac85186f7e7936f30315455cb48b24f1acf79667-push
+          choice: push
+          proposalHash: de2595b08a27ad57bbfe8eb3ac85186f7e7936f30315455cb48b24f1acf79667
+    evidenceWaits:
+      - id: procuraai-drift-metrics:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-drift-metrics
+          contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+          submissionId: 026f3f6d-d0ab-459e-b579-ce4a6a867201
+      - id: procuraai-drift-metrics:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-drift-metrics/design.md
+          contentHash: 72ed523de8eb38894b384fefbb5667ca86c694ea9c7012983e4637a79f6c8cb8
+          submissionId: 49ecd142-d5c8-4184-9f90-d7786a94db9a
+      - id: procuraai-drift-metrics:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/procuraai-drift-metrics.md
+          contentHash: 07d87114f9cd2e86360a586ddd74953ad524cf783b0876133480be796a18620d
+          submissionId: 3aa870dd-9b6f-444b-ad82-9d3372561b10
+      - id: procuraai-drift-metrics:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/833b04d6-94a9-46e6-bc7f-519662edfcbd.log
+          contentHash: 54920f1cb485c1d40b135f911a1683a51f65459b554d7d5a19ffa7708077476d
+          submissionId: 08b81727-a7dc-43bf-9a49-5e726285680b
+      - id: procuraai-drift-metrics:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+          contentHash: 05e1cccc6355698a07fef581a57c731db3106eca13b1ed49df0b122131bbe9ca
+          submissionId: c6f7141d-b8ef-491f-b078-08b5965c56d8
+      - id: procuraai-drift-metrics:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/092d73d5-b412-415d-a6f5-86da4212aede.log
+          contentHash: e82f546a9566af35e7c21f090642b14d06fb43ee25ce95e2aa454f5bf835665d
+          submissionId: bf5bd7a9-c824-4d0d-a32d-e158c7dc5961
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 43
+  sourceHash: a076ab27391222ef2f5cac7e46b87f552ada3229f2bc3a349a652b94cdb0c73d
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+              ref: openspec/changes/procuraai-drift-metrics
+      - contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+        ref: openspec/changes/procuraai-drift-metrics
+      - contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-drift-metrics/.comet/handoff/design-context.json
+              handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+              proposal: 采纳方案 A：领域纯函数裁决（DriftVerdict 三态 + DriftThresholds + DriftSignal +
+                DriftSignalPolicy），计数复用现有 tracePort/ledger
+                真实计数不新增端口不落库，阈值由调用方配置缺省 UNDETERMINED，只读端点复用
+                procurement:ai-governance:read 权限。关键取舍：样本数来自追溯事件偏保守不会误报触阈；不硬编码
+                owner 通过线；不改 DDL/CI
+                判据/evalset。风险：追溯留痕不完整会低估样本（偏保守）；阈值缺省不可判定是刻意诚实。无 Spec Patch，spec
+                与 design 与 Open 一致。
+              requirementsEvidence:
+                contentHash: 939b8909f4a4b99aa700081d4983f1cabe4641da94e68a444af5350be8a92093
+                ref: openspec/changes/procuraai-drift-metrics
+              sourceEvidence:
+                contentHash: e59844e3d298ff77a5e7e237719b1e4e24a2967db737f04e926edc071d9bfe24
+                ref: openspec/changes/procuraai-drift-metrics
+      - handoffContext: openspec/changes/procuraai-drift-metrics/.comet/handoff/design-context.json
+        handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+        proposal: 采纳方案 A：领域纯函数裁决（DriftVerdict 三态 + DriftThresholds + DriftSignal +
+          DriftSignalPolicy），计数复用现有 tracePort/ledger 真实计数不新增端口不落库，阈值由调用方配置缺省
+          UNDETERMINED，只读端点复用 procurement:ai-governance:read
+          权限。关键取舍：样本数来自追溯事件偏保守不会误报触阈；不硬编码 owner 通过线；不改 DDL/CI
+          判据/evalset。风险：追溯留痕不完整会低估样本（偏保守）；阈值缺省不可判定是刻意诚实。无 Spec Patch，spec 与
+          design 与 Open 一致。
+        requirementsEvidence:
+          contentHash: 939b8909f4a4b99aa700081d4983f1cabe4641da94e68a444af5350be8a92093
+          ref: openspec/changes/procuraai-drift-metrics
+        sourceEvidence:
+          contentHash: e59844e3d298ff77a5e7e237719b1e4e24a2967db737f04e926edc071d9bfe24
+          ref: openspec/changes/procuraai-drift-metrics
+      - designDoc: openspec/changes/procuraai-drift-metrics/design.md
+      - contentHash: 72ed523de8eb38894b384fefbb5667ca86c694ea9c7012983e4637a79f6c8cb8
+        ref: openspec/changes/procuraai-drift-metrics/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 72ed523de8eb38894b384fefbb5667ca86c694ea9c7012983e4637a79f6c8cb8
+          ref: openspec/changes/procuraai-drift-metrics/design.md
+        plan: docs/superpowers/plans/procuraai-drift-metrics.md
+        planEvidence:
+          contentHash: 07d87114f9cd2e86360a586ddd74953ad524cf783b0876133480be796a18620d
+          ref: docs/superpowers/plans/procuraai-drift-metrics.md
+        taskRevision: 992f81ea0e8071858ba8171f7b5c149c36399cf32c734fab9b8cf5c4a659c9e6
+      - contentHash: 07d87114f9cd2e86360a586ddd74953ad524cf783b0876133480be796a18620d
+        ref: docs/superpowers/plans/procuraai-drift-metrics.md
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/bone-procurement-ai-governance/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 54920f1cb485c1d40b135f911a1683a51f65459b554d7d5a19ffa7708077476d
+        cwd: .
+        environment: 7b90d21f66ee59ead5c2f2c073f4e39432c6636fe5171337db3e604feb2c2925
+        exitCode: 0
+        inputAfter: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+        inputBefore: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+        manifestHash: 29d1d33a0c38664b1515e9c9cb2a8cf85ddab95a7f83b32d5f06775a1897d986
+        manifestRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/30e9415d-0738-458b-93d5-9db18857a79b.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/833b04d6-94a9-46e6-bc7f-519662edfcbd.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 54920f1cb485c1d40b135f911a1683a51f65459b554d7d5a19ffa7708077476d
+        ref: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/833b04d6-94a9-46e6-bc7f-519662edfcbd.log
+      - contentHash: 05e1cccc6355698a07fef581a57c731db3106eca13b1ed49df0b122131bbe9ca
+        ref: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/bone-procurement-ai-governance/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: e82f546a9566af35e7c21f090642b14d06fb43ee25ce95e2aa454f5bf835665d
+        cwd: .
+        deliveryInputs:
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java: git:fad701904337fe9f16aaa2ebda1eed6fe326b752
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceApplicationService.java: git:6e2d08577777ad399ed2af0e5940ef5075fb0003
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceProperties.java: git:6daa849dc366c189f7f5a7842dddf4128e8dc618
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/DriftMetricsView.java: git:2afbc7a5b1bd47ce9310e789bf3284a28d898654
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftSignal.java: git:77200525ebaa3f302266a33e7525167e7c23d7fb
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftThresholds.java: git:466a86fc03a4dd6b082e2212a58a45cec68daf70
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftVerdict.java: git:d0a3b107eee1499ebe13a8da2bf9b1f23d9ac421
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/service/DriftSignalPolicy.java: git:86c9f5d327acb11f4baf64faeba04f1b30bda0a6
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/AiGovernanceToggleTest.java: git:180ab07225cc1477e5664cea8c6d6b7386545950
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/adapter/web/AiGovernanceControllerContractTest.java: git:f7d5ce864896b9d1ba4125a94ae809c42f5f2eef
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/application/DriftMetricsApplicationTest.java: git:86924ecdf89be6690f10e9840c5cabe7933a5fdc
+          bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/domain/model/capability/DriftSignalTest.java: git:77bf544846f510fb56ec2b57ecdb63639f761cfb
+        environment: 7b90d21f66ee59ead5c2f2c073f4e39432c6636fe5171337db3e604feb2c2925
+        exitCode: 0
+        inputAfter: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+        inputBefore: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+        manifestHash: 29d1d33a0c38664b1515e9c9cb2a8cf85ddab95a7f83b32d5f06775a1897d986
+        manifestRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/66281f62-d949-4a30-aebe-a1e6e162a2a1.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/092d73d5-b412-415d-a6f5-86da4212aede.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: e82f546a9566af35e7c21f090642b14d06fb43ee25ce95e2aa454f5bf835665d
+        ref: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/092d73d5-b412-415d-a6f5-86da4212aede.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-drift-metrics
+            changeDir: openspec/changes/procuraai-drift-metrics
+            workspaceBaseline:
+              ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: 漂移信号三态判词 + 治理指标只读观测（金监 §6/§9）：领域纯函数裁决 + 复用现有 ledger/trace 真实计数 +
+                只读端点（阈值只由服务端配置、默认 UNDETERMINED）；106 例测试全绿、采购聚合 10 模块 SUCCESS、6 项
+                procuraAI 门禁不退化；独立审查 I1 已修复；不改 DDL/CI 判据/evalset，不声明模型达标。
+              targetBranch: dev
+      - remote: origin
+        summary: 漂移信号三态判词 + 治理指标只读观测（金监 §6/§9）：领域纯函数裁决 + 复用现有 ledger/trace 真实计数 +
+          只读端点（阈值只由服务端配置、默认 UNDETERMINED）；106 例测试全绿、采购聚合 10 模块 SUCCESS、6 项
+          procuraAI 门禁不退化；独立审查 I1 已修复；不改 DDL/CI 判据/evalset，不声明模型达标。
+        targetBranch: dev
+      - baseCommit: e6e84a86b8691e6d2ddd93180c59d317decc1275
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-25-procuraai-drift-metrics
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-drift-metrics
+              changeDir: openspec/changes/procuraai-drift-metrics
+              workspaceBaseline:
+                ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-drift-metrics
+              changeDir: openspec/changes/procuraai-drift-metrics
+              workspaceBaseline:
+                ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-drift-metrics/.comet/handoff/design-context.json
+                handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+                proposal: 采纳方案 A：领域纯函数裁决（DriftVerdict 三态 + DriftThresholds + DriftSignal +
+                  DriftSignalPolicy），计数复用现有 tracePort/ledger
+                  真实计数不新增端口不落库，阈值由调用方配置缺省 UNDETERMINED，只读端点复用
+                  procurement:ai-governance:read 权限。关键取舍：样本数来自追溯事件偏保守不会误报触阈；不硬编码
+                  owner 通过线；不改 DDL/CI
+                  判据/evalset。风险：追溯留痕不完整会低估样本（偏保守）；阈值缺省不可判定是刻意诚实。无 Spec
+                  Patch，spec 与 design 与 Open 一致。
+                requirementsEvidence:
+                  contentHash: 939b8909f4a4b99aa700081d4983f1cabe4641da94e68a444af5350be8a92093
+                  ref: openspec/changes/procuraai-drift-metrics
+                sourceEvidence:
+                  contentHash: e59844e3d298ff77a5e7e237719b1e4e24a2967db737f04e926edc071d9bfe24
+                  ref: openspec/changes/procuraai-drift-metrics
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-drift-metrics/design.md
+      - sequence: 8
+        value:
+          contentHash: 72ed523de8eb38894b384fefbb5667ca86c694ea9c7012983e4637a79f6c8cb8
+          ref: openspec/changes/procuraai-drift-metrics/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-drift-metrics/.comet/handoff/design-context.json
+          handoffHash: 35c97bd4781e8118fff093a242de8a7f4905dfc7d076f20ccc5d1683e8796daf
+          proposal: 采纳方案 A：领域纯函数裁决（DriftVerdict 三态 + DriftThresholds + DriftSignal +
+            DriftSignalPolicy），计数复用现有 tracePort/ledger 真实计数不新增端口不落库，阈值由调用方配置缺省
+            UNDETERMINED，只读端点复用 procurement:ai-governance:read
+            权限。关键取舍：样本数来自追溯事件偏保守不会误报触阈；不硬编码 owner 通过线；不改 DDL/CI
+            判据/evalset。风险：追溯留痕不完整会低估样本（偏保守）；阈值缺省不可判定是刻意诚实。无 Spec Patch，spec 与
+            design 与 Open 一致。
+          requirementsEvidence:
+            contentHash: 939b8909f4a4b99aa700081d4983f1cabe4641da94e68a444af5350be8a92093
+            ref: openspec/changes/procuraai-drift-metrics
+          sourceEvidence:
+            contentHash: e59844e3d298ff77a5e7e237719b1e4e24a2967db737f04e926edc071d9bfe24
+            ref: openspec/changes/procuraai-drift-metrics
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-drift-metrics
+              changeDir: openspec/changes/procuraai-drift-metrics
+              workspaceBaseline:
+                ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+                ref: openspec/changes/procuraai-drift-metrics
+      - sequence: 2
+        value:
+          contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+          ref: openspec/changes/procuraai-drift-metrics
+      - sequence: 4
+        value:
+          contentHash: a994c66d1dc6c84b5d8804dcd0317e6014d26a0d52b84a88ebebb9bb90ea7ce5
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 72ed523de8eb38894b384fefbb5667ca86c694ea9c7012983e4637a79f6c8cb8
+            ref: openspec/changes/procuraai-drift-metrics/design.md
+          plan: docs/superpowers/plans/procuraai-drift-metrics.md
+          planEvidence:
+            contentHash: 07d87114f9cd2e86360a586ddd74953ad524cf783b0876133480be796a18620d
+            ref: docs/superpowers/plans/procuraai-drift-metrics.md
+          taskRevision: 992f81ea0e8071858ba8171f7b5c149c36399cf32c734fab9b8cf5c4a659c9e6
+      - sequence: 12
+        value:
+          contentHash: 07d87114f9cd2e86360a586ddd74953ad524cf783b0876133480be796a18620d
+          ref: docs/superpowers/plans/procuraai-drift-metrics.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/bone-procurement-ai-governance/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 54920f1cb485c1d40b135f911a1683a51f65459b554d7d5a19ffa7708077476d
+          cwd: .
+          environment: 7b90d21f66ee59ead5c2f2c073f4e39432c6636fe5171337db3e604feb2c2925
+          exitCode: 0
+          inputAfter: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+          inputBefore: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+          manifestHash: 29d1d33a0c38664b1515e9c9cb2a8cf85ddab95a7f83b32d5f06775a1897d986
+          manifestRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/30e9415d-0738-458b-93d5-9db18857a79b.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/833b04d6-94a9-46e6-bc7f-519662edfcbd.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 54920f1cb485c1d40b135f911a1683a51f65459b554d7d5a19ffa7708077476d
+          ref: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/833b04d6-94a9-46e6-bc7f-519662edfcbd.log
+      - sequence: 17
+        value:
+          contentHash: 05e1cccc6355698a07fef581a57c731db3106eca13b1ed49df0b122131bbe9ca
+          ref: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-25-procuraai-drift-metrics-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/bone-procurement-ai-governance/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: e82f546a9566af35e7c21f090642b14d06fb43ee25ce95e2aa454f5bf835665d
+          cwd: .
+          deliveryInputs:
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java: git:fad701904337fe9f16aaa2ebda1eed6fe326b752
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceApplicationService.java: git:6e2d08577777ad399ed2af0e5940ef5075fb0003
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/AiGovernanceProperties.java: git:6daa849dc366c189f7f5a7842dddf4128e8dc618
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/application/DriftMetricsView.java: git:2afbc7a5b1bd47ce9310e789bf3284a28d898654
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftSignal.java: git:77200525ebaa3f302266a33e7525167e7c23d7fb
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftThresholds.java: git:466a86fc03a4dd6b082e2212a58a45cec68daf70
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/model/capability/DriftVerdict.java: git:d0a3b107eee1499ebe13a8da2bf9b1f23d9ac421
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/domain/service/DriftSignalPolicy.java: git:86c9f5d327acb11f4baf64faeba04f1b30bda0a6
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/AiGovernanceToggleTest.java: git:180ab07225cc1477e5664cea8c6d6b7386545950
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/adapter/web/AiGovernanceControllerContractTest.java: git:f7d5ce864896b9d1ba4125a94ae809c42f5f2eef
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/application/DriftMetricsApplicationTest.java: git:86924ecdf89be6690f10e9840c5cabe7933a5fdc
+            bone-apps/bone-procurement/bone-procurement-ai-governance/src/test/java/com/bone/procurement/governance/domain/model/capability/DriftSignalTest.java: git:77bf544846f510fb56ec2b57ecdb63639f761cfb
+          environment: 7b90d21f66ee59ead5c2f2c073f4e39432c6636fe5171337db3e604feb2c2925
+          exitCode: 0
+          inputAfter: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+          inputBefore: 35e2f1137a704dd720a1f92072b175010bbb1d3c779729b8382d8acdcdc144ca
+          manifestHash: 29d1d33a0c38664b1515e9c9cb2a8cf85ddab95a7f83b32d5f06775a1897d986
+          manifestRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/66281f62-d949-4a30-aebe-a1e6e162a2a1.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/092d73d5-b412-415d-a6f5-86da4212aede.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: e82f546a9566af35e7c21f090642b14d06fb43ee25ce95e2aa454f5bf835665d
+          ref: .comet/runtime/classic-sdk-checks/8c3b2baa3da736b200844007108dd6edbabe4ceb704661d6230dff17c9b0dfdb/092d73d5-b412-415d-a6f5-86da4212aede.log
+      - sequence: 21
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-drift-metrics
+              changeDir: openspec/changes/procuraai-drift-metrics
+              workspaceBaseline:
+                ref: a1901ca2-6263-46a5-99a5-d74e6a09ddb8
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: 漂移信号三态判词 + 治理指标只读观测（金监 §6/§9）：领域纯函数裁决 + 复用现有 ledger/trace 真实计数 +
+                  只读端点（阈值只由服务端配置、默认 UNDETERMINED）；106 例测试全绿、采购聚合 10 模块 SUCCESS、6
+                  项 procuraAI 门禁不退化；独立审查 I1 已修复；不改 DDL/CI 判据/evalset，不声明模型达标。
+                targetBranch: dev
+      - sequence: 20
+        value:
+          remote: origin
+          summary: 漂移信号三态判词 + 治理指标只读观测（金监 §6/§9）：领域纯函数裁决 + 复用现有 ledger/trace 真实计数 +
+            只读端点（阈值只由服务端配置、默认 UNDETERMINED）；106 例测试全绿、采购聚合 10 模块 SUCCESS、6 项
+            procuraAI 门禁不退化；独立审查 I1 已修复；不改 DDL/CI 判据/evalset，不声明模型达标。
+          targetBranch: dev
+      - sequence: 22
+        value:
+          baseCommit: e6e84a86b8691e6d2ddd93180c59d317decc1275
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 23
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-25-procuraai-drift-metrics
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 51
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 54
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 55
+        right: 48
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 58
+        right: 51
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 53
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 59
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 61
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 22
+        left: 63
+        right: 64
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 65
+        right: 51
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 66
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 67
+        right: 48
+        height: 5
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 70
+        height: 2
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 72
+        right: 73
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 75
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 71
+        right: 77
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 79
+        right: 80
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 81
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 82
+        right: 77
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 84
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 80
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 85
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 87
+        right: 77
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 89
+        right: 90
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 91
+        right: 84
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 92
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 77
+        height: 5
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: 96
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 99
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 102
+        right: 96
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 101
+        right: 103
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 104
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 43
+        left: 107
+        right: 108
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 90
+        right: 84
+        height: 2
+      - key: full.build.check.evidence
+        value: 37
+        left: 109
+        right: 110
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 111
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 112
+        right: 105
+        height: 5
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: 114
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 115
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 110
+        right: 86
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 116
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 118
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 45
+        left: 120
+        right: 121
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 122
+        right: 108
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 123
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 124
+        right: 105
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 127
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 129
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 132
+        right: 133
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 134
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 136
+        right: 137
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: 138
+        right: 133
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 139
+        right: 130
+        height: 4
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: 141
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 145
+        height: 2
+      - key: full.open
+        value: 29
+        left: 143
+        right: 146
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 149
+        right: 150
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 148
+        right: 151
+        height: 3
+      - key: full.open
+        value: 29
+        left: 152
+        right: 146
+        height: 4
+      - key: full.archive.prepare
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: 154
+        right: 155
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 158
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: 157
+        right: 159
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: 156
+        right: 160
+        height: 4
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 162
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 164
+        right: 165
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 163
+        right: 166
+        height: 3
+      - key: full.open
+        value: 29
+        left: 151
+        right: 167
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 161
+        right: 168
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 171
+        right: 172
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 29
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 178
+        right: 179
+        height: 2
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 181
+        right: 182
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 180
+        right: 183
+        height: 3
+      - key: full.open
+        value: 29
+        left: 184
+        right: 176
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 186
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 187
+        right: 190
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 176
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: 191
+        right: 192
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 194
+        right: 195
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 196
+        right: 190
+        height: 3
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: 198
+        height: 2
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 199
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 200
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 201
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 203
+        height: 2
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: 205
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 204
+        right: 206
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 207
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 208
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 56
+      - 62
+      - 68
+      - 78
+      - 83
+      - 88
+      - 94
+      - 100
+      - 106
+      - 113
+      - 119
+      - 125
+      - 128
+      - 131
+      - 135
+      - 140
+      - 142
+      - 147
+      - 153
+      - 169
+      - 170
+      - 177
+      - 185
+      - 193
+      - 202
+      - 209
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:14
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:16
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:18
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:23
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:7
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-drift-metrics:9
+          - results
+        map: 26
+      - path:
+          - outputs
+        map: 22
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+  storageHash: 6c375d6afcbfc9d118b09f0a6872c3b163c0200c41d237bc082bc0941ef76753
+check_epoch: 6

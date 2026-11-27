@@ -5,6 +5,7 @@ import { Auth } from '@bone/ui';
 import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CommandPalette } from './components/CommandPalette';
+import { GlobalCaseFinder } from './components/GlobalCaseFinder';
 import { PERMISSIONS } from './constants/permissions';
 import { CLAIM_MENU_BASENAME, STANDALONE_PATHS, isStandalonePath } from './workbench/sclaimRoutes';
 import { Case360Page } from './pages/Case360Page';
@@ -91,8 +92,11 @@ function ClaimRoutes(): JSX.Element {
 function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  // 按完整路径段匹配：startsWith('/case') 会把 hidden 的 '/case-query' 高亮成案件 360。
   const activePath =
-    CLAIM_ROUTES.map((r) => r.path).find((k) => location.pathname.startsWith(k)) ?? CLAIM_DEFAULT_PATH;
+    CLAIM_ROUTES.map((r) => r.path).find(
+      (k) => location.pathname === k || location.pathname.startsWith(`${k}/`),
+    ) ?? CLAIM_DEFAULT_PATH;
   // hidden 路由不占菜单项：/plan（保单配置下钻页）高亮归到其入口「保单管理」，
   // 否则菜单无项可高亮、用户会迷失当前位置。
   const selectedKey = activePath === '/plan' ? '/policy' : activePath;
@@ -165,6 +169,8 @@ export const App: React.FC<AppProps> = ({ embedded = false }) => {
       <BrowserRouter basename={CLAIM_MENU_BASENAME} future={{ v7_relativeSplatPath: true }}>
         {/* 全局命令面板（⌘/Ctrl+K）只在根布局挂一次；必须在 Router 内使用 useNavigate。 */}
         <CommandPalette />
+        {/* 案件速查在所有理赔菜单常驻：先定位案件，再进入具体工作台。 */}
+        <GlobalCaseFinder />
         <ErrorBoundary>
           {embedded ? (
             <ClaimRoutes />

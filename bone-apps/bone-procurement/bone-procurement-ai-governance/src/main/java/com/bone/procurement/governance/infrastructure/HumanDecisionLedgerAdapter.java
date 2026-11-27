@@ -84,6 +84,13 @@ public class HumanDecisionLedgerAdapter implements HumanDecisionLedger {
         .count();
   }
 
+  @Override
+  public List<HumanFinalDecision> findByCapability(CapabilityCode code) {
+    return query("capabilityCode", code.value()).stream()
+        .map(HumanDecisionLedgerAdapter::toDomain)
+        .toList();
+  }
+
   private List<HumanDecisionEntity> query(String field, Object value) {
     return repository.findByCriteria(
         Criteria.<HumanDecisionEntity>create()

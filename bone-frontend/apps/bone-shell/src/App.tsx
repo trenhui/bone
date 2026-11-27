@@ -1152,11 +1152,13 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     const { pathname, hash } = location;
     if (pathname === '/profile') return '个人中心';
     const currentHash = hash.replace('#', '');
-    // hidden 的 My Home / case record 不在 IAM 菜单树里，顶栏若回退成「BONE 平台控制台」
-    // 用户就不知道自己在哪（Nielsen #1 Visibility of system status）。这里只补标题，
-    // 不改菜单数据与选中态 —— 零门禁风险。SynapClaim 规范后这俩落在 /sclaim/claim/* pathname。
+    // hidden 的 My Home / case record / 案件速查不在 IAM 菜单树里，顶栏若回退成
+    // 「BONE 平台控制台」用户就不知道自己在哪（Nielsen #1 Visibility of system status）。
+    // 这里只补标题，不改菜单数据与选中态 —— 零门禁风险。
+    // 必须按完整短路径匹配：startsWith('/case') 会把 '/case-query' 误判成案件 360。
     if (pathname === `${CLAIM_MENU_PREFIX}/workbench`) return '我的工作台';
-    if (pathname.startsWith(`${CLAIM_MENU_PREFIX}/case`)) return '案件 360';
+    if (pathname === `${CLAIM_MENU_PREFIX}/case`) return '案件 360';
+    if (pathname === `${CLAIM_MENU_PREFIX}/case-query`) return '案件查询';
     const walk = (items: ShellMenuItem[]): string => {
       let fallback = '';
       for (const item of items) {

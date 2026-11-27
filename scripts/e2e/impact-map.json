@@ -3457,6 +3457,13 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claims/query",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claims/{id}",
    "controller": "ClaimCaseController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
@@ -4337,6 +4344,13 @@
   },
   {
    "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/reclassify",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
    "path": "/api/v1/claims/{claimId}/evidences/{evidenceId}/parse",
    "controller": "EvidenceController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
@@ -4695,6 +4709,55 @@
    "cases": []
   },
   {
+   "http": "GET",
+   "path": "/api/v1/procurement/business/{rfxNo}/award",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/{rfxNo}/award",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/bids",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/quotations",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/capa",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/capa/{capaNo}/close",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/business/{rfxNo}/quotations",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
    "http": "POST",
    "path": "/api/v1/procurement/qualifications",
    "controller": "QualificationController",
@@ -4830,6 +4893,27 @@
   {
    "http": "GET",
    "path": "/api/v1/procurement/ai-governance/capabilities/{code}/overrides",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/drift",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/oversight",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/posture",
    "controller": "AiGovernanceController",
    "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
    "cases": []
@@ -5214,8 +5298,8 @@
   }
  ],
  "summary": {
-  "endpoints": 628,
+  "endpoints": 640,
   "covered": 254,
-  "uncovered": 374
+  "uncovered": 386
  }
 }

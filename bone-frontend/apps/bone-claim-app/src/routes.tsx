@@ -17,6 +17,7 @@ import {
   DatabaseOutlined,
   LinkOutlined,
   DashboardOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -52,6 +53,7 @@ const AnalyticsDashboardPage = lazy(() => import('./pages/AnalyticsDashboardPage
 const BlindLabelWorkbenchPage = lazy(() => import('./pages/BlindLabelWorkbenchPage').then((m) => ({ default: m.BlindLabelWorkbenchPage })));
 const WorkbenchPage = lazy(() => import('./pages/WorkbenchPage').then((m) => ({ default: m.WorkbenchPage })));
 const Case360Page = lazy(() => import('./pages/Case360Page').then((m) => ({ default: m.Case360Page })));
+const CaseQueryPage = lazy(() => import('./pages/CaseQueryPage').then((m) => ({ default: m.CaseQueryPage })));
 const CaseSignPage = lazy(() => import('./pages/CaseSignPage').then((m) => ({ default: m.CaseSignPage })));
 
 /**
@@ -161,6 +163,8 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/workbench', name: '我的工作台', icon: <SolutionOutlined />, element: <WorkbenchPage />, hidden: true, isDefault: true },
   // 案件 360：单一 case record，URL 契约 /case?claimId=...&tab=...（见 workbench/caseDeepLinks.ts）。
   { path: '/case', name: '案件 360', icon: <AuditOutlined />, element: <Case360Page />, hidden: true },
+  // 全局案件速查：hidden 路由，由所有菜单页右下角「案件速查」按钮进入，不占 IAM 菜单、不改迁移。
+  { path: '/case-query', name: '案件查询', icon: <SearchOutlined />, element: <CaseQueryPage />, hidden: true },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/sclaim/claim/<hash>`（无 hash）。 */

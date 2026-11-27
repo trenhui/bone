@@ -41,6 +41,9 @@ import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
 import { FILE_NAME_INVALID_HINT, isSafeFileName } from '../utils/fileName';
+import { EvidenceImage } from '../components/EvidenceImage';
+import { DOC_TYPES, DOC_TYPE_UPLOAD_OPTIONS, docTypeLabel } from '../services/docTypes';
+import { extractDocTypeSignals } from '../services/docTypeSignals';
 
 /**
  * 材料上传页（synapClaim A2，登记 + 展示）。
@@ -61,14 +64,6 @@ import { FILE_NAME_INVALID_HINT, isSafeFileName } from '../utils/fileName';
  * </ol>
  */
 
-/** 材料类型（与后端 `DocType` 枚举逐一对应，勿在此增删）。 */
-const DOC_TYPES: { value: string; label: string }[] = [
-  { value: 'INVOICE', label: '发票' },
-  { value: 'LIST', label: '费用清单' },
-  { value: 'MEDICAL_RECORD', label: '病历' },
-  { value: 'MEDICAL_SETTLEMENT', label: '医保结算单' },
-];
-
 const OCR_STATUS: Record<string, { color: string; label: string }> = {
   PENDING: { color: 'default', label: '待解析' },
   DONE: { color: 'green', label: '已解析' },
@@ -76,7 +71,6 @@ const OCR_STATUS: Record<string, { color: string; label: string }> = {
   FAILED: { color: 'red', label: '解析失败' },
 };
 
-const docTypeLabel = (v?: string): string => DOC_TYPES.find((d) => d.value === v)?.label ?? v ?? '-';
 const ocrStatus = (v?: string) =>
   v ? (OCR_STATUS[v] ?? { color: 'default', label: v }) : { color: 'default', label: '待解析' };
 
@@ -210,7 +204,8 @@ export interface CasePageProps {
 export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): ReactElement {
   const { claimId: urlClaimId, input, setInput, submit } = useClaimIdParam();
   const claimId = embeddedClaimId ?? urlClaimId;
-  const [docType, setDocType] = useState('INVOICE');
+  /** AUTO 是前端伪类型：上传时转成 autoClassify=true，由后端按原始文件名归类。 */
+  const [docType, setDocType] = useState('AUTO');
   /** 表格勾选的影像（批量标注清晰度；单张即长度为 1 的 items）。 */
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   /** 操作区待应用的清晰度值。 */
@@ -284,8 +279,20 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
         return;
       }
       patchJob(jobKey, { stage: 'registering', percent: 100 });
-      await evidenceApi.register(claimId, { fileRef, contentHash, docType });
-      message.success({ content: `已登记：${file.name}`, key: MSG_KEY_UPLOAD });
+      const auto = docType === 'AUTO';
+      // 内容信号与哈希/上传并行准备：仅 AUTO 时需要，手动指定类型不必解码影像。
+      const imageSignals = auto ? await extractDocTypeSignals(file) : undefined;
+      await evidenceApi.register(claimId, {
+        fileRef,
+        contentHash,
+        ...(auto
+          ? { autoClassify: true, originalName: file.name, imageSignals }
+          : { docType }),
+      });
+      message.success({
+        content: `已登记：${file.name}（${auto ? '已按影像内容自动分类' : docTypeLabel(docType)}）`,
+        key: MSG_KEY_UPLOAD,
+      });
       await load();
     } catch (err) {
       // 份数超限 / 内容重复 / 证据已锁定 等都已在 zh-CN 有译文，不再逐个 if 手写
@@ -452,8 +459,8 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
                 data-testid="evidence-doc-type"
                 value={docType}
                 onChange={setDocType}
-                options={DOC_TYPES}
-                style={{ width: 160 }}
+                options={DOC_TYPE_UPLOAD_OPTIONS}
+                style={{ width: 210 }}
                 placeholder="材料类型"
               />
               <Upload beforeUpload={beforeUpload} showUploadList={false} multiple accept="image/jpeg,image/png,application/pdf" maxCount={20}>
@@ -576,10 +583,11 @@ export function EvidenceUploadPage({ embeddedClaimId }: CasePageProps = {}): Rea
                     style={{ height: 250, border: '1px dashed #d9d9d9', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#fafafa' }}
                   >
                     {selected?.fileRef && /\.(png|jpe?g|webp)$/i.test(selected.fileRef) ? (
-                      <img
+                      <EvidenceImage
+                        fileRef={selected.fileRef}
                         alt={`影像 ${selected.id}`}
-                        src={attachmentApi.downloadUrl(selected.fileRef)}
                         style={{ maxHeight: '100%', maxWidth: '100%', transform: `scale(${zoom}) rotate(${rotation}deg)` }}
+                        testId="evidence-preview-image"
                       />
                     ) : (
                       <Space direction="vertical" align="center">

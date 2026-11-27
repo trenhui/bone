@@ -1,0 +1,2838 @@
+# comet-execution: managed-run
+change_id: 027f5b75-f352-4e44-8123-507de08abfd0
+workflow: full
+language: zh-CN
+phase: verify
+context_compression: off
+build_mode: direct
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: off
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: d1742235a8f81f93dff343ce685a00363f0a7fe0
+design_doc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+verify_result: pending
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+branch_status: pending
+created_at: 2026-11-26
+verified_at: null
+archive_confirmation: null
+archived: false
+bound_branch: dev
+direct_override: true
+handoff_context: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+handoff_hash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v1
+  hash: c4649679af72fe49e87c6fdf1f3a06f1f86eb58520d32fefe8b83ca33c4e229f
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: synapclaim-engineering-evidence-rerun
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: bbba96cfde61bed8a56ed106a6daf362c7dc72e5108549fe1dbee837a7fcd701
+    input:
+      change: synapclaim-engineering-evidence-rerun
+      changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+      workspaceBaseline:
+        ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+    state:
+      archiveConfirmation: null
+      archived: false
+      autoTransition: true
+      baseRef: d1742235a8f81f93dff343ce685a00363f0a7fe0
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: direct
+      buildPause: null
+      checkEpoch: 3
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-26
+      designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+      directOverride: true
+      handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+      handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+      isolation: current
+      language: zh-CN
+      phase: verify
+      plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+      reviewMode: off
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+      verifiedAt: null
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pending
+      workflow: full
+    status: running
+    sequence: 23
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-8ebb6e545d147edb00ba59a9993ded9151e37612026c2771a6100a3b57611fd1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:1
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs: {}
+        inputHash: 62da416f5ef19f829bfdc879173cfa64fc07e30de39222a80853d8316b3e8139
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:1
+          attempt: 1
+          claimToken: portable-8ebb6e545d147edb00ba59a9993ded9151e37612026c2771a6100a3b57611fd1
+          inputHash: 62da416f5ef19f829bfdc879173cfa64fc07e30de39222a80853d8316b3e8139
+          outcomeId: ee0b2eae-a908-429f-83f3-0a25f863bcf1
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9b0ca6cd3d6097827ea28e8ad6113cbd7b1744fb9997861573e1996c9d0c5f50
+            outcomeId: ee0b2eae-a908-429f-83f3-0a25f863bcf1
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-66b88439fbf7a31cd7827cfb010a9c1ea5737c7a2758b6e8f87b9b15428df21e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:4
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.open.evidence:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: eacad8820873d672a3974568294246ab76e3fda395351c07dde0fc85bb0494b6
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:4
+          attempt: 1
+          claimToken: portable-66b88439fbf7a31cd7827cfb010a9c1ea5737c7a2758b6e8f87b9b15428df21e
+          inputHash: eacad8820873d672a3974568294246ab76e3fda395351c07dde0fc85bb0494b6
+          outcomeId: synapclaim-engineering-evidence-rerun:4:1:executor-result
+          output:
+            contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d03fa6c3f52e05d2f8ab68310e2eebc8d04822fc7f995e607cfe4fde573f1e51
+            outcomeId: synapclaim-engineering-evidence-rerun:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-e7efc491fa8ec21df0e9267cd9d0db4ab78fe5ba6d4a48da3754ed86cde353bc
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:5
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.open.evidence:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.open.revalidate:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+        inputHash: 0418874db1ee0244f28c17861b0b9f7e06fa3fb6877e6c8dd10d244ce432a1da
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:5
+          attempt: 1
+          claimToken: portable-e7efc491fa8ec21df0e9267cd9d0db4ab78fe5ba6d4a48da3754ed86cde353bc
+          inputHash: 0418874db1ee0244f28c17861b0b9f7e06fa3fb6877e6c8dd10d244ce432a1da
+          outcomeId: 850425a7-e5c5-42ad-b3f7-e03d94bd19ea
+          output:
+            handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+            handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+            proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+              工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline 的
+              design.md/specs/tasks（openspec validate --strict
+              通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+              证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+              DDL、不碰资金金额、不开默认开关、不接真实
+              provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+              SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 255dbe2db0d5f1133906a3592046a458426574c85cbafbc5f2674df07ed18051
+            outcomeId: 850425a7-e5c5-42ad-b3f7-e03d94bd19ea
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        id: synapclaim-engineering-evidence-rerun:7
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+                    proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+                      工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline
+                      的 design.md/specs/tasks（openspec validate --strict
+                      通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+                      证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+                      DDL、不碰资金金额、不开默认开关、不接真实
+                      provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+                      SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+              proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+                工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline 的
+                design.md/specs/tasks（openspec validate --strict
+                通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+                证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+                DDL、不碰资金金额、不开默认开关、不接真实
+                provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+                SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+            full.open:
+              event: open-complete
+            full.open.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.open.evidence:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.open.revalidate:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+        inputHash: af1ae1773cb123c374ff1d233881f667cfcaf4059107ff6a1aac1998c94c4a8e
+        protocolVersion: 1
+        reason: 命令 revise-design 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: cancelled
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-062a89801c14f487d83831e3883b20923f777c15fe8f15c98ae11204c21e8833
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:8
+        input:
+          activation:
+            expectedRevision: 10
+            fromPhase: design
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs: {}
+        inputHash: 93f8573312196815a9d380a5cb73f8fa4b12579313096b81cebc47c780a21778
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:8
+          attempt: 1
+          claimToken: portable-062a89801c14f487d83831e3883b20923f777c15fe8f15c98ae11204c21e8833
+          inputHash: 93f8573312196815a9d380a5cb73f8fa4b12579313096b81cebc47c780a21778
+          outcomeId: d3619a30-9f80-4bf8-a90b-814c8bd5c380
+          output:
+            handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+            handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+            proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+              标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+              Patch=无。
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2e28afe092ab8007fd6dd4f3baee85f50e3ec1d343f7942e6df864f1d28552b9
+            outcomeId: d3619a30-9f80-4bf8-a90b-814c8bd5c380
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-5b78d2ec54d11c2e70bcb8c75706f4167ac1a0bf4d0cfd08d853037b8d3217a0
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:10
+        input:
+          activation:
+            expectedRevision: 13
+            fromPhase: design
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs: {}
+        inputHash: 9921fca595e0a5a995374754727306acef70bd7b2965fefc39ddd1a734b42540
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:10
+          attempt: 1
+          claimToken: portable-5b78d2ec54d11c2e70bcb8c75706f4167ac1a0bf4d0cfd08d853037b8d3217a0
+          inputHash: 9921fca595e0a5a995374754727306acef70bd7b2965fefc39ddd1a734b42540
+          outcomeId: 89b10949-e55d-48c8-9d4b-e7aca8fc4473
+          output:
+            handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+            handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+            proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+              标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+              Patch=无。
+            requirementsEvidence:
+              contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            sourceEvidence:
+              contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0643061b8085eb142d5686b89ad692cb05e00ad89fbd4578b270e6d0d57ba621
+            outcomeId: 89b10949-e55d-48c8-9d4b-e7aca8fc4473
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-83bc47bfc81d33fa1ecc93c5d84d94614aa6f22b34d5bd3da4c846c244ebf118
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:12
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: eadef9e055e124a81316b50ebf0bb4090be75955e490acc5d733c459e067328b
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:12
+          attempt: 1
+          claimToken: portable-83bc47bfc81d33fa1ecc93c5d84d94614aa6f22b34d5bd3da4c846c244ebf118
+          inputHash: eadef9e055e124a81316b50ebf0bb4090be75955e490acc5d733c459e067328b
+          outcomeId: eb2e3f80-89d3-4cef-90e6-f261b0695804
+          output:
+            designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5041d0fae2b30998fac526af205707463995601a2f7430ed9844539e247eae0c
+            outcomeId: eb2e3f80-89d3-4cef-90e6-f261b0695804
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-97bb7358aa23363f0cb2073f61547d5c76c57c4a9650f4c27df4ee21cb36e276
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:14
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.evidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: 52fbb294d95db150d028a644764cf703b04497cd7c744c611bce578ab67c679d
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:14
+          attempt: 1
+          claimToken: portable-97bb7358aa23363f0cb2073f61547d5c76c57c4a9650f4c27df4ee21cb36e276
+          inputHash: 52fbb294d95db150d028a644764cf703b04497cd7c744c611bce578ab67c679d
+          outcomeId: 318caec7-f21c-4372-9adc-78f47b273752
+          output:
+            boundBranch: dev
+            buildMode: direct
+            directOverride: true
+            isolation: current
+            reviewMode: off
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 58587750c9b88d27d8e9a4aa9b73884ddcc62709b40ab2ea5d1a589d87473794
+            outcomeId: 318caec7-f21c-4372-9adc-78f47b273752
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-6c7b0e7510f4388e72a848cd74a1308ca08c72b8f7d29d9c73e73338a0ab838d
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:16
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.evidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: d58630e859fb3a648736422166f6651088724ac1f6d4e037feafea4157c40f9e
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:16
+          attempt: 1
+          claimToken: portable-6c7b0e7510f4388e72a848cd74a1308ca08c72b8f7d29d9c73e73338a0ab838d
+          inputHash: d58630e859fb3a648736422166f6651088724ac1f6d4e037feafea4157c40f9e
+          outcomeId: 3c8aad89-c782-4c67-95d7-fd8d5945de45
+          output:
+            designEvidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+            planEvidence:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+            taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f694f603436407ebd8f67a81069c660b52e08a78a70695d8a656c1b93a8e41d6
+            outcomeId: 3c8aad89-c782-4c67-95d7-fd8d5945de45
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/synapclaim-engineering-evidence-rerun:18/1
+          token: portable-060c98c2a70f6737702f3439bb341560eb4b19b8722deba1b24ac1d58b1ac564
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:18
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.plan:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.evidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: b172f5154991e19e0f5301167d1a73c16e8b043ffa71a68b031f6d61b8608911
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:18
+          attempt: 1
+          claimToken: portable-060c98c2a70f6737702f3439bb341560eb4b19b8722deba1b24ac1d58b1ac564
+          inputHash: b172f5154991e19e0f5301167d1a73c16e8b043ffa71a68b031f6d61b8608911
+          outcomeId: 8b8ed484-b1eb-4103-a815-8e33dd09e3e8
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c5832b8a0e78b9bbf4de276b08cfa153e1849686109fa2e00cb54bbb8edca780
+            outcomeId: 8b8ed484-b1eb-4103-a815-8e33dd09e3e8
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-4d65f72a6e758e96e4045fde1f2df6eb742619cbe34760cacb33a087b6e4fdb9
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:19
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.evidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: 23d81269d9ece639ec2e23db5df8dfc1951186644b8052e9b86d964a4997e884
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:19
+          attempt: 1
+          claimToken: portable-4d65f72a6e758e96e4045fde1f2df6eb742619cbe34760cacb33a087b6e4fdb9
+          inputHash: 23d81269d9ece639ec2e23db5df8dfc1951186644b8052e9b86d964a4997e884
+          outcomeId: 273a36be-ad3e-4247-af52-a1e59564444c
+          output:
+            argv:
+              - bash
+              - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+            cwd: .
+            environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+            exitCode: 0
+            inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+            inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+            manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+            manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8030d344e6c2776ec1f9bfa2758614bf9beb3ea17e4d68a8b55c1cd6677a8739
+            outcomeId: 273a36be-ad3e-4247-af52-a1e59564444c
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b32e7ce2cb2d874f86b9eba76788899f1e3dc409aa1bfd2f6af251bf1ef24f8b
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:21
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.build.check:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              cwd: .
+              environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+              exitCode: 0
+              inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+              manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            full.build.check.evidence:
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.evidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        inputHash: 167a1dbe9267cc06af245381f35658fe122ac26c69cbaca05ac3d41b4cc37644
+        outcome:
+          actionId: synapclaim-engineering-evidence-rerun:21
+          attempt: 1
+          claimToken: portable-b32e7ce2cb2d874f86b9eba76788899f1e3dc409aa1bfd2f6af251bf1ef24f8b
+          inputHash: 167a1dbe9267cc06af245381f35658fe122ac26c69cbaca05ac3d41b4cc37644
+          outcomeId: 8b6e6ced-a62e-48d5-aadc-3cf066f9c500
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8561401e3a2568ee63bde245c9762ff3d9da227d5b741bf619a20e1f58edcd9f
+            outcomeId: 8b6e6ced-a62e-48d5-aadc-3cf066f9c500
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-d71206e6653e81484f72d6bc4d3c517789c7c05fb8aa416c0616b074da6828dd
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: synapclaim-engineering-evidence-rerun:23
+        input:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.build.check:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              cwd: .
+              environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+              exitCode: 0
+              inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+              manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+            full.build.check.evidence:
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+            full.build.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+            full.build.execute:
+              event: build-complete
+            full.build.plan:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+            full.build.plan.evidence:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+            full.design.confirm:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.design.document:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.evidence:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+            full.verify.report.evidence:
+              contentHash: 672402d32479312005085c2a7a2d4b83388812afd7e71e1d7f2cc3d6b246a1c9
+              ref: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+            full.verify.run:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+        inputHash: 276b61110ad4134b69958a23c5b2e4531955656228b97373b081cdd094518789
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: synapclaim-engineering-evidence-rerun
+        status: unknown
+        stepId: full.verify.check
+        type: call_tool
+    commands:
+      - id: 5dac161e0973998ec9b7ada8749900a2e5d40e94664aa25d1764c900e9078944
+        name: revise-design
+        inputHash: 1e306398e8ef1b55aff26e460caf48bcb138d19c27c0b9cc8a4403fd380edfcc
+        actionId: synapclaim-engineering-evidence-rerun:8
+      - id: 0686b851ef267e10df018c73e9fbe6d4689af5e1c02624c3451ad2d4df382954
+        name: revise-design
+        inputHash: 76a0a0dcb2d473fd7456d3b507ae0c9b79dd55f3ce3a75eec0c25aa81d8edc70
+        actionId: synapclaim-engineering-evidence-rerun:10
+    actionContexts:
+      synapclaim-engineering-evidence-rerun:1:
+        results: {}
+        sequence: 1
+      synapclaim-engineering-evidence-rerun:10:
+        results: {}
+        sequence: 10
+      synapclaim-engineering-evidence-rerun:12:
+        results:
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 12
+      synapclaim-engineering-evidence-rerun:14:
+        results:
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 14
+      synapclaim-engineering-evidence-rerun:16:
+        results:
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 16
+      synapclaim-engineering-evidence-rerun:18:
+        results:
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 17
+            value:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 18
+      synapclaim-engineering-evidence-rerun:19:
+        results:
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 18
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 17
+            value:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 19
+      synapclaim-engineering-evidence-rerun:21:
+        results:
+          full.build.check:
+            sequence: 19
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              cwd: .
+              environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+              exitCode: 0
+              inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+              manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.check.evidence:
+            sequence: 20
+            value:
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 18
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 17
+            value:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 21
+      synapclaim-engineering-evidence-rerun:23:
+        results:
+          full.build.check:
+            sequence: 19
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              cwd: .
+              environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+              exitCode: 0
+              inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+              manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.check.evidence:
+            sequence: 20
+            value:
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 18
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 17
+            value:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.verify.report.evidence:
+            sequence: 22
+            value:
+              contentHash: 672402d32479312005085c2a7a2d4b83388812afd7e71e1d7f2cc3d6b246a1c9
+              ref: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+          full.verify.run:
+            sequence: 21
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+        sequence: 23
+      synapclaim-engineering-evidence-rerun:4:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        sequence: 4
+      synapclaim-engineering-evidence-rerun:5:
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+        sequence: 5
+      synapclaim-engineering-evidence-rerun:7:
+        results:
+          full.design.confirm:
+            sequence: 6
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+                    proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+                      工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline
+                      的 design.md/specs/tasks（openspec validate --strict
+                      通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+                      证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+                      DDL、不碰资金金额、不开默认开关、不接真实
+                      provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+                      SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+              proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+                工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline 的
+                design.md/specs/tasks（openspec validate --strict
+                通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+                证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+                DDL、不碰资金金额、不开默认开关、不接真实
+                provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+                SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+        sequence: 7
+      synapclaim-engineering-evidence-rerun:8:
+        results: {}
+        sequence: 8
+    waits:
+      - id: synapclaim-engineering-evidence-rerun:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        proposalHash: cfb37c5f1b89571e80aed10427c43ca3c407021c3cfefdfa9cb1459fd43e91c1
+        choices:
+          - approved
+          - rejected
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        decision:
+          id: classic-open-882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+          choice: approved
+          proposalHash: cfb37c5f1b89571e80aed10427c43ca3c407021c3cfefdfa9cb1459fd43e91c1
+      - id: synapclaim-engineering-evidence-rerun:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+              proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+                工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline 的
+                design.md/specs/tasks（openspec validate --strict
+                通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+                证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+                DDL、不碰资金金额、不开默认开关、不接真实
+                provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+                SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+        proposalHash: 6278c9b1f7083a47d6173b57fd320662f04fda17693166b6e0522eb8ceeef7b1
+        choices:
+          - approved
+          - rejected
+        results:
+          full.design.handoff:
+            sequence: 5
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: 9a30b8d74a3943e1e10af1f29c62b5cb59e7d49a95de004ee9479a7499b883ae
+              proposal: 设计交接（synapclaim-engineering-evidence-rerun）：本 change 重新验收 synapClaim
+                工程证据底座的已交付实现。复用原 synapclaim-engineering-evidence-baseline 的
+                design.md/specs/tasks（openspec validate --strict
+                通过）。实现范围不变：EngineeringEvidenceService 汇总四处 fail-closed
+                证据、免赔不可达维度显式拒绝、provider 缺失 fail-fast、变异可证伪钉子；不新增
+                DDL、不碰资金金额、不开默认开关、不接真实
+                provider。取舍：直接复用已合并主线的真实代码，不做重复实现（build_mode=direct/direct_override）。风险：无新增行为变更，仅流程重走以补齐
+                SDK verify 权威收据。Spec Patch：无（spec 与已交付实现一致）。
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+          full.open.confirm:
+            sequence: 3
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.open:
+                    event: open-complete
+                  full.open.evidence:
+                    contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                    ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.evidence:
+            sequence: 2
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.open.revalidate:
+            sequence: 4
+            value:
+              contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+        decision:
+          id: classic-design-6278c9b1f7083a47d6173b57fd320662f04fda17693166b6e0522eb8ceeef7b1-approved
+          choice: approved
+          proposalHash: 6278c9b1f7083a47d6173b57fd320662f04fda17693166b6e0522eb8ceeef7b1
+      - id: synapclaim-engineering-evidence-rerun:9
+        stepId: full.design.confirm
+        sequence: 9
+        status: cancelled
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+        proposalHash: 2f73f168baa74eac1f38ac6674b95acf7aea7661dd41d7e7b84ef826f37c8955
+        choices:
+          - approved
+          - rejected
+        results:
+          full.design.handoff:
+            sequence: 8
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+      - id: synapclaim-engineering-evidence-rerun:11
+        stepId: full.design.confirm
+        sequence: 11
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        proposalHash: 55c656e517ad7b1fc5b7d20731253ae04d41f3e6a022713211ab76b5c923b22e
+        choices:
+          - approved
+          - rejected
+        results:
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        decision:
+          id: classic-design-55c656e517ad7b1fc5b7d20731253ae04d41f3e6a022713211ab76b5c923b22e-approved
+          choice: approved
+          proposalHash: 55c656e517ad7b1fc5b7d20731253ae04d41f3e6a022713211ab76b5c923b22e
+      - id: synapclaim-engineering-evidence-rerun:15
+        stepId: full.build.confirm
+        sequence: 15
+        status: resolved
+        proposal:
+          input:
+            change: synapclaim-engineering-evidence-rerun
+            changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+            workspaceBaseline:
+              ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 27c728e34f8107bfbc007ad545be52590aa46951b9e0485beb24a8adda28d895
+        choices:
+          - approved
+          - rejected
+        results:
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        decision:
+          id: classic-build-27c728e34f8107bfbc007ad545be52590aa46951b9e0485beb24a8adda28d895-approved
+          choice: approved
+          proposalHash: 27c728e34f8107bfbc007ad545be52590aa46951b9e0485beb24a8adda28d895
+    evidenceWaits:
+      - id: synapclaim-engineering-evidence-rerun:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results:
+          full.open:
+            sequence: 1
+            value:
+              event: open-complete
+        receipt:
+          ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+          submissionId: e3218052-41e5-435d-bb16-b24f3577e2dd
+      - id: synapclaim-engineering-evidence-rerun:13
+        stepId: full.design.evidence
+        sequence: 13
+        kind: classic-design-document
+        status: resolved
+        results:
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        receipt:
+          ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+          submissionId: d5d8aad1-470c-4337-b0f2-2d7ad7a7e1d9
+      - id: synapclaim-engineering-evidence-rerun:17
+        stepId: full.build.plan.evidence
+        sequence: 17
+        kind: classic-build-plan
+        status: resolved
+        results:
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        receipt:
+          ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+          submissionId: 6a587df2-1214-4ed1-b986-9a6e9e102d68
+      - id: synapclaim-engineering-evidence-rerun:20
+        stepId: full.build.check.evidence
+        sequence: 20
+        kind: classic-build-check
+        status: resolved
+        results:
+          full.build.check:
+            sequence: 19
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              cwd: .
+              environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+              exitCode: 0
+              inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+              manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 18
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 17
+            value:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+          contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+          submissionId: 9affe61d-d948-4d52-9a22-6b38b1b7c38c
+      - id: synapclaim-engineering-evidence-rerun:22
+        stepId: full.verify.report.evidence
+        sequence: 22
+        kind: classic-verification-report
+        status: resolved
+        results:
+          full.build.check:
+            sequence: 19
+            value:
+              argv:
+                - bash
+                - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+              changedDuringExecution: []
+              checkEpoch: 2
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              cwd: .
+              environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+              exitCode: 0
+              inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+              manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+              manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+              receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+              reusable: false
+              reused: false
+              scope: build
+              tier: full
+              timeoutMs: 900000
+          full.build.check.evidence:
+            sequence: 20
+            value:
+              contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+              ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+          full.build.configure:
+            sequence: 14
+            value:
+              boundBranch: dev
+              buildMode: direct
+              directOverride: true
+              isolation: current
+              reviewMode: off
+              subagentDispatch: null
+              tddMode: tdd
+          full.build.confirm:
+            sequence: 15
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.build.configure:
+                    boundBranch: dev
+                    buildMode: direct
+                    directOverride: true
+                    isolation: current
+                    reviewMode: off
+                    subagentDispatch: null
+                    tddMode: tdd
+          full.build.execute:
+            sequence: 18
+            value:
+              event: build-complete
+          full.build.plan:
+            sequence: 16
+            value:
+              designEvidence:
+                contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+              plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              planEvidence:
+                contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+                ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+              taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+          full.build.plan.evidence:
+            sequence: 17
+            value:
+              contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+              ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          full.design.confirm:
+            sequence: 11
+            value:
+              choice: approved
+              proposal:
+                input:
+                  change: synapclaim-engineering-evidence-rerun
+                  changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+                  workspaceBaseline:
+                    ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+                outputs:
+                  full.design.handoff:
+                    handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                    handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                    proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                      标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify
+                      收据；Spec Patch=无。
+                    requirementsEvidence:
+                      contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                    sourceEvidence:
+                      contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                      ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.design.document:
+            sequence: 12
+            value:
+              designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.evidence:
+            sequence: 13
+            value:
+              contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+              ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          full.design.handoff:
+            sequence: 10
+            value:
+              handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+              handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+              proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                Patch=无。
+              requirementsEvidence:
+                contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+              sourceEvidence:
+                contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          full.verify.run:
+            sequence: 21
+            value:
+              event: verification-ready
+              verificationReport: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+          contentHash: 672402d32479312005085c2a7a2d4b83388812afd7e71e1d7f2cc3d6b246a1c9
+          submissionId: 57efe465-50f5-4203-a835-033d3af9ad4b
+    ready: []
+    joins: {}
+    outputs:
+      full.build.check:
+        sequence: 19
+        value:
+          argv:
+            - bash
+            - openspec/changes/synapclaim-engineering-evidence-rerun/build-check.sh
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+          cwd: .
+          environment: 21384b89c5a46c6b755652675d33438a2e5a79d1e5a3a20a14be48f66c919203
+          exitCode: 0
+          inputAfter: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+          inputBefore: 81ea3581b1a02569f416eff0514cce57b2f474ed47682a729a194ec395ea7d4e
+          manifestHash: aec98c2d442c410a7235ec1a9f4a1b4c12e67a676abb74d7e8f186a5c5b00c8b
+          manifestRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/44f8bac2-86ad-4822-a229-c6a70396444d.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      full.build.check.evidence:
+        sequence: 20
+        value:
+          contentHash: f1c2bc66b5c63b239d12cab823adb37d197ec31da2c2f4a429be8b8072c564bf
+          ref: .comet/runtime/classic-sdk-checks/17c63d0e4ce9a8adc7ca9e20b0498830f7acbd946e4d7694af471309d1af7c5d/cef5be34-e9ac-48f0-bf15-1be9e9153caa.log
+      full.build.configure:
+        sequence: 14
+        value:
+          boundBranch: dev
+          buildMode: direct
+          directOverride: true
+          isolation: current
+          reviewMode: off
+          subagentDispatch: null
+          tddMode: tdd
+      full.build.confirm:
+        sequence: 15
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-engineering-evidence-rerun
+              changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+              workspaceBaseline:
+                ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: direct
+                directOverride: true
+                isolation: current
+                reviewMode: off
+                subagentDispatch: null
+                tddMode: tdd
+      full.build.execute:
+        sequence: 18
+        value:
+          event: build-complete
+      full.build.plan:
+        sequence: 16
+        value:
+          designEvidence:
+            contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+            ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+          plan: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          planEvidence:
+            contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+            ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+          taskRevision: e632bff6252a39210202a862e94493ca25fb5ee055b4e8ec1fa49e643eecc772
+      full.build.plan.evidence:
+        sequence: 17
+        value:
+          contentHash: 2607cd1dd1383d20e7aa746741a5b6de035539a94304e9f6ccbe5b820df771e3
+          ref: docs/superpowers/plans/2026-11-26-synapclaim-engineering-evidence-rerun.md
+      full.design.confirm:
+        sequence: 11
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-engineering-evidence-rerun
+              changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+              workspaceBaseline:
+                ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+                handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+                proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+                  标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+                  Patch=无。
+                requirementsEvidence:
+                  contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+                  ref: openspec/changes/synapclaim-engineering-evidence-rerun
+                sourceEvidence:
+                  contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+                  ref: openspec/changes/synapclaim-engineering-evidence-rerun
+      full.design.document:
+        sequence: 12
+        value:
+          designDoc: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+      full.design.evidence:
+        sequence: 13
+        value:
+          contentHash: 3026110a7da8f5a995660e90ab1f25e0b8e848c9cda2c2c1aac4a591794d1374
+          ref: openspec/changes/synapclaim-engineering-evidence-rerun/design.md
+      full.design.handoff:
+        sequence: 10
+        value:
+          handoffContext: openspec/changes/synapclaim-engineering-evidence-rerun/.comet/handoff/design-context.json
+          handoffHash: b50aec21cf90c3f8e7befcd6771e92a9a0a61e7ae30e4f704e842926ad15ac8c
+          proposal: 重新验收工程证据底座已交付实现，复用原 baseline 产物并更新 comet_change
+            标识；范围不变、无新增行为、不碰资金/DDL；取舍=复用已合并真实代码；风险=仅补齐 SDK verify 收据；Spec
+            Patch=无。
+          requirementsEvidence:
+            contentHash: d5ba8b5fcfad8c89b8f817590c92d73534813e45a35c05ae5109a4665cf88669
+            ref: openspec/changes/synapclaim-engineering-evidence-rerun
+          sourceEvidence:
+            contentHash: 8af1521028eb5a16c11e7a1df69bddab8c1497349e0b488839944e19a6d01d2f
+            ref: openspec/changes/synapclaim-engineering-evidence-rerun
+      full.open:
+        sequence: 1
+        value:
+          event: open-complete
+      full.open.confirm:
+        sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: synapclaim-engineering-evidence-rerun
+              changeDir: openspec/changes/synapclaim-engineering-evidence-rerun
+              workspaceBaseline:
+                ref: 1e992899-a8ae-4ac6-8c0d-139a872ff3b4
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+                ref: openspec/changes/synapclaim-engineering-evidence-rerun
+      full.open.evidence:
+        sequence: 2
+        value:
+          contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+          ref: openspec/changes/synapclaim-engineering-evidence-rerun
+      full.open.revalidate:
+        sequence: 4
+        value:
+          contentHash: 882c1c3740fbce72d3f3f659123e991dd416278f0fc0e857d9cec16adf16a24e
+      full.verify.report.evidence:
+        sequence: 22
+        value:
+          contentHash: 672402d32479312005085c2a7a2d4b83388812afd7e71e1d7f2cc3d6b246a1c9
+          ref: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+      full.verify.run:
+        sequence: 21
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-synapclaim-engineering-evidence-rerun-verify.md
+    children: []
+    lineage: []
+  sourceRevision: 37
+  sourceHash: 8917d181121d14463d82622c924987e1a5a379d2f5eb9224dae08c780e7ccff1
+check_epoch: 3

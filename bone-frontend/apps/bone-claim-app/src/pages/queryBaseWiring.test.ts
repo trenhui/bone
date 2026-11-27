@@ -34,18 +34,28 @@ describe('P0-3 查询基座接线（URL 真源）', () => {
     }
   });
 
-  it('核赔页：任务维筛选进 URL，后端无 keyword 故显式关闭搜索框', () => {
+  it('核赔页：任务维进 URL，关键字/高级条件走服务端查询接口', () => {
     expect(review).toMatch(/setFilter\('taskStatus'/);
-    expect(review).toMatch(/searchable=\{false\}/);
+    expect(review).toMatch(/onKeyword=\{setKeyword\}/);
+    expect(review).toMatch(/claimApi\.query\(/);
+    expect(review).toMatch(/<ClaimQueryFields/);
     expect(review).not.toMatch(/setTaskFilter|setPageSize/);
-    expect(review).not.toMatch(/<Input\.Search/);
   });
 
-  it('初审页：状态筛选进 URL，后端无 keyword 故显式关闭搜索框', () => {
+  it('初审页：状态进 URL，关键字/高级条件走服务端查询接口', () => {
     expect(preExam).toMatch(/setFilter\('status'/);
-    expect(preExam).toMatch(/searchable=\{false\}/);
+    expect(preExam).toMatch(/onKeyword=\{setKeyword\}/);
+    expect(preExam).toMatch(/claimApi\.query\(/);
+    expect(preExam).toMatch(/<ClaimQueryFields/);
     expect(preExam).not.toMatch(/setStatusFilter/);
-    expect(preExam).not.toMatch(/<Input\.Search/);
+  });
+
+  it('全局案件查询页：复用同一查询字段与服务端分页接口', () => {
+    const caseQuery = read('CaseQueryPage.tsx');
+    expect(caseQuery).toMatch(/<ClaimQueryFields/);
+    expect(caseQuery).toMatch(/claimApi\.query\(/);
+    expect(caseQuery).toMatch(/useSavedViews\(/);
+    expect(caseQuery).toMatch(/currentQueryString\(\)/);
   });
 
   it('额度页：真实关键字进 URL，减人状态用 f_removed 结构化筛选', () => {

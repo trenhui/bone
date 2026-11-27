@@ -19,6 +19,7 @@ import type {
   ClaimCaseResp,
   ClaimDecisionReq,
   ClaimHeadProjection,
+  ClaimQueryParams,
   ClaimReportDetail,
   ClaimStatusName,
   ClaimWithItemsProjection,
@@ -140,6 +141,18 @@ export const claimApi = {
        * 后果：绑定失败时后端把空集兜底成"待核赔 40"，默认视图看着是对的，
        * 而切到"已结案/复核中"筛选时列表纹丝不动——典型的"配了不生效"。
        */
+      paramsSerializer: { indexes: null },
+    });
+  },
+
+  /**
+   * 案件灵活查询（工作台 / 全局案件速查共用）。
+   *
+   * 服务端真分页 + 真过滤，禁止把筛选留在前端只切当前页：那会让「共 N 条」与可见行自相矛盾。
+   */
+  query(params: ClaimQueryParams): Promise<ApiResponse<PageResult<ClaimHeadProjection>>> {
+    return client.get<never, ApiResponse<PageResult<ClaimHeadProjection>>>('/query', {
+      params,
       paramsSerializer: { indexes: null },
     });
   },
