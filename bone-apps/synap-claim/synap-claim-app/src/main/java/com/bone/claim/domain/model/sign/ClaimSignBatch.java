@@ -37,6 +37,15 @@ public class ClaimSignBatch extends TenantAggregateRoot<Long> {
   @Column(name = "sign_channel")
   private String signChannel;
 
+  @Column(name = "insurance_company")
+  private String insuranceCompany;
+
+  @Column(name = "insurance_subsidiary")
+  private String insuranceSubsidiary;
+
+  @Column(name = "insuring_agency")
+  private String insuringAgency;
+
   @Column(name = "sign_status")
   private String signStatus;
 
@@ -45,6 +54,9 @@ public class ClaimSignBatch extends TenantAggregateRoot<Long> {
 
   @Column(name = "claim_count")
   private Integer claimCount;
+
+  @Column(name = "emergency")
+  private String emergency;
 
   @Column(name = "image_ready_count")
   private Integer imageReadyCount;
@@ -145,6 +157,19 @@ public class ClaimSignBatch extends TenantAggregateRoot<Long> {
 
   public SignChannel channelEnum() {
     return SignChannel.ofCode(signChannel);
+  }
+
+  /** 对齐 TPA 页面的可选展示字段；不参与状态迁移与幂等判定。 */
+  public void withSigningParties(
+      String insuranceCompany,
+      String insuranceSubsidiary,
+      String insuringAgency,
+      String emergency) {
+    this.insuranceCompany = insuranceCompany;
+    this.insuranceSubsidiary = insuranceSubsidiary;
+    this.insuringAgency = insuringAgency;
+    this.emergency = emergency;
+    this.updatedAt = Instant.now();
   }
 
   /** 状态迁移唯一入口；非法跃迁与终态重复签收均被拒绝。 */

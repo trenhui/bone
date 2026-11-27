@@ -43,6 +43,24 @@ public class SignBatchItem extends TenantAbstractEntity<Long> {
   @Column(name = "insured_id_no")
   private String insuredIdNo;
 
+  @Column(name = "identity_type")
+  private String identityType;
+
+  @Column(name = "counting_result")
+  private Integer countingResult;
+
+  @Column(name = "image_count")
+  private Integer imageCount;
+
+  @Column(name = "image_upload_count")
+  private Integer imageUploadCount;
+
+  @Column(name = "image_upload_time")
+  private Instant imageUploadTime;
+
+  @Column(name = "image_uploader")
+  private String imageUploader;
+
   @Column(name = "out_insure_time")
   private Instant outInsureTime;
 
@@ -112,6 +130,23 @@ public class SignBatchItem extends TenantAbstractEntity<Long> {
 
   public void markImageReady() {
     this.imageReady = true;
+  }
+
+  /** TPA 批次详情页所需的赔案影像要素，由名单导入方按需写入。 */
+  public void withImageAudit(
+      String identityType,
+      Integer countingResult,
+      Integer imageCount,
+      Integer imageUploadCount,
+      Instant imageUploadTime,
+      String imageUploader) {
+    this.identityType = identityType;
+    this.countingResult = countingResult;
+    this.imageCount = imageCount;
+    this.imageUploadCount = imageUploadCount;
+    this.imageUploadTime = imageUploadTime;
+    this.imageUploader = imageUploader;
+    touch();
   }
 
   /** 是否尚未关联案件且要素齐全，可进入自动建案。 */
