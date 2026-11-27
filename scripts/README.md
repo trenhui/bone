@@ -425,7 +425,7 @@ if __name__ == "__main__":
 | `hooks/` | 是（须登记本文件） | 入库版 git hook，由 `setup-hooks.sh` 安装 |
 | `tests/` | 是（`test_*.py`） | 门禁自身单测与契约测试，`check.sh [42]` 全量跑；`bone.py selftest` 亦可 |
 | `migration/` | 是（须登记 manifest） | 顺序与完整性由 `check-migration-manifest.py` 托管 |
-| `claim_sign_backfill/` | 是（须登记本文件） | TPA 签收明细回填入口 `claim_sign_backfill/import_sign_batches.py`；数据仍在 `outputs/tpa-claim-crawl/` |
+| `claim_sign_backfill/` | 是（须登记本文件） | TPA 签收明细回填入口 `claim_sign_backfill/import_sign_batches.py`、对齐字段回填 `claim_sign_backfill/backfill_tpa_parity_fields.py`、全量抓取 `claim_sign_backfill/fetch_sign_all.py`（真机 Sa-Token 拉签收批次+赔案明细，只读）；数据仍在 `outputs/tpa-claim-crawl/` |
 | `seed/uat/build/` | **否** | 生成产物 |
 | `archive/` | **否** | 归档区，见 `archive/README.md` |
 | `tmp/`、`logs/`、`__pycache__/` | **否** | git 忽略 |
