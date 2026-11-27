@@ -24,6 +24,25 @@ final class BlindLabelCalibrationSamples {
   /** 映射产物：可用的校准样本 + 解析失败计数（失败样本直接丢弃，不补值）。 */
   record Mapping(List<CalibrationSample> samples, int unparseableSamples) {}
 
+  /**
+   * 带真实决策维度的样本（MRM 偏差监测用）：与 {@link #from} 同源解析，避免为分组另写一套样本口径。 decisionResult 取自 AI
+   * 建议快照，缺失即整条样本不可用——不补默认值、不臆造维度。
+   */
+  record DimensionSample(CalibrationSample sample, String decisionResult) {}
+
+  private record ParsedSample(CalibrationSample sample, String decisionResult) {}
+
+  static List<DimensionSample> fromWithDimensions(List<BlindLabelTask> tasks, ObjectMapper mapper) {
+    List<DimensionSample> result = new ArrayList<>();
+    for (BlindLabelTask task : tasks) {
+      ParsedSample parsed = parse(task, mapper);
+      if (parsed != null) {
+        result.add(new DimensionSample(parsed.sample(), parsed.decisionResult()));
+      }
+    }
+    return List.copyOf(result);
+  }
+
   static Mapping from(List<BlindLabelTask> tasks, ObjectMapper mapper) {
     List<CalibrationSample> samples = new ArrayList<>();
     int unparseable = 0;
@@ -39,6 +58,11 @@ final class BlindLabelCalibrationSamples {
   }
 
   private static CalibrationSample toSample(BlindLabelTask task, ObjectMapper mapper) {
+    ParsedSample parsed = parse(task, mapper);
+    return parsed == null ? null : parsed.sample();
+  }
+
+  private static ParsedSample parse(BlindLabelTask task, ObjectMapper mapper) {
     JsonNode ai = read(mapper, task.getAiSuggestionJson());
     JsonNode label = read(mapper, task.getLabelResultJson());
     if (ai == null || label == null) {
@@ -56,12 +80,14 @@ final class BlindLabelCalibrationSamples {
     }
     String channel = read(mapper, task.getLabelPayloadJson()).path("channel").asText("");
     String sliceKey = channel.isBlank() ? SLICE_GLOBAL : channel;
-    return new CalibrationSample(
-        confidence,
-        decisionResult.equalsIgnoreCase(humanDecision),
-        sliceKey,
-        LabelSource.BLIND_LABEL,
-        true);
+    return new ParsedSample(
+        new CalibrationSample(
+            confidence,
+            decisionResult.equalsIgnoreCase(humanDecision),
+            sliceKey,
+            LabelSource.BLIND_LABEL,
+            true),
+        decisionResult);
   }
 
   private static JsonNode read(ObjectMapper mapper, String json) {

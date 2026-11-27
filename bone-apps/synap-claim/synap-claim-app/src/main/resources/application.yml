@@ -61,6 +61,12 @@ bone:
       # 核责规则资产位置：默认 classpath 内的 claim-ruleset.json；指向外部文件即可不发版调整规则。
       # 配置文件缺失/损坏/为空时适配器回退内置规则集（fail-closed 方向），不会静默放行。
       location: ${BONE_CLAIM_RULESET_LOCATION:classpath:claim-ruleset.json}
+    mrm:
+      model-cards:
+        # 模型卡清单（只读治理真源）：默认 classpath 内 mrm-model-cards.json，初态为空清单。
+        # 缺失/损坏/字段不合法时 Registry 降级 CONFIG_UNAVAILABLE（fail-closed），不会把空清单误报成治理健康。
+        # 消费方：MrmModelCardRegistry（@Value Resource）；无其他消费方，勿重复配置。
+        location: ${BONE_CLAIM_MRM_MODEL_CARDS_LOCATION:classpath:mrm-model-cards.json}
     document-parse:
       # 感知层实现：text = 数电票文本层确定性解析（默认）；llm = 模型驱动结构化抽取（需真实 provider）。
       # llm 模式未配 provider 时网关回落 MockLlmClient，适配器显式拒绝并转人工，绝不伪造解析产物。

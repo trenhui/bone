@@ -39,7 +39,7 @@ NODE_BIN="$(command -v node || ls /Users/renhui.trh/.workbuddy/binaries/node/ver
 
 # 业务层分组：只在这里声明一次，list / 执行 / 文档共用同一份真相
 PY_CORE=(two-scenario-full-chain-e2e.py app-to-data-full-chain-e2e.py ui-schema-samples-e2e.py)
-PY_SWEEP=(api-sweep.py real-id-sweep.py write-sweep.py write_coverage.py synap-claim-ai-config-governance-e2e.py)
+PY_SWEEP=(api-sweep.py real-id-sweep.py write-sweep.py write_coverage.py synap-claim-ai-config-governance-e2e.py claim-mrm-governance-e2e.py)
 PY_CHAIN=(chains.py multichannel.py channel-buyer-broadcast.py integration-flow-exec-chain.py)
 # Node API 全链（走网关、无需前端）；与 UI 探针分组分开，API 环境也能独立跑。
 # 顺序即依赖：workbench-feedback 复用 full-chain 落地的案件数据（CLAIM_ID），必须排在其后。
