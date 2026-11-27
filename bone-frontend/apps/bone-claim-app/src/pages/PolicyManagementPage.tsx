@@ -439,6 +439,14 @@ export function PolicyManagementPage(): ReactElement {
           >
             导出 CSV
           </AuthButton>
+          {/* 决策图编排是 hidden 路由（不占 IAM 菜单），从配置面下钻进入，避免功能不可达 */}
+          <AuthButton
+            code={PERMISSIONS.POLICY_READ}
+            icon={<SettingOutlined />}
+            onClick={() => navigate('/decision-graph')}
+          >
+            决策图编排
+          </AuthButton>
           <AuthButton
             code={PERMISSIONS.POLICY_WRITE}
             type="primary"

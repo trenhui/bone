@@ -8,13 +8,19 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.adapter.web.dto.request.FlowConfigReq;
 import com.bone.claim.application.port.out.DecisionFlowConfigPort;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.domain.model.config.ClaimFlowConfig;
 import com.bone.claim.domain.model.config.ClaimFlowConfigChange;
+import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.repository.ClaimFlowConfigRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -84,5 +90,92 @@ class ClaimFlowConfigApplicationServiceTest {
         .hasMessageContaining("SC_CLAIM_FLOW_CONFIG_INVALID");
     verify(f.repo, never()).save(any());
     verify(f.publisher, never()).publishFrom(any());
+  }
+
+  @Test
+  @DisplayName("节点存在性：执行图里不存在的节点写入期拒绝，不落库、不发事件")
+  void unknownNodeIsRejectedBeforeSave() {
+    Fixture f = new Fixture();
+
+    assertThatThrownBy(() -> f.service.save(Set.of("FraudScreen")))
+        .hasMessageContaining(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID);
+    verify(f.repo, never()).save(any());
+    verify(f.publisher, never()).publishFrom(any());
+  }
+
+  @Test
+  @DisplayName("白名单外节点：四个必需节点逐个拒绝，且与 AiAssess 混合提交也整批拒绝（不部分写入）")
+  void nonWhitelistedNodesAreRejectedBeforeSave() {
+    for (String node :
+        new String[] {
+          DecisionGraph.EVIDENCE_LOAD,
+          DecisionGraph.RULE_CHECK,
+          DecisionGraph.ADJUST,
+          DecisionGraph.ARBITRATE
+        }) {
+      Fixture f = new Fixture();
+      assertThatThrownBy(() -> f.service.save(Set.of(node)))
+          .hasMessageContaining(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID);
+      verify(f.repo, never()).save(any());
+      verify(f.publisher, never()).publishFrom(any());
+    }
+
+    Fixture mixed = new Fixture();
+    assertThatThrownBy(
+            () -> mixed.service.save(Set.of(DecisionGraph.AI_ASSESS, DecisionGraph.ADJUST)))
+        .hasMessageContaining(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID);
+    verify(mixed.repo, never()).save(any());
+    verify(mixed.publisher, never()).publishFrom(any());
+  }
+
+  @Test
+  @DisplayName("skipNodes 非法：空白/不存在的节点名写入期拒绝，不落库、不发事件")
+  void blankAndUnknownSkipNodesAreRejectedBeforeSave() {
+    Fixture blank = new Fixture();
+    assertThatThrownBy(() -> blank.service.save(Set.of("")))
+        .hasMessageContaining(ClaimErrorCodes.CLAIM_FLOW_CONFIG_INVALID);
+    verify(blank.repo, never()).save(any());
+    verify(blank.publisher, never()).publishFrom(any());
+  }
+
+  @Test
+  @DisplayName("skipNodes 非法（null）：入站 DTO @NotNull 拒绝，避免「没传」与「显式清空」混淆")
+  void flowConfigReqRejectsNullSkipNodes() {
+    try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+      Validator validator = factory.getValidator();
+      assertThat(validator.validate(new FlowConfigReq(null)))
+          .anySatisfy(
+              violation -> {
+                assertThat(violation.getPropertyPath().toString()).isEqualTo("skipNodes");
+                assertThat(violation.getMessage()).contains("skipNodes 不能为 null");
+              });
+    }
+  }
+
+  @Test
+  @DisplayName("回滚到空集：config_json 写回 skipNodes=[]，configVersion 递增并留痕 OVERWRITTEN")
+  void rollbackToEmptyRestoresCanonicalConfigVersion() {
+    Fixture f = new Fixture();
+    ClaimFlowConfig published =
+        ClaimFlowConfig.create(
+            TENANT,
+            DecisionFlowConfigPort.FLOW_KEY,
+            7,
+            "{\"skipNodes\":[\"AiAssess\"]}",
+            Instant.now());
+    when(f.repo.findByFlowKey(TENANT, DecisionFlowConfigPort.FLOW_KEY)).thenReturn(published);
+
+    var view = f.service.save(Set.of());
+
+    assertThat(view.skipNodes()).isEmpty();
+    assertThat(view.configVersion()).isEqualTo(8);
+    ArgumentCaptor<ClaimFlowConfig> saved = ArgumentCaptor.forClass(ClaimFlowConfig.class);
+    verify(f.repo).save(saved.capture());
+    assertThat(saved.getValue().getConfigJson()).contains("\"skipNodes\":[]");
+    ArgumentCaptor<ClaimFlowConfigChange> changed =
+        ArgumentCaptor.forClass(ClaimFlowConfigChange.class);
+    verify(f.publisher).publishFrom(changed.capture());
+    assertThat(changed.getValue().event().changeType()).isEqualTo("OVERWRITTEN");
+    assertThat(changed.getValue().event().configVersion()).isEqualTo(8);
   }
 }

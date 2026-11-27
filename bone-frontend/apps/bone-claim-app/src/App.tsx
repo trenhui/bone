@@ -30,6 +30,9 @@ const HIDDEN_ROUTE_REQUIRED: Record<string, string> = {
   // 运营看板消费 GET /api/v1/claims/analytics/summary，后端 @PreAuthorize('claim:claims:read')。
   '/analytics': PERMISSIONS.CLAIMS_READ,
   '/blind-labels': PERMISSIONS.INSPECTION_WRITE,
+  // 决策图编排读写走 claim:policy:read/write（与后端 @PreAuthorize 一致）；
+  // 直接输 hash 绕过侧栏时仍按 POLICY_READ fail-closed，写按钮再由 AuthButton(POLICY_WRITE) 收敛。
+  '/decision-graph': PERMISSIONS.POLICY_READ,
 };
 
 function RouteDenied(): JSX.Element {
@@ -93,7 +96,8 @@ function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
     CLAIM_ROUTES.map((r) => r.path).find((k) => location.pathname.startsWith(k)) ?? CLAIM_DEFAULT_PATH;
   // hidden 路由不占菜单项：/plan（保单配置下钻页）高亮归到其入口「保单管理」，
   // 否则菜单无项可高亮、用户会迷失当前位置。
-  const selectedKey = activePath === '/plan' ? '/policy' : activePath;
+  const selectedKey =
+    activePath === '/plan' || activePath === '/decision-graph' ? '/policy' : activePath;
 
   return (
     <Layout.Sider theme="light" breakpoint="lg" collapsedWidth={0} collapsed={collapsed}>

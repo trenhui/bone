@@ -17,6 +17,7 @@ import {
   DatabaseOutlined,
   LinkOutlined,
   DashboardOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -52,6 +53,7 @@ const AnalyticsDashboardPage = lazy(() => import('./pages/AnalyticsDashboardPage
 const BlindLabelWorkbenchPage = lazy(() => import('./pages/BlindLabelWorkbenchPage').then((m) => ({ default: m.BlindLabelWorkbenchPage })));
 const WorkbenchPage = lazy(() => import('./pages/WorkbenchPage').then((m) => ({ default: m.WorkbenchPage })));
 const Case360Page = lazy(() => import('./pages/Case360Page').then((m) => ({ default: m.Case360Page })));
+const DecisionGraphDesignerPage = lazy(() => import('./pages/DecisionGraphDesignerPage').then((m) => ({ default: m.DecisionGraphDesignerPage })));
 
 /**
  * 智能理赔 · 路由与页面名的**唯一真源**（单导航架构的前端侧锚点）。
@@ -158,6 +160,9 @@ export const CLAIM_ROUTES: ClaimRoute[] = [
   { path: '/workbench', name: '我的工作台', icon: <SolutionOutlined />, element: <WorkbenchPage />, hidden: true, isDefault: true },
   // 案件 360：单一 case record，URL 契约 /case?claimId=...&tab=...（见 workbench/caseDeepLinks.ts）。
   { path: '/case', name: '案件 360', icon: <AuditOutlined />, element: <Case360Page />, hidden: true },
+  // 决策图编排：hidden 配置页，无 IAM 菜单（不新增菜单迁移脚本）；从保单管理「决策图编排」下钻进入。
+  // 单导航探针对 hidden 路由豁免「功能不可达」断言，visibleRoutes 顺序与条数不受影响。
+  { path: '/decision-graph', name: '决策图编排', icon: <SettingOutlined />, element: <DecisionGraphDesignerPage />, hidden: true },
 ];
 
 /** shell（qiankun activeRule）侧的路由前缀；菜单 path 形如 `/sclaim/claim/<hash>`（无 hash）。 */

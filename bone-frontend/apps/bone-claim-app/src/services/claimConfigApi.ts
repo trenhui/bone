@@ -34,6 +34,19 @@ export type QuotaType = 'PERSONAL' | 'LIABILITY_CAP' | 'LIABILITY_PERSONAL';
 /** 作业开关：NEED 需生成 / NOT_NEED 无需生成。 */
 export type DocFlag = 'NEED' | 'NOT_NEED';
 
+/**
+ * 决策图流程配置视图（后端 `GET/PUT /api/v1/claim-config/flows/decision-graph`）。
+ *
+ * <p>仅暴露 `skipNodes` 一个可写维度；`flowKey` / `configVersion` / `version` 只读。
+ * `version` 是后端 `@Version` 乐观锁号（Long 全局序列化为字符串），只透传展示，不做数值运算。
+ */
+export interface DecisionFlowConfigView {
+  flowKey: string;
+  configVersion: number;
+  skipNodes: string[];
+  version?: string | null;
+}
+
 export interface PolicyView {
   policyNo: string;
   policyName: string;
@@ -827,6 +840,29 @@ export const claimConfigApi = {
     return client.put<UpdatePolicyReq, ApiResponse<PolicyView>>(
       `/policies/${encodeURIComponent(policyNo)}`,
       req,
+    );
+  },
+
+  /**
+   * 读取决策图流程配置（后端 `claim:policy:read`）。
+   *
+   * <p>只读视图：节点顺序由后端 `DecisionGraph.canonical()` 决定，接口不暴露顺序字段。
+   */
+  getFlowConfig(): Promise<ApiResponse<DecisionFlowConfigView>> {
+    return client.get<never, ApiResponse<DecisionFlowConfigView>>('/flows/decision-graph');
+  },
+
+  /**
+   * 保存决策图流程配置（后端 `claim:policy:write`）。
+   *
+   * <p>请求体只含 `skipNodes`；传空数组 = 恢复 canonical 图（秒级回滚的落点）。
+   * 服务端会拒绝白名单外节点（`SC_CLAIM_FLOW_CONFIG_INVALID`）并递增 config_version、
+   * 发布 `ClaimFlowConfigChangedEvent` 留痕；前端不重复实现这套门禁。
+   */
+  updateFlowConfig(skipNodes: string[]): Promise<ApiResponse<DecisionFlowConfigView>> {
+    return client.put<{ skipNodes: string[] }, ApiResponse<DecisionFlowConfigView>>(
+      '/flows/decision-graph',
+      { skipNodes },
     );
   },
 

@@ -2,6 +2,7 @@ package com.bone.claim.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -184,5 +185,24 @@ class DecisionGraphFlowConfigTest {
           throw new IllegalStateException("配置中心不可用");
         };
     assertThat(run(broken).decisionResult()).isEqualTo("AUTO_APPROVE");
+  }
+
+  @Test
+  @DisplayName("回滚到空集：执行结果与 canonical 逐字段一致（结论、轨迹数、原因码）")
+  void rollbackToEmptyMatchesCanonicalExecution() {
+    var canonical = run(null);
+    var afterRollback = run(tenantId -> Set.of());
+
+    assertThat(afterRollback.decisionResult()).isEqualTo(canonical.decisionResult());
+    assertThat(afterRollback.decisionResult()).isEqualTo("AUTO_APPROVE");
+    assertThat(afterRollback.traceCount()).isEqualTo(canonical.traceCount());
+    assertThat(afterRollback.traceCount()).isEqualTo(5);
+
+    // 两次执行各落一条记录：回滚后的原因码必须与 canonical 逐字相同（没有 FLOW_CONFIG_AI_SKIPPED）。
+    ArgumentCaptor<DecisionExecution> both = ArgumentCaptor.forClass(DecisionExecution.class);
+    verify(decisionExecutionApplicationService, times(2)).persist(both.capture());
+    assertThat(both.getAllValues().get(0).getTriageReason())
+        .isEqualTo(both.getAllValues().get(1).getTriageReason())
+        .isEqualTo("ALL_GATES_PASSED");
   }
 }
