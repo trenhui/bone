@@ -25,6 +25,10 @@ export interface SignBatch {
   source: 'ONLINE' | 'OFFLINE';
   signType: 'AUTO' | 'MANUAL';
   signChannel: string;
+  insuranceCompany?: string;
+  insuranceSubsidiary?: string;
+  insuringAgency?: string;
+  emergency?: string;
   signStatus: 'WAIT_FOR_PARTICIPANT' | 'WAIT_FOR_IMAGE' | 'WAIT_FOR_CONFIRMATION' | 'FINISHED' | 'DELETED';
   claimCount: number;
   imageReadyCount: number;
@@ -32,12 +36,31 @@ export interface SignBatch {
   expressNo?: string;
   sender?: string;
   signTime?: string;
+  createdAt?: string;
   signOperator?: string;
   signRemark?: string;
   createdCaseCount?: number;
   skippedCaseCount?: number;
   manualCaseCount?: number;
   caseItems?: SignCaseItem[];
+}
+
+/** 批次内赔案明细（对齐普康批次详情页）。 */
+export interface SignBatchItem {
+  itemId: string;
+  claimNo: string;
+  policyNo?: string;
+  insuredName?: string;
+  insuredIdNo?: string;
+  identityType?: string;
+  imageReady?: boolean;
+  countingResult?: number;
+  imageCount?: number;
+  imageUploadCount?: number;
+  imageUploadTime?: string;
+  imageUploader?: string;
+  caseStatus?: string;
+  caseId?: string;
 }
 
 export interface SignTrack {
@@ -60,8 +83,19 @@ export interface SignCaseSummary {
 }
 
 export interface SignBatchListParams {
-  source?: 'ONLINE' | 'OFFLINE';
+  source?: 'ALL' | 'ONLINE' | 'OFFLINE';
+  batchNo?: string;
+  signType?: 'AUTO' | 'MANUAL';
+  signChannel?: string;
   signStatus?: string;
+  insuranceCompany?: string;
+  insuranceSubsidiary?: string;
+  insuringAgency?: string;
+  signOperator?: string;
+  signTimeStart?: string;
+  signTimeEnd?: string;
+  createTimeStart?: string;
+  createTimeEnd?: string;
   page?: number;
   size?: number;
 }
@@ -80,6 +114,10 @@ export interface CreateOfflineBatchReq {
   expressNo?: string;
   sender?: string;
   arriveTime?: string;
+  insuranceCompany?: string;
+  insuranceSubsidiary?: string;
+  insuringAgency?: string;
+  emergency?: string;
 }
 
 export const claimSignApi = {
@@ -124,6 +162,11 @@ export const claimSignApi = {
   /** 轨迹。 */
   tracks(batchId: string) {
     return client.get<never, ApiResponse<SignTrack[]>>(`/sign/batches/${batchId}/tracks`);
+  },
+
+  /** 批次内赔案明细（只读）。 */
+  items(batchId: string) {
+    return client.get<never, ApiResponse<SignBatchItem[]>>(`/sign/batches/${batchId}/items`);
   },
 
   /** 批次列表（服务端真分页）。 */

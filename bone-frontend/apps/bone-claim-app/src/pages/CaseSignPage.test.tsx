@@ -16,6 +16,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const h = vi.hoisted(() => ({
   list: vi.fn(),
   tracks: vi.fn(),
+  detail: vi.fn(),
+  items: vi.fn(),
   confirm: vi.fn(),
   registerImage: vi.fn(),
   importParticipants: vi.fn(),
@@ -32,7 +34,8 @@ vi.mock('../services/claimSign', () => ({
     importParticipants: h.importParticipants,
     createOfflineBatch: h.createOfflineBatch,
     acknowledge: vi.fn(),
-    detail: vi.fn(),
+    detail: h.detail,
+    items: h.items,
   },
 }));
 
@@ -105,6 +108,8 @@ beforeEach(() => {
   h.confirm.mockResolvedValue(ok(null));
   h.registerImage.mockResolvedValue(ok(null));
   h.tracks.mockResolvedValue(ok([]));
+  h.detail.mockResolvedValue(ok(batch('FINISHED')));
+  h.items.mockResolvedValue(ok([]));
 });
 
 describe('CaseSignPage · 四态操作入口', () => {
@@ -170,7 +175,7 @@ describe('CaseSignPage · 交互护栏', () => {
     renderPage();
 
     await screen.findByText(BATCH_NO);
-    fireEvent.click(screen.getByText('线上自动签收'));
+    fireEvent.click(screen.getByText('线上签收'));
 
     await waitFor(() =>
       expect(h.list).toHaveBeenCalledWith({ source: 'ONLINE', page: 1, size: 20 }),
@@ -197,6 +202,8 @@ describe('CaseSignPage · 交互护栏', () => {
     fireEvent.click(await screen.findByTestId('sign-tracks'));
 
     expect(h.tracks).toHaveBeenCalledWith(BATCH_ID);
+    expect(h.detail).toHaveBeenCalledWith(BATCH_ID);
+    expect(h.items).toHaveBeenCalledWith(BATCH_ID);
     expect(await screen.findByText('批次创建')).toBeTruthy();
   });
 });
@@ -215,7 +222,7 @@ describe('CaseSignPage · 可观测性与空态', () => {
     h.list.mockResolvedValue(ok({ records: [], total: '0', page: 1, size: 20 }));
     renderPage();
 
-    expect(await screen.findByText('暂无线下签收批次')).toBeTruthy();
+    expect(await screen.findByText('暂无签收批次')).toBeTruthy();
     expect(screen.getByTestId('sign-empty-create')).toBeTruthy();
   });
 
@@ -223,5 +230,53 @@ describe('CaseSignPage · 可观测性与空态', () => {
     expect(describeSignLoadError({ response: { status: 404 } })).toContain('未在当前环境部署');
     expect(describeSignLoadError({ response: { status: 403 } })).toContain('缺少签收权限');
     expect(describeSignLoadError({ response: { status: 500 } })).toContain('HTTP 500');
+  });
+});
+
+describe('CaseSignPage · TPA 签收台对齐', () => {
+  it('搜索条件走服务端查询参数，不做前端假筛选', async () => {
+    givenStatus('FINISHED');
+    renderPage();
+    await screen.findByText(BATCH_NO);
+
+    fireEvent.change(screen.getByPlaceholderText('请输入批次号'), {
+      target: { value: '264203068' },
+    });
+    fireEvent.click(screen.getByTestId('sign-search'));
+
+    await waitFor(() =>
+      expect(h.list).toHaveBeenCalledWith(
+        expect.objectContaining({ batchNo: '264203068', source: 'ALL', page: 1 }),
+      ),
+    );
+  });
+
+  it('批次详情一次加载摘要、赔案明细与轨迹', async () => {
+    givenStatus('FINISHED');
+    h.detail.mockResolvedValue(
+      ok({ ...batch('FINISHED'), insuranceCompany: '永诚财险', caseItems: [] }),
+    );
+    h.items.mockResolvedValue(
+      ok([
+        {
+          itemId: '1',
+          claimNo: '264203068004',
+          policyNo: 'P-2026-001',
+          insuredName: '唐娜',
+          identityType: '身份证',
+          insuredIdNo: '150426194811037349',
+          imageReady: false,
+          caseStatus: 'NEW',
+        },
+      ]),
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('sign-detail'));
+
+    expect(await screen.findByText('264203068004')).toBeTruthy();
+    expect(screen.getByText('永诚财险')).toBeTruthy();
+    expect(h.detail).toHaveBeenCalledWith(BATCH_ID);
+    expect(h.items).toHaveBeenCalledWith(BATCH_ID);
   });
 });

@@ -22,7 +22,7 @@ STAMP = str(int(time.time()))[-8:]
 
 # 端点路径集中声明；影响分析按这里的字面量做「端点 ↔ 用例」映射。
 PATHS = {
-    "login": "/api/v1/auth/login",
+    "login": "/api/v1/iam/login",
     "auto_sign": "/api/v1/claims/sign",
     "create_batch": "/api/v1/claims/sign/batches",
     "participants": "/api/v1/claims/sign/batches/{batchId}/participants",
@@ -30,6 +30,7 @@ PATHS = {
     "confirm": "/api/v1/claims/sign/batches/{batchId}/confirm",
     "list": "/api/v1/claims/sign/batches",
     "detail": "/api/v1/claims/sign/batches/{batchId}",
+    "items": "/api/v1/claims/sign/batches/{batchId}/items",
     "tracks": "/api/v1/claims/sign/batches/{batchId}/tracks",
 }
 
@@ -113,12 +114,14 @@ def main():
 
     _, listed = req(token, "GET", PATHS["list"] + "?page=1&size=20")
     _, detail = req(token, "GET", PATHS["detail"].format(batchId=batch_id))
+    _, items = req(token, "GET", PATHS["items"].format(batchId=batch_id))
     _, tracks = req(token, "GET", PATHS["tracks"].format(batchId=batch_id))
     summary = detail.get("data", {})
     assert "createdCaseCount" in summary, "详情缺少自动建案摘要"
+    assert isinstance(items.get("data"), list), "赔案明细不是数组"
     assert tracks.get("data"), "轨迹为空"
-    print("E2E_CLAIM_SIGN_CHAIN_OK autoCreated=%s batch=%s tracks=%d" % (
-        auto.get("data", {}).get("created"), batch_id, len(tracks["data"])))
+    print("E2E_CLAIM_SIGN_CHAIN_OK autoCreated=%s batch=%s items=%d tracks=%d" % (
+        auto.get("data", {}).get("created"), batch_id, len(items["data"]), len(tracks["data"])))
 
 
 if __name__ == "__main__":

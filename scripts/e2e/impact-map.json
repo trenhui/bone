@@ -1510,6 +1510,7 @@
    "controller": "AuthController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
    "cases": [
+    "claim-secure-signing-chain.py",
     "e2e_synap_claim.py",
     "synap-claim-task-workbench-e2e.py",
     "write_coverage.py"
@@ -4037,6 +4038,15 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claims/sign/batches/{batchId}/items",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claims/sign/batches/{batchId}/tracks",
    "controller": "ClaimSignController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
@@ -5288,8 +5298,8 @@
   }
  ],
  "summary": {
-  "endpoints": 639,
-  "covered": 253,
+  "endpoints": 640,
+  "covered": 254,
   "uncovered": 386
  }
 }

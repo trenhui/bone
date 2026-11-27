@@ -102,6 +102,11 @@ public class ClaimSignApplicationService {
             command.expressNo(),
             command.sender(),
             command.arriveTime());
+    batch.withSigningParties(
+        command.insuranceCompany(),
+        command.insuranceSubsidiary(),
+        command.insuringAgency(),
+        command.emergency());
     batchRepository.insert(batch);
     appendTrack(batch, null, "CREATE", "线下批次创建", command.operator());
     domainEventPublisher.publishFrom(batch);
@@ -180,9 +185,36 @@ public class ClaimSignApplicationService {
   }
 
   @Transactional(readOnly = true)
-  public PageResult<ClaimSignBatch> list(String source, String signStatus, int page, int size) {
+  public PageResult<ClaimSignBatch> list(SignBatchQuery query) {
     return batchRepository.findBatchPage(
-        tenantPort.currentTenantId(), source, signStatus, page, size);
+        tenantPort.currentTenantId(),
+        query.source(),
+        query.batchNo(),
+        query.signType(),
+        query.signChannel(),
+        query.signStatus(),
+        query.insuranceCompany(),
+        query.insuranceSubsidiary(),
+        query.insuringAgency(),
+        query.signOperator(),
+        query.signTimeStart(),
+        query.signTimeEnd(),
+        query.createTimeStart(),
+        query.createTimeEnd(),
+        query.page(),
+        query.size());
+  }
+
+  /** 批次内赔案明细，按赔案号稳定排序，供详情页只读展示。 */
+  @Transactional(readOnly = true)
+  public List<SignBatchItem> items(long batchId) {
+    requireBatch(tenantPort.currentTenantId(), batchId);
+    return batchRepository.findItemsByBatchId(batchId).stream()
+        .sorted(
+            java.util.Comparator.comparing(
+                SignBatchItem::getClaimNo,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -308,5 +340,27 @@ public class ClaimSignApplicationService {
       String expressNo,
       String sender,
       Instant arriveTime,
-      String operator) {}
+      String operator,
+      String insuranceCompany,
+      String insuranceSubsidiary,
+      String insuringAgency,
+      String emergency) {}
+
+  /** 服务端组合查询入参（应用层自有形状，不依赖 adapter DTO）。 */
+  public record SignBatchQuery(
+      String source,
+      String batchNo,
+      String signType,
+      String signChannel,
+      String signStatus,
+      String insuranceCompany,
+      String insuranceSubsidiary,
+      String insuringAgency,
+      String signOperator,
+      Instant signTimeStart,
+      Instant signTimeEnd,
+      Instant createTimeStart,
+      Instant createTimeEnd,
+      int page,
+      int size) {}
 }

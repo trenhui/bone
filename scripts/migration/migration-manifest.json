@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 153,
+  "executableCount": 154,
   "retired": [],
   "entries": [
     {
@@ -969,6 +969,12 @@
       "file": "0146_claim_sign_case_status_backfill.sql",
       "kind": "mixed",
       "summary": "签收明细 case_status 存量语义回填：0145 已记账故新建迁移，不修改其 sha256；claim_id 非空的存量明细置 SKIPPED、为空的置 AWAIT_MANUAL，新行 DEFAULT PENDING；幂等 UPDATE + 条件 MODIFY COLUMN + 存储过程 SIGNAL(1644) 终态断言无 NULL。同步 bone-init.sql 明细表默认值。"
+    },
+    {
+      "order": 154,
+      "file": "0147_claim_sign_tpa_parity.sql",
+      "kind": "ddl",
+      "summary": "TPA 签收对齐：批次补保司三方与紧急程度，明细补证件类型与影像要素"
     }
   ],
   "ordinalConflicts": [

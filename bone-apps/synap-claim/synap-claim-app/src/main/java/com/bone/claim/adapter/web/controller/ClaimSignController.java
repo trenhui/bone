@@ -6,6 +6,7 @@ import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.ConfirmSignReq;
 import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.CreateSignBatchReq;
 import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.ImportParticipantsReq;
 import com.bone.claim.adapter.web.dto.request.ClaimSignRequests.SignCaseElementReq;
+import com.bone.claim.adapter.web.dto.response.SignBatchItemResp;
 import com.bone.claim.adapter.web.dto.response.SignBatchResp;
 import com.bone.claim.adapter.web.dto.response.SignCaseSummaryResp;
 import com.bone.claim.adapter.web.dto.response.SignTrackResp;
@@ -73,7 +74,11 @@ public class ClaimSignController {
                 req.expressNo(),
                 req.sender(),
                 req.arriveTime(),
-                CurrentOperator.requireId()));
+                CurrentOperator.requireId(),
+                req.insuranceCompany(),
+                req.insuranceSubsidiary(),
+                req.insuringAgency(),
+                req.emergency()));
     return ApiResponse.success(HttpStatus.CREATED.value(), batchId);
   }
 
@@ -108,13 +113,35 @@ public class ClaimSignController {
   @PreAuthorize("hasAuthority('claim:claims:read')")
   @GetMapping("/batches")
   public ApiResponse<PageResult<SignBatchResp>> list(
-      @ModelAttribute com.bone.claim.adapter.web.dto.request.ClaimSignPageReq req) {
+      @ModelAttribute @Valid com.bone.claim.adapter.web.dto.request.ClaimSignPageReq req) {
     PageResult<ClaimSignBatch> page =
-        signService.list(req.source(), req.signStatus(), req.pageOrDefault(), req.sizeOrDefault());
+        signService.list(
+            new ClaimSignApplicationService.SignBatchQuery(
+                req.source(),
+                req.batchNo(),
+                req.signType(),
+                req.signChannel(),
+                req.signStatus(),
+                req.insuranceCompany(),
+                req.insuranceSubsidiary(),
+                req.insuringAgency(),
+                req.signOperator(),
+                req.signTimeStart(),
+                req.signTimeEnd(),
+                req.createTimeStart(),
+                req.createTimeEnd(),
+                req.pageOrDefault(),
+                req.sizeOrDefault()));
     return ApiResponse.success(
         page.map(
             batch ->
                 ClaimSignAssembler.INSTANCE.toResp(batch, signService.caseSummary(batch.getId()))));
+  }
+
+  @PreAuthorize("hasAuthority('claim:claims:read')")
+  @GetMapping("/batches/{batchId}/items")
+  public ApiResponse<List<SignBatchItemResp>> items(@PathVariable long batchId) {
+    return ApiResponse.success(ClaimSignAssembler.INSTANCE.toItemResps(signService.items(batchId)));
   }
 
   @PreAuthorize("hasAuthority('claim:claims:read')")

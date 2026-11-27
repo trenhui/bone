@@ -58,18 +58,46 @@ public interface ClaimSignBatchRepository extends Repository<ClaimSignBatch, Lon
       @Param("operator") String operator,
       @Param("remark") String remark);
 
-  /** 签收批次分页查询（服务端真分页，按来源/状态筛选）。 */
+  /** 签收批次分页查询（服务端真分页，条件对齐普康 TPA 签收台）。 */
   default PageResult<ClaimSignBatch> findBatchPage(
-      Long tenantId, String source, String signStatus, int page, int size) {
+      Long tenantId,
+      String source,
+      String batchNo,
+      String signType,
+      String signChannel,
+      String signStatus,
+      String insuranceCompany,
+      String insuranceSubsidiary,
+      String insuringAgency,
+      String signOperator,
+      Instant signTimeStart,
+      Instant signTimeEnd,
+      Instant createTimeStart,
+      Instant createTimeEnd,
+      int page,
+      int size) {
     Criteria<ClaimSignBatch> criteria =
         Criteria.<ClaimSignBatch>create().eq(ClaimSignBatch::getTenantId, tenantId);
-    if (source != null && !source.isBlank()) {
+    if (present(source) && !"ALL".equalsIgnoreCase(source)) {
       criteria.eq(ClaimSignBatch::getSource, source);
     }
-    if (signStatus != null && !signStatus.isBlank()) {
-      criteria.eq(ClaimSignBatch::getSignStatus, signStatus);
-    }
+    criteria.eq(present(signType), ClaimSignBatch::getSignType, signType);
+    criteria.eq(present(signStatus), ClaimSignBatch::getSignStatus, signStatus);
+    criteria.likeIfPresent(ClaimSignBatch::getBatchNo, batchNo);
+    criteria.likeIfPresent(ClaimSignBatch::getSignChannel, signChannel);
+    criteria.likeIfPresent(ClaimSignBatch::getInsuranceCompany, insuranceCompany);
+    criteria.likeIfPresent(ClaimSignBatch::getInsuranceSubsidiary, insuranceSubsidiary);
+    criteria.likeIfPresent(ClaimSignBatch::getInsuringAgency, insuringAgency);
+    criteria.likeIfPresent(ClaimSignBatch::getSignOperator, signOperator);
+    criteria.gte(signTimeStart != null, ClaimSignBatch::getSignTime, signTimeStart);
+    criteria.lte(signTimeEnd != null, ClaimSignBatch::getSignTime, signTimeEnd);
+    criteria.gte(createTimeStart != null, ClaimSignBatch::getCreatedAt, createTimeStart);
+    criteria.lte(createTimeEnd != null, ClaimSignBatch::getCreatedAt, createTimeEnd);
     return pageByCriteria(criteria.page(page, size));
+  }
+
+  private static boolean present(String value) {
+    return value != null && !value.isBlank();
   }
 
   /** 追加签收轨迹（append-only）。INSERT 显式写 tenant_id 故用 MANUAL；SDK 要求 SQL 方法声明策略。 */

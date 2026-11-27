@@ -37,7 +37,11 @@ public final class ClaimSignRequests {
       @Schema(description = "快递公司") String expressCompany,
       @Schema(description = "快递单号") String expressNo,
       @Schema(description = "发件人") String sender,
-      @Schema(description = "到件时间") Instant arriveTime) {}
+      @Schema(description = "到件时间") Instant arriveTime,
+      @Schema(description = "保险公司") String insuranceCompany,
+      @Schema(description = "保险分公司") String insuranceSubsidiary,
+      @Schema(description = "投保公司") String insuringAgency,
+      @Schema(description = "紧急程度") String emergency) {}
 
   /** 导入人员名单：赔案 ID 列表。 */
   public record ImportParticipantsReq(@Schema(description = "赔案ID列表") List<Long> claimIds) {}
