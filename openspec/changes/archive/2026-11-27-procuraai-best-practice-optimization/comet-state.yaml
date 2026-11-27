@@ -2,7 +2,7 @@
 change_id: f03124bc-55fe-4f39-a16e-0c43b1de3512
 workflow: tweak
 language: zh-CN
-phase: verify
+phase: archive
 context_compression: off
 build_mode: direct
 build_pause: null
@@ -15,14 +15,14 @@ auto_transition: true
 base_ref: 3f2ab42083dee879d8e1af0ff9e84b71ede33aef
 design_doc: null
 plan: null
-verify_result: pending
+verify_result: pass
 verify_failures: 0
 verification_report: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
 branch_status: pending
 created_at: 2026-11-26
-verified_at: null
-archive_confirmation: null
-archived: false
+verified_at: 2026-11-27
+archive_confirmation: confirmed
+archived: true
 bound_branch: dev
 direct_override: null
 handoff_context: null
@@ -31,7 +31,7 @@ classic_profile: null
 classic_migration: null
 run_checkpoint:
   schema: comet.workflow-run-checkpoint.v2
-  hash: 9ceccc37b6ce94d55190722e44688ec7e61bb4d3d29f7a9a990e492101564848
+  hash: a2bbc94fb9abfc315fca167011fbab20826fb9fa38104938285b4d54a0e1d475
   run:
     protocolVersion: 1
     schemaVersion: 1
@@ -40,9 +40,9 @@ run_checkpoint:
     workflow:
       id: comet-classic-tweak
       version: "1"
-      hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+      hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
     definitionHashes:
-      '["comet-classic-tweak","1"]': fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+      '["comet-classic-tweak","1"]': 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
     initialStateHash: 805486066cdbde47dbbe886c41766ec4afe41732ea3af555b1b04c898b37cb95
     input:
       change: procuraai-best-practice-optimization
@@ -50,15 +50,15 @@ run_checkpoint:
       workspaceBaseline:
         ref: 354426b9-c058-4811-9753-20a5e160d7a5
     state:
-      archiveConfirmation: null
-      archived: false
+      archiveConfirmation: confirmed
+      archived: true
       autoTransition: true
       baseRef: 3f2ab42083dee879d8e1af0ff9e84b71ede33aef
       boundBranch: dev
       branchStatus: pending
       buildMode: direct
       buildPause: null
-      checkEpoch: 6
+      checkEpoch: 19
       classicMigration: null
       classicProfile: null
       contextCompression: off
@@ -69,19 +69,19 @@ run_checkpoint:
       handoffHash: null
       isolation: current
       language: zh-CN
-      phase: verify
+      phase: archive
       plan: null
       reviewMode: off
       subagentDispatch: null
       tddMode: direct
       verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
-      verifiedAt: null
+      verifiedAt: 2026-11-27
       verifyFailures: 0
       verifyMode: light
-      verifyResult: pending
+      verifyResult: pass
       workflow: tweak
     status: running
-    sequence: 25
+    sequence: 63
     actions:
       - attempt: 1
         claim:
@@ -671,10 +671,10 @@ run_checkpoint:
         status: succeeded
         stepId: tweak.verify.run
         type: invoke_skill
-      - attempt: 1
+      - attempt: 2
         claim:
           executorId: comet-classic-check
-          token: portable-5a0f0696e7cf40433a58caf961b23cce93ec3cc04e9d41a82029be43000a43fb
+          token: portable-2f74345179e9f35c737ac166a8635edf0562df0591b63ad7e714a8e986196911
         executionOrigin:
           workflow:
             hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
@@ -689,17 +689,1159 @@ run_checkpoint:
               ref: 354426b9-c058-4811-9753-20a5e160d7a5
           outputs: {}
         inputHash: 0c68003de6cd04d86ee37136ad5d53740704f91ac7381c176b365ceb52144994
+        outcome:
+          actionId: procuraai-best-practice-optimization:25
+          attempt: 2
+          claimToken: portable-2f74345179e9f35c737ac166a8635edf0562df0591b63ad7e714a8e986196911
+          inputHash: 0c68003de6cd04d86ee37136ad5d53740704f91ac7381c176b365ceb52144994
+          outcomeId: baa5f35f-d717-4650-af3c-d47a648f4d0f
+          output:
+            argv:
+              - python3
+              - tools/check_procura_alignment.py
+            changedDuringExecution: []
+            checkEpoch: 6
+            contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+            cwd: .
+            deliveryInputs: {}
+            environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+            exitCode: 0
+            inputAfter: fdb4203042b53f31c4299e0096da0d69add9daeabf66480f3620637e9b14200a
+            inputBefore: fdb4203042b53f31c4299e0096da0d69add9daeabf66480f3620637e9b14200a
+            manifestHash: 9f5402e339c24f99165928437061b1e0ac6b25a7aa804dcd2cd7d35243396eb3
+            manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/bfad472e-aece-4214-85dc-d9660e744676.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/c578387e-901f-411a-8cd9-49951e28f5d4.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
         protocolVersion: 1
-        reason: 原 classic-check 执行器留下日志和输入快照，但未写入 Runtime 追加式收据；SDK 层结果未知，需按恢复流程处理
-        receipts: []
+        receipts:
+          - hash: a8f412960250c560c1573857e97bf7d6edc753f7fba57b29d16b02bd35ecff84
+            outcomeId: baa5f35f-d717-4650-af3c-d47a648f4d0f
+        reconciliations:
+          - attempt: 1
+            evidence:
+              basis:
+                - "runtime check-receipts/classic: 0d701af0/9db194a8/2e52fab0 三个
+                  identity 均 MISS"
+                - change 内 sdk-dc8af...json status=started（可编辑副本，非权威收据）
+                - comet state restore --confirmed exit=0，重建后 rejectedOutcomes=0
+                - 用户 2026-11-27 明确选择 '重新初始化 Run 重走'
+              summary: 按用户授权的重新初始化重走：原 classic-check 执行器进程已退出，Runtime 追加式 check-receipts 中本次
+                claim 的三个 identity 均不存在（从未写入完成收据），change 内 sdk-*.json 仅为 started
+                副本。已用官方 state restore --confirmed 从 checkpoint 重建 Run（exit
+                0），该重建动作已剥离原 attempt 的 rejectedOutcomes（现为 0），故这是重建 Run
+                上的全新尝试。本次 retry 后由 guard 真实重新执行 python3
+                tools/check_procura_alignment.py 并生成新的 Runtime 收据，不沿用、不冒充任何旧结果。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-e93381f5bc98c3e2cc2107d13944b67c85d8efaa581dadf675c0200ddd3726c7
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:27
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 4846afc02fbc88bb96d648c56e1615c85f5e4fe7d02bb9bfe39382a5a422124c
+        outcome:
+          actionId: procuraai-best-practice-optimization:27
+          attempt: 1
+          claimToken: portable-e93381f5bc98c3e2cc2107d13944b67c85d8efaa581dadf675c0200ddd3726c7
+          inputHash: 4846afc02fbc88bb96d648c56e1615c85f5e4fe7d02bb9bfe39382a5a422124c
+          outcomeId: 870db096-e031-40ad-a6d2-d05ff1b4d55f
+          output:
+            remote: origin
+            summary: procuraAI 业界最佳实践优化落地收尾：本轮重新初始化 SDK Run 并重跑真实检查（主门禁 10/10），Verify 通过、归档本
+              change 产物与 8 份 procuraAI 文档，交付 push 到 origin/dev；排除并行会话的 procura
+              运营台与 claim 相关改动。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7a5f2f03d3d0ad420dcfe1860aa43329daea1c6177f4093fbb6500c62fd4e397
+            outcomeId: 870db096-e031-40ad-a6d2-d05ff1b4d55f
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-ac601e2b5524e2f47bbe1ce245a03946acc9abe602bc6c08375a3d8039bb5a2a
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:29
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 996d6224a2799a26c8482a929d5ea3d8b14e17de6fbbb90992726e19897d2729
+        outcome:
+          actionId: procuraai-best-practice-optimization:29
+          attempt: 1
+          claimToken: portable-ac601e2b5524e2f47bbe1ce245a03946acc9abe602bc6c08375a3d8039bb5a2a
+          inputHash: 996d6224a2799a26c8482a929d5ea3d8b14e17de6fbbb90992726e19897d2729
+          outcomeId: e1e56622-03dc-47c7-b1c4-85e8303488d0
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 526a8dc1be30c1d244a5a9388f973cb266c1e3273a093216b827b3ebed30a0a1
+            outcomeId: e1e56622-03dc-47c7-b1c4-85e8303488d0
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-a0c101f12406024418bda9aec411dc55cbae08ab2e9af03eb3b3dedbf9191d59
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:31
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 996d6224a2799a26c8482a929d5ea3d8b14e17de6fbbb90992726e19897d2729
+        outcome:
+          actionId: procuraai-best-practice-optimization:31
+          attempt: 2
+          claimToken: portable-a0c101f12406024418bda9aec411dc55cbae08ab2e9af03eb3b3dedbf9191d59
+          inputHash: 996d6224a2799a26c8482a929d5ea3d8b14e17de6fbbb90992726e19897d2729
+          outcomeId: 720b055d-5bb4-40db-9764-0e67fc8f64dc
+          output:
+            argv:
+              - python3
+              - tools/check_procura_alignment.py
+            changedDuringExecution: []
+            checkEpoch: 8
+            contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+            cwd: .
+            deliveryInputs: {}
+            environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+            exitCode: 0
+            inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+            inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+            manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+            manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a8a29f98-fa30-4220-aca1-73f0dfeda2f1.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/362624c8-2530-4d5e-8e20-44b8d83cb156.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a792b4d01a3d3ecd81d3d3dd159df00094f89ea0489a126d1388b273bf082fa5
+            outcomeId: 720b055d-5bb4-40db-9764-0e67fc8f64dc
+        reconciliations:
+          - attempt: 1
+            evidence:
+              basis:
+                - recovery status=outcome-unknown, record=started
+                - rejectedOutcomes=0
+                - 本轮用户授权重新初始化并重走流程
+              summary: Verify guard --apply 的 classic-check 执行器在写入 Runtime
+                追加式收据前中断（record=started、无完整结果）；当前 Action 为本 Run 重新派发的全新
+                attempt（rejectedOutcomes=0）。本次 retry 后由 guard 真实重新执行 python3
+                tools/check_procura_alignment.py 生成新收据，不沿用旧结果。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-9c7bfcd60aa3bb50d9e1c45d29438a406203deb37fdb0c31ea106506c5a4de97
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:33
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: b9aa2667e036bb8f0f6c59facb47255fffa2353122d31f94d5ac0044ef5543e7
+        outcome:
+          actionId: procuraai-best-practice-optimization:33
+          attempt: 1
+          claimToken: portable-9c7bfcd60aa3bb50d9e1c45d29438a406203deb37fdb0c31ea106506c5a4de97
+          inputHash: b9aa2667e036bb8f0f6c59facb47255fffa2353122d31f94d5ac0044ef5543e7
+          outcomeId: e9a360db-ae9f-4339-b7b7-d28fa3ec67f1
+          output:
+            remote: origin
+            summary: procuraAI 业界最佳实践优化落地最终交付：重新初始化 SDK Run 后真实重跑主门禁 10/10、Verify 通过；归档本
+              change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话 procura 运营台与
+              claim 改动。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b7425e542d8a6e80ec5660ece66bd0d65b4b3eab5f071ff3e7a6089ef00acbeb
+            outcomeId: e9a360db-ae9f-4339-b7b7-d28fa3ec67f1
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-a3f8e37a1ed78b5871281d0eafd25889c699db57d9ff05f3414aee2bac3b2dd4
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:35
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 048f1c55c0bad5d9de2e422c63f8eeb24f2ae26f5a695bd2e42aa39e73289e57
+        outcome:
+          actionId: procuraai-best-practice-optimization:35
+          attempt: 1
+          claimToken: portable-a3f8e37a1ed78b5871281d0eafd25889c699db57d9ff05f3414aee2bac3b2dd4
+          inputHash: 048f1c55c0bad5d9de2e422c63f8eeb24f2ae26f5a695bd2e42aa39e73289e57
+          outcomeId: 7cfa89dd-9bb8-4606-8ee1-e0b1186a3bcd
+          output:
+            baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3fcd4a4227c0f7fffbf1bfa8cc4702b995ea6e1376340200ac96fe8477d82af2
+            outcomeId: 7cfa89dd-9bb8-4606-8ee1-e0b1186a3bcd
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-archive
+          token: portable-4919a43925382aa57058022d6aca9a1ca03c42cdfe9282c7981bb6510c5a5520
+        executionOrigin:
+          workflow:
+            hash: fdf07b67da7ac398b4edb7c9909de416a5ef83a8db900f0772e4859731a215cd
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:36
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 5b2969f87c9fa6426e7bcf683a9f2c69413ecae5392007db6a3b78c812f7c950
+        outcome:
+          actionId: procuraai-best-practice-optimization:36
+          attempt: 2
+          claimToken: portable-4919a43925382aa57058022d6aca9a1ca03c42cdfe9282c7981bb6510c5a5520
+          inputHash: 5b2969f87c9fa6426e7bcf683a9f2c69413ecae5392007db6a3b78c812f7c950
+          outcomeId: ea26494a-c86b-4da5-b3a3-7f050d85a9de
+          output:
+            archiveStarted: true
+            reason: "\e[31m✖\e[39m Error: Archive
+              '2026-11-27-procuraai-best-practice-optimization' is already being
+              created. If no archive process is running, remove the stale claim
+              at
+              /Users/renhui.trh/code/bone/openspec/changes/archive/.openspec-ar\
+              chive.lock and rerun.
+
+
+              Task status: ✓ Complete\n"
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: cc45a124a2e57dcc453c02817a8fa10e1a1e13791cc51c2f2da51b4925f4040c
+            outcomeId: ea26494a-c86b-4da5-b3a3-7f050d85a9de
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 本次归档副作用未执行，retry 只用于补记并重跑归档：classic-archive 执行器进程已不存在；原 active change
+                目录 openspec/changes/procuraai-best-practice-optimization
+                仍在；openspec/changes/archive 下不存在
+                2026-11-27-procuraai-best-practice-optimization；没有规格同步结果；没有归档收据；comet
+                archive --recover --json 只读核对返回 'Classic SDK Archive still has
+                its active change' (exit 70)。唯一存在的
+                .comet/archive-documents.json(documents:{}) 与
+                .comet/archive-requirements.json 是 claim 前的 preflight 元数据，不构成
+                OpenSpec 目录搬迁、规格同步或 Git 提交；工作区无归档物理变化，未提交、未 push。
+            resolution: not-executed
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: failed
+        stepId: tweak.archive.execute
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-2dfb3a534bdcb3773799ed7f4104c932cc8a94dc255dea6d449688beb6fcfa1e
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:37
+        input:
+          activation:
+            expectedRevision: 72
+            fromPhase: archive
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 3c4fa37584f41e2f7fd48dd44881d0983a84e6c04819d1ea8c16b3b84fadcc70
+        outcome:
+          actionId: procuraai-best-practice-optimization:37
+          attempt: 1
+          claimToken: portable-2dfb3a534bdcb3773799ed7f4104c932cc8a94dc255dea6d449688beb6fcfa1e
+          inputHash: 3c4fa37584f41e2f7fd48dd44881d0983a84e6c04819d1ea8c16b3b84fadcc70
+          outcomeId: 29d22d82-37ca-4c4d-ac54-20cf8ed30e4c
+          output:
+            event: open-complete
+            requirementsEvidence:
+              contentHash: 9c0e5a8ecede3d0c49d5041b9020094d92ef38f0f3f7f23bd3933d997d846aa6
+              ref: openspec/changes/procuraai-best-practice-optimization
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: f9df17fa60bbc866de434f364a5001bda5518b803dd28dccacc78a0a4d94445a
+            outcomeId: 29d22d82-37ca-4c4d-ac54-20cf8ed30e4c
+        reconciliations: []
+        ref: comet-tweak
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-best-practice-optimization:39/1
+          token: portable-43d191f6e5655a9e8ae8135b526e4921d25a430ea3eba882ffa01724e07cdb65
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:39
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 49ec0ffa0b431c4660dc94f0e00983a506657e13bc2e1de8f390b62207212b74
+        outcome:
+          actionId: procuraai-best-practice-optimization:39
+          attempt: 1
+          claimToken: portable-43d191f6e5655a9e8ae8135b526e4921d25a430ea3eba882ffa01724e07cdb65
+          inputHash: 49ec0ffa0b431c4660dc94f0e00983a506657e13bc2e1de8f390b62207212b74
+          outcomeId: e6f3daf4-8e64-463f-94f9-c0489e0375d7
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3e25ebaf38216d7d16e8c84b7eb776a0591caa9ad69e755e4af0b34989d3ad17
+            outcomeId: e6f3daf4-8e64-463f-94f9-c0489e0375d7
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-d063a43dac6368d0d62b4cc2a7d94af306d0737de1b0d3fbfcc7eaaa411b51f0
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:40
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: b14d68fd1383374a0cdba91a3aca1f5c6e8cae79574883310fcbbec2f6529e46
+        outcome:
+          actionId: procuraai-best-practice-optimization:40
+          attempt: 1
+          claimToken: portable-d063a43dac6368d0d62b4cc2a7d94af306d0737de1b0d3fbfcc7eaaa411b51f0
+          inputHash: b14d68fd1383374a0cdba91a3aca1f5c6e8cae79574883310fcbbec2f6529e46
+          outcomeId: c2c62a98fc0aa2458b7d029e078bf4caa692985a3861533372b96cd5646ff7ec
+          output:
+            argv:
+              - python3
+              - tools/check_procura_alignment.py
+            changedDuringExecution: []
+            checkEpoch: 11
+            contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+            cwd: .
+            environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+            exitCode: 0
+            inputAfter: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+            inputBefore: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+            manifestHash: 4f6cfb22d62e0dc20c9903bfef4cce4530d163efc5ee718fae4d5ea263149da6
+            manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0f8ff746-a1a7-4b12-89f9-3731e9478249.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a9bd92ee-ce49-47fb-9c66-426c7af216fc.log
+            reusable: true
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 0ae517acc7653464cc61bb68dd7cda3eb252141da04178b771300ae536156b0a
+            outcomeId: c2c62a98fc0aa2458b7d029e078bf4caa692985a3861533372b96cd5646ff7ec
         reconciliations: []
         ref: classic-check
         requiredCapabilities: []
         retry: manual
         runId: procuraai-best-practice-optimization
-        status: unknown
+        status: succeeded
+        stepId: tweak.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-ee980326723a7be5ae931300405c9401503b37609a0675729199efe8290e2041
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:42
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 6c77795d18ca38b2a7d1b97affefb0c087d893df64872238bf331d37d9c389a9
+        outcome:
+          actionId: procuraai-best-practice-optimization:42
+          attempt: 1
+          claimToken: portable-ee980326723a7be5ae931300405c9401503b37609a0675729199efe8290e2041
+          inputHash: 6c77795d18ca38b2a7d1b97affefb0c087d893df64872238bf331d37d9c389a9
+          outcomeId: f20d42fb-3f4a-4de2-9fb4-257802ada325
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c13acabcb101cb14d57a449b85251ee4d29d4996de854cc752030af362861d43
+            outcomeId: f20d42fb-3f4a-4de2-9fb4-257802ada325
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-8820f2e46a172fb950d2b5bfce25ad1f7ca9bae172a804210407650307985035
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:44
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: cd1ab9db7e962765277a40158eafcd5d019e79d8c1fbd126926e76a49fc47c52
+        outcome:
+          actionId: procuraai-best-practice-optimization:44
+          attempt: 2
+          claimToken: portable-8820f2e46a172fb950d2b5bfce25ad1f7ca9bae172a804210407650307985035
+          inputHash: cd1ab9db7e962765277a40158eafcd5d019e79d8c1fbd126926e76a49fc47c52
+          outcomeId: 977bde4c-4ca2-4de6-a6a1-95fcc48e906b
+          output:
+            argv:
+              - python3
+              - tools/check_procura_alignment.py
+            changedDuringExecution: []
+            checkEpoch: 12
+            contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+            cwd: .
+            deliveryInputs: {}
+            environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+            exitCode: 0
+            inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+            inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+            manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+            manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/71f54e6f-32e8-4f7d-bc77-dd7ee34d8bd6.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/ff3d6e4f-17e6-4c88-8bde-71cb62f95b7f.log
+            reusable: true
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 16a90d385b1cb559008f219a14c2957b47f5d54da69035c04fa8147e415282d0
+            outcomeId: 977bde4c-4ca2-4de6-a6a1-95fcc48e906b
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: resolution=not-executed 仅指 SDK 结果回填未执行，不代表检查命令未运行：本次 classic-check
+                已真实执行 python3 tools/check_procura_alignment.py，用户级 Runtime 收据
+                d4e4c500-4172-44ae-8d35-53f8b24090de.log 显示 A1–A10 全部通过
+                (10/10)，manifest cafaa881-d614-4536-be99-a2a27d9a49e8.manifest
+                存在；但 SDK record
+                sdk-7b87bb429c1f45c33569f186644f1276d6b3530601efcc0a4c2f50818f1692ea.json
+                仍为 started，执行器进程已不存在。retry 只用于让 Runtime 重新产生完整结果记录，不伪造旧检查成功。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
         stepId: tweak.verify.check
         type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-d1d1d5507c5c124039b25034edba07aceaeee7d138787f07dc086cbd5d760733
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:46
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 6d2be242005deb7f8b7f0419a65a4a5b1c61a7804d81cdbf8febea79f0fd22d2
+        outcome:
+          actionId: procuraai-best-practice-optimization:46
+          attempt: 1
+          claimToken: portable-d1d1d5507c5c124039b25034edba07aceaeee7d138787f07dc086cbd5d760733
+          inputHash: 6d2be242005deb7f8b7f0419a65a4a5b1c61a7804d81cdbf8febea79f0fd22d2
+          outcomeId: 24703c34-fbd3-4d2d-9733-198ddb5d07b2
+          output:
+            remote: origin
+            summary: procuraAI 业界最佳实践优化落地最终交付：repair-archive 重开后复用未变产物与验证报告，真实重跑主门禁
+              10/10、Verify 通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+              origin/dev；排除并行会话 procura 运营台与 claim 改动。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5a325c715208c6f7411cbffaeef9990f988a92845cc63cb57d91ea914d8a5fe2
+            outcomeId: 24703c34-fbd3-4d2d-9733-198ddb5d07b2
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-b323d64f1bb4c198ae367eca4e6505746824cc473f683a8cdaa7ae573f97dca4
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:48
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 73c5e40efd6f3419e48f79a6a4dca188e1a8e149aeb1e5f8afca916266bea8e5
+        outcome:
+          actionId: procuraai-best-practice-optimization:48
+          attempt: 1
+          claimToken: portable-b323d64f1bb4c198ae367eca4e6505746824cc473f683a8cdaa7ae573f97dca4
+          inputHash: 73c5e40efd6f3419e48f79a6a4dca188e1a8e149aeb1e5f8afca916266bea8e5
+          outcomeId: 4803b61b-07e1-4697-9235-8da582decb3d
+          output:
+            baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9fafff4db0c1a0b3bdb1a7177e925ef7f6477cae0d464d176936a002b6219475
+            outcomeId: 4803b61b-07e1-4697-9235-8da582decb3d
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-archive
+          token: portable-be2d3280ad8dcfbfd8aa1705dd93d9347df1372eade299fe15131e4daec67c6e
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:49
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: e1f78f6cb8db8d52c358134ea4e46cda4f9028b8c4d10b7e8df6cae644594632
+        outcome:
+          actionId: procuraai-best-practice-optimization:49
+          attempt: 2
+          claimToken: portable-be2d3280ad8dcfbfd8aa1705dd93d9347df1372eade299fe15131e4daec67c6e
+          inputHash: e1f78f6cb8db8d52c358134ea4e46cda4f9028b8c4d10b7e8df6cae644594632
+          outcomeId: f586284d-91dc-4602-8d7e-683570afef69
+          output:
+            archiveStarted: true
+            reason: "\e[31m✖\e[39m Error: Archive
+              '2026-11-27-procuraai-best-practice-optimization' is already being
+              created. If no archive process is running, remove the stale claim
+              at
+              /Users/renhui.trh/code/bone/openspec/changes/archive/.openspec-ar\
+              chive.lock and rerun.
+
+
+              Task status: ✓ Complete\n"
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: 0c35de67d8e5f3402d3a64054791d019d30050dd18c71d925565cc2ddb08a7a8
+            outcomeId: f586284d-91dc-4602-8d7e-683570afef69
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: resolution=not-executed 仅指 SDK 归档结果回填未执行，不代表曾完成归档：后台执行器已退出；active
+                change 目录仍在，archive 目录未生成，Runtime
+                无归档结果记录；.comet/archive-documents.json 的 documents 为空，只是 claim 前
+                preflight 元数据；无提交、无 push。此次 retry 用于恢复 pending Archive
+                Action，随后由 comet archive 同步执行真实归档并回填结果。
+            resolution: not-executed
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: failed
+        stepId: tweak.archive.execute
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-5734700fcd5265d9fed87eb4106f037c71c230636daf563bcc624da6a717e4fc
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:50
+        input:
+          activation:
+            expectedRevision: 100
+            fromPhase: archive
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: f904ae3118df15f4c1e74d1a0d51394431cb0dcfd9d17e5af44289e98fad37bc
+        outcome:
+          actionId: procuraai-best-practice-optimization:50
+          attempt: 1
+          claimToken: portable-5734700fcd5265d9fed87eb4106f037c71c230636daf563bcc624da6a717e4fc
+          inputHash: f904ae3118df15f4c1e74d1a0d51394431cb0dcfd9d17e5af44289e98fad37bc
+          outcomeId: 02617ccd-ec64-4584-ab24-ffbbfee9ddfc
+          output:
+            event: open-complete
+            requirementsEvidence:
+              contentHash: 9c0e5a8ecede3d0c49d5041b9020094d92ef38f0f3f7f23bd3933d997d846aa6
+              ref: openspec/changes/procuraai-best-practice-optimization
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cf81b28a3f25acf4cf02e71e94482fa128212b839f342fa1fb1a48c0a249b739
+            outcomeId: 02617ccd-ec64-4584-ab24-ffbbfee9ddfc
+        reconciliations: []
+        ref: comet-tweak
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-best-practice-optimization:52/1
+          token: portable-b96e4a1e56251e80457f621a3008bf1926bbf14d61e026730131c7424c063b49
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:52
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 49ec0ffa0b431c4660dc94f0e00983a506657e13bc2e1de8f390b62207212b74
+        outcome:
+          actionId: procuraai-best-practice-optimization:52
+          attempt: 1
+          claimToken: portable-b96e4a1e56251e80457f621a3008bf1926bbf14d61e026730131c7424c063b49
+          inputHash: 49ec0ffa0b431c4660dc94f0e00983a506657e13bc2e1de8f390b62207212b74
+          outcomeId: 550f7545-555a-49d5-9cca-c412358916f2
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d0fc2f95a3f863d76a49d9289d65e2ee2dafd1489b49efe6b8497b340e5923fa
+            outcomeId: 550f7545-555a-49d5-9cca-c412358916f2
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-5d553620be713c0b2549d6ed6224833d351ae656557c531b91182b990b7c6d1b
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:53
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: b14d68fd1383374a0cdba91a3aca1f5c6e8cae79574883310fcbbec2f6529e46
+        outcome:
+          actionId: procuraai-best-practice-optimization:53
+          attempt: 1
+          claimToken: portable-5d553620be713c0b2549d6ed6224833d351ae656557c531b91182b990b7c6d1b
+          inputHash: b14d68fd1383374a0cdba91a3aca1f5c6e8cae79574883310fcbbec2f6529e46
+          outcomeId: 4c9ee4f792e467383445fe7969a33e440ee949317a18233d9b3cf6202b55ef78
+          output:
+            argv:
+              - python3
+              - tools/check_procura_alignment.py
+            changedDuringExecution: []
+            checkEpoch: 15
+            contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+            cwd: .
+            environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+            exitCode: 0
+            inputAfter: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+            inputBefore: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+            manifestHash: 4f6cfb22d62e0dc20c9903bfef4cce4530d163efc5ee718fae4d5ea263149da6
+            manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/8e0e26b8-554c-4bba-b10f-3bd9d9569531.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0932bb6b-21fd-4368-92ef-c89fd98227ba.log
+            reusable: true
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b10c7d2a9459a35ce7950cd8609047a6924984b8d6ba3551f0cda0060e9c30ad
+            outcomeId: 4c9ee4f792e467383445fe7969a33e440ee949317a18233d9b3cf6202b55ef78
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-a824ce38c2398bdecf8eecb5a7b0af25f1f0b57ea0865ad4a0228006ad2de4f5
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:55
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 61c5b6e9dd6625f8798ad0d1070a6b709f7b095af0d821d2f1c59309d170b191
+        outcome:
+          actionId: procuraai-best-practice-optimization:55
+          attempt: 1
+          claimToken: portable-a824ce38c2398bdecf8eecb5a7b0af25f1f0b57ea0865ad4a0228006ad2de4f5
+          inputHash: 61c5b6e9dd6625f8798ad0d1070a6b709f7b095af0d821d2f1c59309d170b191
+          outcomeId: e72947b9-59d3-4453-a768-80185ada7a42
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a04e0c15f3d29a67391a7cb770feced9677f8656c6ab5d8b92e09f43ebd22efe
+            outcomeId: e72947b9-59d3-4453-a768-80185ada7a42
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-71c44e8a9dce4ac98c5845dc7889bb9b17df65efecb23b8f16eec31b1f8104a3
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:57
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 94424cf560af5cd8d60399aaa291e533e56e20ccb88f3317d4c0dd3f1db82db3
+        outcome:
+          actionId: procuraai-best-practice-optimization:57
+          attempt: 2
+          claimToken: portable-71c44e8a9dce4ac98c5845dc7889bb9b17df65efecb23b8f16eec31b1f8104a3
+          inputHash: 94424cf560af5cd8d60399aaa291e533e56e20ccb88f3317d4c0dd3f1db82db3
+          outcomeId: 879986db00f93308f0f3e0ebd07b23c2313dc1a5fbbd2103796638484de66794
+          output:
+            argv:
+              - python3
+              - tools/check_procura_alignment.py
+            changedDuringExecution: []
+            checkEpoch: 16
+            contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+            cwd: .
+            deliveryInputs: {}
+            environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+            exitCode: 0
+            inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+            inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+            manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+            manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/fb85e687-0bc9-468f-a191-8cd8daf754ce.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/b0940d87-6235-464f-8469-2eeccc4a118c.log
+            reusable: true
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4ce58656ec70d57b302edfd70f979702f5d237d5d59052e3ea94a0f039955032
+            outcomeId: 879986db00f93308f0f3e0ebd07b23c2313dc1a5fbbd2103796638484de66794
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: resolution=not-executed 仅指 SDK 结果回填未执行，不代表检查命令未运行：本次 classic-check
+                已写出收据 dec368ec-f242-432a-a82c-44b667de04a2.log 与 manifest
+                b1adfeda-a877-4570-8643-92a3dd7fb1f1.manifest；但 record 仍为
+                started，执行器已退出。retry 只用于生成完整 Runtime 结果记录，不伪造旧检查成功。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7fe2f5e6e22eff8afa9fbc47dd6e6f8819b4831a582d1607131d189b6e1ae291
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:59
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 8971351b0656df7f7becaaaaedbe56f2134772349bb64be9950f4846bc7d164e
+        outcome:
+          actionId: procuraai-best-practice-optimization:59
+          attempt: 1
+          claimToken: portable-7fe2f5e6e22eff8afa9fbc47dd6e6f8819b4831a582d1607131d189b6e1ae291
+          inputHash: 8971351b0656df7f7becaaaaedbe56f2134772349bb64be9950f4846bc7d164e
+          outcomeId: 030f79c8-7d21-4367-a2a7-ce6872c49db0
+          output:
+            remote: origin
+            summary: procuraAI 业界最佳实践优化落地最终交付：已清除阻塞归档的陈旧 openspec-archive.lock，重跑主门禁 10/10 与
+              Verify 均通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+              origin/dev；排除并行会话 procura 运营台与 claim 改动。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 423f683418ec3d5df67d13c46d5f1e08355a09e11aadbd1323aeadf23574ee77
+            outcomeId: 030f79c8-7d21-4367-a2a7-ce6872c49db0
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-578f8879af0790c895f46d61794e9adb27cca03cf5d95b68f59712109780d57a
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:61
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 6d119250b4992e10b91c293e4a20ced441dd17aa1404743802aaf6f4dcc7e2ec
+        outcome:
+          actionId: procuraai-best-practice-optimization:61
+          attempt: 1
+          claimToken: portable-578f8879af0790c895f46d61794e9adb27cca03cf5d95b68f59712109780d57a
+          inputHash: 6d119250b4992e10b91c293e4a20ced441dd17aa1404743802aaf6f4dcc7e2ec
+          outcomeId: b2a7455c-3313-4747-800f-3995737f3177
+          output:
+            baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a4b8d17dbaf6f5bfb60eb4e317e80ed338980d5e38b2671a05d0f4017e9c5b44
+            outcomeId: b2a7455c-3313-4747-800f-3995737f3177
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-f9ee99c4cbd8fb92297b100dda1008376d27aa9388cc893ab4ca96b31ab0232b
+        executionOrigin:
+          workflow:
+            hash: 6d6ff572e069b8f282c8eac8bd396a758fb20da7d5b1d957f4c320c91dd945c9
+            id: comet-classic-tweak
+            version: "1"
+        id: procuraai-best-practice-optimization:62
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: af9953d27baea20b27cea9b94dc8acbe29bddfdbc5bd08786ed56f5c69c1f38c
+        outcome:
+          actionId: procuraai-best-practice-optimization:62
+          artifacts:
+            - sha256: 0261e3e8aabd5c52a28f0f9184e587785cb0bcb18c2dc1ed452690b57b234786
+              uri: openspec/changes/archive/2026-11-27-procuraai-best-practice-optimization/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-f9ee99c4cbd8fb92297b100dda1008376d27aa9388cc893ab4ca96b31ab0232b
+          inputHash: af9953d27baea20b27cea9b94dc8acbe29bddfdbc5bd08786ed56f5c69c1f38c
+          outcomeId: procuraai-best-practice-optimization:62:1:recovered:125
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-27-procuraai-best-practice-optimization
+          status: succeeded
+        protocolVersion: 1
+        reason: 原执行器中断，正在核对本次执行结果
+        receipts:
+          - hash: a356854716b6910d83144d9ce741831a128afda49210c4228771806b50afd90f
+            outcomeId: procuraai-best-practice-optimization:62:1:recovered:125
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: succeeded
+        stepId: tweak.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-best-practice-optimization:63
+        input:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs: {}
+        inputHash: 02c8badcd64e679cadb1bbe3132bcb0d577f5832595f483605d62e71e6b48438
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-best-practice-optimization
+        status: pending
+        stepId: tweak.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: 03466b112aa52e2597fc7012a87115a8ad0717ae7f7427469e66e2cd51dd53a1
+        name: repair-archive
+        inputHash: 638be84b5f8eb3adcb82e29f3c04bbe9f0e7fc7905f0e8f2da90ea916e47be06
+        actionId: procuraai-best-practice-optimization:37
+      - id: b3b3ecedba89084b5c4279f46631704aae0e772488f7fd575e079174e5b2e136
+        name: repair-archive
+        inputHash: 75ec47dad34922f71f85f8c602487b8b97553bb72002f41b918acfd9c11489cf
+        actionId: procuraai-best-practice-optimization:50
     actionContexts:
       procuraai-best-practice-optimization:1:
         results: {}
@@ -725,15 +1867,84 @@ run_checkpoint:
       procuraai-best-practice-optimization:25:
         results: {}
         sequence: 25
+      procuraai-best-practice-optimization:27:
+        results: {}
+        sequence: 27
+      procuraai-best-practice-optimization:29:
+        results: {}
+        sequence: 29
       procuraai-best-practice-optimization:3:
         results: {}
         sequence: 3
+      procuraai-best-practice-optimization:31:
+        results: {}
+        sequence: 31
+      procuraai-best-practice-optimization:33:
+        results: {}
+        sequence: 33
+      procuraai-best-practice-optimization:35:
+        results: {}
+        sequence: 35
+      procuraai-best-practice-optimization:36:
+        results: {}
+        sequence: 36
+      procuraai-best-practice-optimization:37:
+        results: {}
+        sequence: 37
+      procuraai-best-practice-optimization:39:
+        results: {}
+        sequence: 39
       procuraai-best-practice-optimization:4:
         results: {}
         sequence: 4
+      procuraai-best-practice-optimization:40:
+        results: {}
+        sequence: 40
+      procuraai-best-practice-optimization:42:
+        results: {}
+        sequence: 42
+      procuraai-best-practice-optimization:44:
+        results: {}
+        sequence: 44
+      procuraai-best-practice-optimization:46:
+        results: {}
+        sequence: 46
+      procuraai-best-practice-optimization:48:
+        results: {}
+        sequence: 48
+      procuraai-best-practice-optimization:49:
+        results: {}
+        sequence: 49
+      procuraai-best-practice-optimization:50:
+        results: {}
+        sequence: 50
+      procuraai-best-practice-optimization:52:
+        results: {}
+        sequence: 52
+      procuraai-best-practice-optimization:53:
+        results: {}
+        sequence: 53
+      procuraai-best-practice-optimization:55:
+        results: {}
+        sequence: 55
+      procuraai-best-practice-optimization:57:
+        results: {}
+        sequence: 57
+      procuraai-best-practice-optimization:59:
+        results: {}
+        sequence: 59
       procuraai-best-practice-optimization:6:
         results: {}
         sequence: 6
+      procuraai-best-practice-optimization:61:
+        results: {}
+        sequence: 61
+      procuraai-best-practice-optimization:62:
+        results: {}
+        sequence: 62
+      procuraai-best-practice-optimization:63:
+        results: {}
+        sequence: 63
       procuraai-best-practice-optimization:7:
         results: {}
         sequence: 7
@@ -857,6 +2068,122 @@ run_checkpoint:
           id: classic-archive-2d133aa4a8acd9aa2d7c6c1be793767f7fab9d5a82334a29ce0920226ab3449f-reverify
           choice: reverify
           proposalHash: 2d133aa4a8acd9aa2d7c6c1be793767f7fab9d5a82334a29ce0920226ab3449f
+      - id: procuraai-best-practice-optimization:28
+        stepId: tweak.archive.confirm
+        sequence: 28
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地收尾：本轮重新初始化 SDK Run 并重跑真实检查（主门禁 10/10），Verify 通过、归档本
+                change 产物与 8 份 procuraAI 文档，交付 push 到 origin/dev；排除并行会话的 procura
+                运营台与 claim 相关改动。
+              targetBranch: dev
+        proposalHash: 1ade5db536b43e56da774a5555559c1efcc37dc2bd31e83ad565694197337e82
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-1ade5db536b43e56da774a5555559c1efcc37dc2bd31e83ad565694197337e82-reverify
+          choice: reverify
+          proposalHash: 1ade5db536b43e56da774a5555559c1efcc37dc2bd31e83ad565694197337e82
+      - id: procuraai-best-practice-optimization:34
+        stepId: tweak.archive.confirm
+        sequence: 34
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地最终交付：重新初始化 SDK Run 后真实重跑主门禁 10/10、Verify 通过；归档本
+                change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话 procura
+                运营台与 claim 改动。
+              targetBranch: dev
+        proposalHash: cd22c54464a2debbda4b7158f45f257f979efbd13e0b1c9b0a9fe55d0763bc95
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-cd22c54464a2debbda4b7158f45f257f979efbd13e0b1c9b0a9fe55d0763bc95-push
+          choice: push
+          proposalHash: cd22c54464a2debbda4b7158f45f257f979efbd13e0b1c9b0a9fe55d0763bc95
+      - id: procuraai-best-practice-optimization:47
+        stepId: tweak.archive.confirm
+        sequence: 47
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地最终交付：repair-archive 重开后复用未变产物与验证报告，真实重跑主门禁
+                10/10、Verify 通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+                origin/dev；排除并行会话 procura 运营台与 claim 改动。
+              targetBranch: dev
+        proposalHash: 16d0df2900a2eed4891325c69f2c52613e7a408afe3389d0fd88b4b03753add5
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-16d0df2900a2eed4891325c69f2c52613e7a408afe3389d0fd88b4b03753add5-push
+          choice: push
+          proposalHash: 16d0df2900a2eed4891325c69f2c52613e7a408afe3389d0fd88b4b03753add5
+      - id: procuraai-best-practice-optimization:60
+        stepId: tweak.archive.confirm
+        sequence: 60
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地最终交付：已清除阻塞归档的陈旧 openspec-archive.lock，重跑主门禁 10/10 与
+                Verify 均通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+                origin/dev；排除并行会话 procura 运营台与 claim 改动。
+              targetBranch: dev
+        proposalHash: 6666b36c8927444d3ea6f0d36a4208b72c72301185598652f318b753cef3e27d
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-6666b36c8927444d3ea6f0d36a4208b72c72301185598652f318b753cef3e27d-push
+          choice: push
+          proposalHash: 6666b36c8927444d3ea6f0d36a4208b72c72301185598652f318b753cef3e27d
     evidenceWaits:
       - id: procuraai-best-practice-optimization:2
         stepId: tweak.open.evidence
@@ -940,13 +2267,123 @@ run_checkpoint:
           ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
           contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
           submissionId: 325db2a4-9bf3-4acd-800e-db704bd589cb
+      - id: procuraai-best-practice-optimization:26
+        stepId: tweak.verify.check.evidence
+        sequence: 26
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/c578387e-901f-411a-8cd9-49951e28f5d4.log
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          submissionId: 45c87429-cf0c-4f74-b18f-1668a24921c6
+      - id: procuraai-best-practice-optimization:30
+        stepId: tweak.verify.report.evidence
+        sequence: 30
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+          contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
+          submissionId: cb47a1f1-9248-46ee-b916-fbfb927bbe79
+      - id: procuraai-best-practice-optimization:32
+        stepId: tweak.verify.check.evidence
+        sequence: 32
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/362624c8-2530-4d5e-8e20-44b8d83cb156.log
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          submissionId: 8767705f-5560-4ea6-93ad-5be91305ced9
+      - id: procuraai-best-practice-optimization:38
+        stepId: tweak.open.evidence
+        sequence: 38
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-best-practice-optimization
+          contentHash: f7edc44af2ff696344dcef51181df6abf9dca30179137e442452abf294586a5c
+          submissionId: 77b13ca2-ea9c-499e-92b0-21cdb81207a2
+      - id: procuraai-best-practice-optimization:41
+        stepId: tweak.build.check.evidence
+        sequence: 41
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a9bd92ee-ce49-47fb-9c66-426c7af216fc.log
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          submissionId: 190b0e60-12c0-40cb-95ae-5f8f34038080
+      - id: procuraai-best-practice-optimization:43
+        stepId: tweak.verify.report.evidence
+        sequence: 43
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+          contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
+          submissionId: 7b1d17fe-de41-48d3-9212-9945f5091a02
+      - id: procuraai-best-practice-optimization:45
+        stepId: tweak.verify.check.evidence
+        sequence: 45
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/ff3d6e4f-17e6-4c88-8bde-71cb62f95b7f.log
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          submissionId: c1469dd9-7ebe-4e4d-8d2d-5fd918dcb6ba
+      - id: procuraai-best-practice-optimization:51
+        stepId: tweak.open.evidence
+        sequence: 51
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-best-practice-optimization
+          contentHash: f7edc44af2ff696344dcef51181df6abf9dca30179137e442452abf294586a5c
+          submissionId: 72701468-c1db-471a-bb36-d10450d25e73
+      - id: procuraai-best-practice-optimization:54
+        stepId: tweak.build.check.evidence
+        sequence: 54
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0932bb6b-21fd-4368-92ef-c89fd98227ba.log
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          submissionId: 94a0ec74-b390-4a88-a53c-41701ee89829
+      - id: procuraai-best-practice-optimization:56
+        stepId: tweak.verify.report.evidence
+        sequence: 56
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+          contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
+          submissionId: d80694c4-3d8a-4d2f-90b2-e0f40c81e2b4
+      - id: procuraai-best-practice-optimization:58
+        stepId: tweak.verify.check.evidence
+        sequence: 58
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/b0940d87-6235-464f-8469-2eeccc4a118c.log
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          submissionId: 1182fb35-8360-48de-8ddc-132c3e7f9ee0
     ready: []
     joins: {}
     outputs: {}
     children: []
     lineage: []
-  sourceRevision: 46
-  sourceHash: 6f70dacf3804d5c7ce53880781415288853dce270658eeebf97427f7029b8b79
+  sourceRevision: 126
+  sourceHash: 5d3323689a9d749704b7bff220b65766b69fc5d2bf005669d050738dc190b6dc
   pool:
     version: 3
     values:
@@ -1101,6 +2538,225 @@ run_checkpoint:
           采集口径、CHANGELOG 第二十八轮台账；Build 修复 F1 探针假阴。主门禁 10/10 + self-test
           157/157；归档本 change 产物与 8 份 procuraAI 文档，排除两个并行 change。
         targetBranch: dev
+      - argv:
+          - python3
+          - tools/check_procura_alignment.py
+        changedDuringExecution: []
+        checkEpoch: 6
+        contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        cwd: .
+        deliveryInputs: {}
+        environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+        exitCode: 0
+        inputAfter: fdb4203042b53f31c4299e0096da0d69add9daeabf66480f3620637e9b14200a
+        inputBefore: fdb4203042b53f31c4299e0096da0d69add9daeabf66480f3620637e9b14200a
+        manifestHash: 9f5402e339c24f99165928437061b1e0ac6b25a7aa804dcd2cd7d35243396eb3
+        manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/bfad472e-aece-4214-85dc-d9660e744676.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/c578387e-901f-411a-8cd9-49951e28f5d4.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/c578387e-901f-411a-8cd9-49951e28f5d4.log
+      - choice: reverify
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地收尾：本轮重新初始化 SDK Run 并重跑真实检查（主门禁 10/10），Verify 通过、归档本
+                change 产物与 8 份 procuraAI 文档，交付 push 到 origin/dev；排除并行会话的 procura
+                运营台与 claim 相关改动。
+              targetBranch: dev
+      - remote: origin
+        summary: procuraAI 业界最佳实践优化落地收尾：本轮重新初始化 SDK Run 并重跑真实检查（主门禁 10/10），Verify 通过、归档本
+          change 产物与 8 份 procuraAI 文档，交付 push 到 origin/dev；排除并行会话的 procura 运营台与
+          claim 相关改动。
+        targetBranch: dev
+      - argv:
+          - python3
+          - tools/check_procura_alignment.py
+        changedDuringExecution: []
+        checkEpoch: 8
+        contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        cwd: .
+        deliveryInputs: {}
+        environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+        exitCode: 0
+        inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+        inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+        manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+        manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a8a29f98-fa30-4220-aca1-73f0dfeda2f1.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/362624c8-2530-4d5e-8e20-44b8d83cb156.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/362624c8-2530-4d5e-8e20-44b8d83cb156.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地最终交付：重新初始化 SDK Run 后真实重跑主门禁 10/10、Verify 通过；归档本
+                change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话 procura
+                运营台与 claim 改动。
+              targetBranch: dev
+      - remote: origin
+        summary: procuraAI 业界最佳实践优化落地最终交付：重新初始化 SDK Run 后真实重跑主门禁 10/10、Verify 通过；归档本
+          change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话 procura 运营台与
+          claim 改动。
+        targetBranch: dev
+      - baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - event: open-complete
+        requirementsEvidence:
+          contentHash: 9c0e5a8ecede3d0c49d5041b9020094d92ef38f0f3f7f23bd3933d997d846aa6
+          ref: openspec/changes/procuraai-best-practice-optimization
+      - contentHash: f7edc44af2ff696344dcef51181df6abf9dca30179137e442452abf294586a5c
+        ref: openspec/changes/procuraai-best-practice-optimization
+      - argv:
+          - python3
+          - tools/check_procura_alignment.py
+        changedDuringExecution: []
+        checkEpoch: 11
+        contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        cwd: .
+        environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+        exitCode: 0
+        inputAfter: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+        inputBefore: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+        manifestHash: 4f6cfb22d62e0dc20c9903bfef4cce4530d163efc5ee718fae4d5ea263149da6
+        manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0f8ff746-a1a7-4b12-89f9-3731e9478249.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a9bd92ee-ce49-47fb-9c66-426c7af216fc.log
+        reusable: true
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a9bd92ee-ce49-47fb-9c66-426c7af216fc.log
+      - argv:
+          - python3
+          - tools/check_procura_alignment.py
+        changedDuringExecution: []
+        checkEpoch: 12
+        contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        cwd: .
+        deliveryInputs: {}
+        environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+        exitCode: 0
+        inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+        inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+        manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+        manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/71f54e6f-32e8-4f7d-bc77-dd7ee34d8bd6.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/ff3d6e4f-17e6-4c88-8bde-71cb62f95b7f.log
+        reusable: true
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/ff3d6e4f-17e6-4c88-8bde-71cb62f95b7f.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地最终交付：repair-archive 重开后复用未变产物与验证报告，真实重跑主门禁
+                10/10、Verify 通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+                origin/dev；排除并行会话 procura 运营台与 claim 改动。
+              targetBranch: dev
+      - remote: origin
+        summary: procuraAI 业界最佳实践优化落地最终交付：repair-archive 重开后复用未变产物与验证报告，真实重跑主门禁
+          10/10、Verify 通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+          origin/dev；排除并行会话 procura 运营台与 claim 改动。
+        targetBranch: dev
+      - argv:
+          - python3
+          - tools/check_procura_alignment.py
+        changedDuringExecution: []
+        checkEpoch: 15
+        contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        cwd: .
+        environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+        exitCode: 0
+        inputAfter: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+        inputBefore: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+        manifestHash: 4f6cfb22d62e0dc20c9903bfef4cce4530d163efc5ee718fae4d5ea263149da6
+        manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/8e0e26b8-554c-4bba-b10f-3bd9d9569531.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0932bb6b-21fd-4368-92ef-c89fd98227ba.log
+        reusable: true
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0932bb6b-21fd-4368-92ef-c89fd98227ba.log
+      - argv:
+          - python3
+          - tools/check_procura_alignment.py
+        changedDuringExecution: []
+        checkEpoch: 16
+        contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        cwd: .
+        deliveryInputs: {}
+        environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+        exitCode: 0
+        inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+        inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+        manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+        manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/fb85e687-0bc9-468f-a191-8cd8daf754ce.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/b0940d87-6235-464f-8469-2eeccc4a118c.log
+        reusable: true
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+        ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/b0940d87-6235-464f-8469-2eeccc4a118c.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-best-practice-optimization
+            changeDir: openspec/changes/procuraai-best-practice-optimization
+            workspaceBaseline:
+              ref: 354426b9-c058-4811-9753-20a5e160d7a5
+          outputs:
+            tweak.archive.prepare:
+              remote: origin
+              summary: procuraAI 业界最佳实践优化落地最终交付：已清除阻塞归档的陈旧 openspec-archive.lock，重跑主门禁 10/10 与
+                Verify 均通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+                origin/dev；排除并行会话 procura 运营台与 claim 改动。
+              targetBranch: dev
+      - remote: origin
+        summary: procuraAI 业界最佳实践优化落地最终交付：已清除阻塞归档的陈旧 openspec-archive.lock，重跑主门禁 10/10 与
+          Verify 均通过；归档本 change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话
+          procura 运营台与 claim 改动。
+        targetBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-27-procuraai-best-practice-optimization
       - sequence: 7
         value:
           argv:
@@ -1275,9 +2931,298 @@ run_checkpoint:
         value:
           event: verification-ready
           verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 25
+        value:
+          argv:
+            - python3
+            - tools/check_procura_alignment.py
+          changedDuringExecution: []
+          checkEpoch: 6
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          cwd: .
+          deliveryInputs: {}
+          environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+          exitCode: 0
+          inputAfter: fdb4203042b53f31c4299e0096da0d69add9daeabf66480f3620637e9b14200a
+          inputBefore: fdb4203042b53f31c4299e0096da0d69add9daeabf66480f3620637e9b14200a
+          manifestHash: 9f5402e339c24f99165928437061b1e0ac6b25a7aa804dcd2cd7d35243396eb3
+          manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/bfad472e-aece-4214-85dc-d9660e744676.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/c578387e-901f-411a-8cd9-49951e28f5d4.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 26
+        value:
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/c578387e-901f-411a-8cd9-49951e28f5d4.log
+      - sequence: 28
+        value:
+          choice: reverify
+          proposal:
+            input:
+              change: procuraai-best-practice-optimization
+              changeDir: openspec/changes/procuraai-best-practice-optimization
+              workspaceBaseline:
+                ref: 354426b9-c058-4811-9753-20a5e160d7a5
+            outputs:
+              tweak.archive.prepare:
+                remote: origin
+                summary: procuraAI 业界最佳实践优化落地收尾：本轮重新初始化 SDK Run 并重跑真实检查（主门禁 10/10），Verify 通过、归档本
+                  change 产物与 8 份 procuraAI 文档，交付 push 到 origin/dev；排除并行会话的
+                  procura 运营台与 claim 相关改动。
+                targetBranch: dev
+      - sequence: 27
+        value:
+          remote: origin
+          summary: procuraAI 业界最佳实践优化落地收尾：本轮重新初始化 SDK Run 并重跑真实检查（主门禁 10/10），Verify 通过、归档本
+            change 产物与 8 份 procuraAI 文档，交付 push 到 origin/dev；排除并行会话的 procura
+            运营台与 claim 相关改动。
+          targetBranch: dev
+      - sequence: 30
+        value:
+          contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
+          ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 29
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 31
+        value:
+          argv:
+            - python3
+            - tools/check_procura_alignment.py
+          changedDuringExecution: []
+          checkEpoch: 8
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          cwd: .
+          deliveryInputs: {}
+          environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+          exitCode: 0
+          inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+          inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+          manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+          manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a8a29f98-fa30-4220-aca1-73f0dfeda2f1.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/362624c8-2530-4d5e-8e20-44b8d83cb156.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 32
+        value:
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/362624c8-2530-4d5e-8e20-44b8d83cb156.log
+      - sequence: 34
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-best-practice-optimization
+              changeDir: openspec/changes/procuraai-best-practice-optimization
+              workspaceBaseline:
+                ref: 354426b9-c058-4811-9753-20a5e160d7a5
+            outputs:
+              tweak.archive.prepare:
+                remote: origin
+                summary: procuraAI 业界最佳实践优化落地最终交付：重新初始化 SDK Run 后真实重跑主门禁 10/10、Verify 通过；归档本
+                  change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话 procura
+                  运营台与 claim 改动。
+                targetBranch: dev
+      - sequence: 33
+        value:
+          remote: origin
+          summary: procuraAI 业界最佳实践优化落地最终交付：重新初始化 SDK Run 后真实重跑主门禁 10/10、Verify 通过；归档本
+            change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话 procura 运营台与
+            claim 改动。
+          targetBranch: dev
+      - sequence: 35
+        value:
+          baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 37
+        value:
+          event: open-complete
+          requirementsEvidence:
+            contentHash: 9c0e5a8ecede3d0c49d5041b9020094d92ef38f0f3f7f23bd3933d997d846aa6
+            ref: openspec/changes/procuraai-best-practice-optimization
+      - sequence: 38
+        value:
+          contentHash: f7edc44af2ff696344dcef51181df6abf9dca30179137e442452abf294586a5c
+          ref: openspec/changes/procuraai-best-practice-optimization
       - sequence: 3
         value:
           event: build-complete
+      - sequence: 39
+        value:
+          event: build-complete
+      - sequence: 40
+        value:
+          argv:
+            - python3
+            - tools/check_procura_alignment.py
+          changedDuringExecution: []
+          checkEpoch: 11
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          cwd: .
+          environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+          exitCode: 0
+          inputAfter: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+          inputBefore: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+          manifestHash: 4f6cfb22d62e0dc20c9903bfef4cce4530d163efc5ee718fae4d5ea263149da6
+          manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0f8ff746-a1a7-4b12-89f9-3731e9478249.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a9bd92ee-ce49-47fb-9c66-426c7af216fc.log
+          reusable: true
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 41
+        value:
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/a9bd92ee-ce49-47fb-9c66-426c7af216fc.log
+      - sequence: 43
+        value:
+          contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
+          ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 42
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 44
+        value:
+          argv:
+            - python3
+            - tools/check_procura_alignment.py
+          changedDuringExecution: []
+          checkEpoch: 12
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          cwd: .
+          deliveryInputs: {}
+          environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+          exitCode: 0
+          inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+          inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+          manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+          manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/71f54e6f-32e8-4f7d-bc77-dd7ee34d8bd6.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/ff3d6e4f-17e6-4c88-8bde-71cb62f95b7f.log
+          reusable: true
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 45
+        value:
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/ff3d6e4f-17e6-4c88-8bde-71cb62f95b7f.log
+      - sequence: 47
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-best-practice-optimization
+              changeDir: openspec/changes/procuraai-best-practice-optimization
+              workspaceBaseline:
+                ref: 354426b9-c058-4811-9753-20a5e160d7a5
+            outputs:
+              tweak.archive.prepare:
+                remote: origin
+                summary: procuraAI 业界最佳实践优化落地最终交付：repair-archive 重开后复用未变产物与验证报告，真实重跑主门禁
+                  10/10、Verify 通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+                  origin/dev；排除并行会话 procura 运营台与 claim 改动。
+                targetBranch: dev
+      - sequence: 46
+        value:
+          remote: origin
+          summary: procuraAI 业界最佳实践优化落地最终交付：repair-archive 重开后复用未变产物与验证报告，真实重跑主门禁
+            10/10、Verify 通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+            origin/dev；排除并行会话 procura 运营台与 claim 改动。
+          targetBranch: dev
+      - sequence: 48
+        value:
+          baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 50
+        value:
+          event: open-complete
+          requirementsEvidence:
+            contentHash: 9c0e5a8ecede3d0c49d5041b9020094d92ef38f0f3f7f23bd3933d997d846aa6
+            ref: openspec/changes/procuraai-best-practice-optimization
+      - sequence: 51
+        value:
+          contentHash: f7edc44af2ff696344dcef51181df6abf9dca30179137e442452abf294586a5c
+          ref: openspec/changes/procuraai-best-practice-optimization
+      - sequence: 52
+        value:
+          event: build-complete
+      - sequence: 53
+        value:
+          argv:
+            - python3
+            - tools/check_procura_alignment.py
+          changedDuringExecution: []
+          checkEpoch: 15
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          cwd: .
+          environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+          exitCode: 0
+          inputAfter: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+          inputBefore: 21fe0d292a301a285d7e9d073e81961e21ef278f127243ef9f43fbcba492c83c
+          manifestHash: 4f6cfb22d62e0dc20c9903bfef4cce4530d163efc5ee718fae4d5ea263149da6
+          manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/8e0e26b8-554c-4bba-b10f-3bd9d9569531.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0932bb6b-21fd-4368-92ef-c89fd98227ba.log
+          reusable: true
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 54
+        value:
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/0932bb6b-21fd-4368-92ef-c89fd98227ba.log
+      - sequence: 56
+        value:
+          contentHash: 6c8ea759ddde1a993caa55c5f0dedec89ec5defdde03cefe5ff45c7a4f4d350d
+          ref: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 55
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-procuraai-best-practice-optimization-verify.md
+      - sequence: 57
+        value:
+          argv:
+            - python3
+            - tools/check_procura_alignment.py
+          changedDuringExecution: []
+          checkEpoch: 16
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          cwd: .
+          deliveryInputs: {}
+          environment: 47788c52f874a7aa63b63bebe2127ef8ccd496463bb7e3b080415d67254d4758
+          exitCode: 0
+          inputAfter: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+          inputBefore: 1a8348215cfa3330fa12ad9e8db286815d475dbe4963682d5f88472b144e4cff
+          manifestHash: e06533f593a952ff83759d9f59dd34050a9cc1bf2c7963b474394bb5a6f700b3
+          manifestRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/fb85e687-0bc9-468f-a191-8cd8daf754ce.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/b0940d87-6235-464f-8469-2eeccc4a118c.log
+          reusable: true
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 58
+        value:
+          contentHash: b3f63a58e111d367b6c8338c45157fd0d29fa165744fe0b0128d396589291033
+          ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/b0940d87-6235-464f-8469-2eeccc4a118c.log
       - sequence: 4
         value:
           argv:
@@ -1305,6 +3250,40 @@ run_checkpoint:
           reason: "Classic check input changed during snapshot:
             openspec/changes/procuraai-procurement-ops-console/comet-state.yaml"
           ref: .comet/runtime/classic-sdk-checks/820609456f61dd041aadf4be1bcbce051e97affa3c8b50e3451020702b284aa8/929e0255-a2e9-4039-a746-b713e7c3d9eb.log
+      - sequence: 60
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-best-practice-optimization
+              changeDir: openspec/changes/procuraai-best-practice-optimization
+              workspaceBaseline:
+                ref: 354426b9-c058-4811-9753-20a5e160d7a5
+            outputs:
+              tweak.archive.prepare:
+                remote: origin
+                summary: procuraAI 业界最佳实践优化落地最终交付：已清除阻塞归档的陈旧 openspec-archive.lock，重跑主门禁 10/10 与
+                  Verify 均通过；归档本 change 产物与 8 份 procuraAI 文档，push 到
+                  origin/dev；排除并行会话 procura 运营台与 claim 改动。
+                targetBranch: dev
+      - sequence: 59
+        value:
+          remote: origin
+          summary: procuraAI 业界最佳实践优化落地最终交付：已清除阻塞归档的陈旧 openspec-archive.lock，重跑主门禁 10/10 与
+            Verify 均通过；归档本 change 产物与 8 份 procuraAI 文档，push 到 origin/dev；排除并行会话
+            procura 运营台与 claim 改动。
+          targetBranch: dev
+      - sequence: 61
+        value:
+          baseCommit: 569a03e191d60ec66d27779d8373b8bafb42e451
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 62
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-27-procuraai-best-practice-optimization
       - sequence: 14
         value:
           choice: later
@@ -1503,106 +3482,176 @@ run_checkpoint:
         left: 31
         right: 27
         height: 4
-      - key: tweak.build.check
-        value: 17
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.execute
-        value: 19
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 33
-        right: 34
-        height: 2
-      - key: tweak.open.evidence
-        value: 21
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.run
-        value: 23
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.report.evidence
-        value: 22
-        left: 36
-        right: 37
-        height: 2
-      - key: tweak.open
-        value: 20
-        left: 35
-        right: 38
-        height: 3
-      - key: tweak.open.evidence
-        value: 21
-        left: null
-        right: null
-        height: 1
       - key: tweak.verify.check.evidence
-        value: 25
+        value: 18
         left: null
         right: null
         height: 1
       - key: tweak.verify.check
-        value: 24
-        left: 40
+        value: 17
+        left: 15
+        right: 33
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 7
+        left: 34
+        right: 12
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 31
+        right: 35
+        height: 4
+      - key: tweak.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 20
+        left: 37
+        right: 21
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 6
+        left: 38
+        right: 5
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 39
+        right: 35
+        height: 4
+      - key: tweak.verify.check.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 21
+        left: 15
         right: 41
         height: 2
       - key: tweak.verify.report.evidence
-        value: 22
+        value: 7
         left: 42
-        right: 37
+        right: 12
         height: 3
       - key: tweak.open
-        value: 20
-        left: 35
+        value: 0
+        left: 39
         right: 43
         height: 4
       - key: tweak.archive.confirm
-        value: 26
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check
-        value: 17
+        value: 23
         left: null
         right: null
         height: 1
       - key: tweak.archive.prepare
-        value: 27
+        value: 24
         left: 45
-        right: 46
+        right: 21
         height: 2
       - key: tweak.build.check.evidence
-        value: 18
-        left: 47
-        right: 34
+        value: 6
+        left: 46
+        right: 5
         height: 3
       - key: tweak.open
-        value: 20
-        left: 48
+        value: 0
+        left: 47
         right: 43
         height: 4
-      - key: tweak.verify.run
+      - key: tweak.archive.preflight
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 23
+        left: null
+        right: 49
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 6
+        left: 21
+        right: 5
+        height: 2
+      - key: tweak.archive.prepare
+        value: 24
+        left: 50
+        right: 51
+        height: 3
+      - key: tweak.open
+        value: 0
+        left: 52
+        right: 43
+        height: 4
+      - key: tweak.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 26
+        left: null
+        right: 54
+        height: 2
+      - key: tweak.build.execute
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 26
+        left: 56
+        right: 54
+        height: 2
+      - key: tweak.build.check
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
         value: 29
+        left: 58
+        right: 59
+        height: 2
+      - key: tweak.open
+        value: 26
+        left: 60
+        right: 54
+        height: 3
+      - key: tweak.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 8
         left: null
         right: null
         height: 1
       - key: tweak.verify.report.evidence
-        value: 28
-        left: 42
-        right: 50
-        height: 3
+        value: 7
+        left: 62
+        right: 63
+        height: 2
       - key: tweak.open
-        value: 20
-        left: 48
-        right: 51
-        height: 4
+        value: 26
+        left: 60
+        right: 64
+        height: 3
+      - key: tweak.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
       - key: tweak.verify.check.evidence
         value: 31
         left: null
@@ -1610,433 +3659,1683 @@ run_checkpoint:
         height: 1
       - key: tweak.verify.check
         value: 30
-        left: 40
-        right: 53
+        left: 66
+        right: 67
         height: 2
       - key: tweak.verify.report.evidence
-        value: 28
-        left: 54
-        right: 50
+        value: 7
+        left: 68
+        right: 63
         height: 3
       - key: tweak.open
-        value: 20
-        left: 48
-        right: 55
+        value: 26
+        left: 60
+        right: 69
         height: 4
       - key: tweak.archive.confirm
         value: 32
         left: null
         right: null
         height: 1
+      - key: tweak.build.check
+        value: 28
+        left: null
+        right: null
+        height: 1
       - key: tweak.archive.prepare
         value: 33
-        left: 57
-        right: 46
-        height: 2
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 58
-        right: 34
-        height: 3
-      - key: tweak.open
-        value: 20
-        left: 59
-        right: 55
-        height: 4
-      - key: tweak.verify.run
-        value: 35
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.report.evidence
-        value: 34
-        left: 54
-        right: 61
-        height: 3
-      - key: tweak.open
-        value: 20
-        left: 59
-        right: 62
-        height: 4
-      - key: tweak.open.evidence
-        value: 21
-        left: null
-        right: null
-        height: 1
-      - key: tweak.open
-        value: 20
-        left: null
-        right: 64
-        height: 2
-      - key: tweak.build.execute
-        value: 36
-        left: null
-        right: null
-        height: 1
-      - key: tweak.open
-        value: 20
-        left: 66
-        right: 64
-        height: 2
-      - key: tweak.build.check
-        value: 37
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.execute
-        value: 36
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check.evidence
-        value: 38
-        left: 68
-        right: 69
-        height: 2
-      - key: tweak.open
-        value: 20
-        left: 70
-        right: 64
-        height: 3
-      - key: tweak.build.execute
-        value: 19
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check.evidence
-        value: 38
-        left: 68
+        left: 71
         right: 72
         height: 2
-      - key: tweak.open
-        value: 20
+      - key: tweak.build.check.evidence
+        value: 29
         left: 73
-        right: 64
+        right: 59
         height: 3
-      - key: tweak.build.check
-        value: 17
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 75
-        right: 72
-        height: 2
       - key: tweak.open
-        value: 20
-        left: 76
-        right: 64
-        height: 3
-      - key: tweak.archive.prepare
-        value: 27
-        left: null
-        right: 46
-        height: 2
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 78
-        right: 34
-        height: 3
-      - key: tweak.verify.check.evidence
+        value: 26
+        left: 74
+        right: 69
+        height: 4
+      - key: tweak.archive.preflight
         value: 25
         left: null
         right: null
         height: 1
-      - key: tweak.verify.check
-        value: 24
-        left: 40
-        right: 80
+      - key: tweak.archive.confirm
+        value: 32
+        left: null
+        right: 76
         height: 2
+      - key: tweak.build.check.evidence
+        value: 29
+        left: 72
+        right: 59
+        height: 2
+      - key: tweak.archive.prepare
+        value: 33
+        left: 77
+        right: 78
+        height: 3
+      - key: tweak.open
+        value: 26
+        left: 79
+        right: 69
+        height: 4
+      - key: tweak.build.check
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 35
+        left: 81
+        right: 82
+        height: 2
+      - key: tweak.open
+        value: 26
+        left: 83
+        right: 54
+        height: 3
+      - key: tweak.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
       - key: tweak.verify.run
-        value: 23
+        value: 8
         left: null
         right: null
         height: 1
       - key: tweak.verify.report.evidence
-        value: 22
-        left: 81
+        value: 7
+        left: 85
+        right: 86
+        height: 2
+      - key: tweak.open
+        value: 26
+        left: 83
+        right: 87
+        height: 3
+      - key: tweak.open.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 36
+        left: 89
+        right: 90
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 7
+        left: 91
+        right: 86
+        height: 3
+      - key: tweak.open
+        value: 26
+        left: 83
+        right: 92
+        height: 4
+      - key: tweak.archive.confirm
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 39
+        left: 94
+        right: 95
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 35
+        left: 96
         right: 82
         height: 3
       - key: tweak.open
-        value: 20
-        left: 79
-        right: 83
-        height: 4
-      - key: tweak.archive.confirm
-        value: 39
-        left: null
-        right: null
-        height: 1
-      - key: tweak.archive.prepare
-        value: 27
-        left: 85
-        right: 46
-        height: 2
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 86
-        right: 34
-        height: 3
-      - key: tweak.open
-        value: 20
-        left: 87
-        right: 83
-        height: 4
-      - key: tweak.archive.confirm
-        value: 40
-        left: null
-        right: null
-        height: 1
-      - key: tweak.archive.prepare
-        value: 27
-        left: 89
-        right: 46
-        height: 2
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 90
-        right: 34
-        height: 3
-      - key: tweak.open
-        value: 20
-        left: 91
-        right: 83
-        height: 4
-      - key: tweak.archive.confirm
         value: 26
-        left: null
-        right: null
-        height: 1
-      - key: tweak.archive.prepare
-        value: 33
-        left: 93
-        right: 46
-        height: 2
-      - key: tweak.build.check.evidence
-        value: 18
-        left: 94
-        right: 34
-        height: 3
-      - key: tweak.verify.check.evidence
-        value: 31
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.check
-        value: 30
-        left: 40
-        right: 96
-        height: 2
-      - key: tweak.verify.run
-        value: 29
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.report.evidence
-        value: 28
         left: 97
-        right: 98
-        height: 3
-      - key: tweak.open
-        value: 20
-        left: 95
-        right: 99
+        right: 92
         height: 4
-      - key: tweak.open
-        value: 20
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check
-        value: 37
-        left: null
-        right: null
-        height: 1
-      - key: tweak.open.evidence
-        value: 21
-        left: null
-        right: null
-        height: 1
-      - key: tweak.open
-        value: 20
-        left: null
-        right: 103
-        height: 2
-      - key: tweak.build.execute
-        value: 36
-        left: 102
-        right: 104
-        height: 3
-      - key: tweak.build.check.evidence
-        value: 38
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check
-        value: 17
-        left: null
-        right: 106
-        height: 2
-      - key: tweak.build.execute
-        value: 19
-        left: 107
-        right: 104
-        height: 3
-      - key: tweak.build.check.evidence
-        value: 18
-        left: null
-        right: null
-        height: 1
-      - key: tweak.build.check
-        value: 17
-        left: null
-        right: 109
-        height: 2
-      - key: tweak.open
-        value: 20
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.run
-        value: 23
-        left: null
-        right: null
-        height: 1
-      - key: tweak.open.evidence
-        value: 21
-        left: 111
-        right: 112
-        height: 2
-      - key: tweak.build.execute
-        value: 19
-        left: 110
-        right: 113
-        height: 3
-      - key: tweak.verify.check
-        value: 24
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.run
-        value: 23
-        left: null
-        right: null
-        height: 1
-      - key: tweak.verify.report.evidence
-        value: 22
-        left: 115
-        right: 116
-        height: 2
-      - key: tweak.open.evidence
-        value: 21
-        left: 111
-        right: 117
-        height: 3
-      - key: tweak.build.execute
-        value: 19
-        left: 110
-        right: 118
-        height: 4
-      - key: tweak.archive.prepare
-        value: 27
-        left: null
-        right: null
-        height: 1
-      - key: tweak.archive.confirm
-        value: 26
-        left: null
-        right: 120
-        height: 2
-      - key: tweak.build.check
-        value: 17
-        left: 121
-        right: 109
-        height: 3
-      - key: tweak.open.evidence
-        value: 21
-        left: 111
-        right: null
-        height: 2
-      - key: tweak.verify.check.evidence
+      - key: tweak.archive.preflight
         value: 25
         left: null
         right: null
         height: 1
+      - key: tweak.archive.confirm
+        value: 38
+        left: null
+        right: 99
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 35
+        left: 95
+        right: 82
+        height: 2
+      - key: tweak.archive.prepare
+        value: 39
+        left: 100
+        right: 101
+        height: 3
+      - key: tweak.open
+        value: 26
+        left: 102
+        right: 92
+        height: 4
+      - key: tweak.archive.confirm
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.preflight
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.execute
+        value: 40
+        left: 104
+        right: 105
+        height: 2
+      - key: tweak.archive.prepare
+        value: 39
+        left: 106
+        right: 101
+        height: 3
+      - key: tweak.open
+        value: 26
+        left: 107
+        right: 92
+        height: 4
+      - key: tweak.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 42
+        left: 109
+        right: 110
+        height: 2
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
       - key: tweak.verify.run
-        value: 29
+        value: 47
         left: null
         right: null
         height: 1
       - key: tweak.verify.report.evidence
-        value: 22
-        left: 124
-        right: 125
+        value: 46
+        left: 112
+        right: 113
         height: 2
+      - key: tweak.open
+        value: 44
+        left: 111
+        right: 114
+        height: 3
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
       - key: tweak.verify.check
-        value: 24
+        value: 48
+        left: 116
+        right: 117
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 46
+        left: 118
+        right: 113
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 111
+        right: 119
+        height: 4
+      - key: tweak.archive.confirm
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 51
+        left: 121
+        right: 122
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 42
         left: 123
+        right: 110
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 124
+        right: 119
+        height: 4
+      - key: tweak.verify.run
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 52
+        left: 118
         right: 126
         height: 3
-      - key: tweak.build.execute
-        value: 19
-        left: 122
+      - key: tweak.open
+        value: 44
+        left: 124
         right: 127
         height: 4
+      - key: tweak.verify.check.evidence
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 54
+        left: 116
+        right: 129
+        height: 2
       - key: tweak.verify.report.evidence
-        value: 28
+        value: 52
+        left: 130
+        right: 126
+        height: 3
+      - key: tweak.open
+        value: 44
         left: 124
-        right: 125
+        right: 131
+        height: 4
+      - key: tweak.archive.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 57
+        left: 133
+        right: 122
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 42
+        left: 134
+        right: 110
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 135
+        right: 131
+        height: 4
+      - key: tweak.verify.run
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 58
+        left: 130
+        right: 137
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 135
+        right: 138
+        height: 4
+      - key: tweak.verify.check.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 60
+        left: 116
+        right: 140
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 58
+        left: 141
+        right: 137
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 135
+        right: 142
+        height: 4
+      - key: tweak.archive.confirm
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 63
+        left: 144
+        right: 122
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 42
+        left: 145
+        right: 110
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 146
+        right: 142
+        height: 4
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 44
+        left: null
+        right: 148
+        height: 2
+      - key: tweak.archive.confirm
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 63
+        left: 150
+        right: null
+        height: 2
+      - key: tweak.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 42
+        left: null
+        right: 152
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 151
+        right: 153
+        height: 3
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 65
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 64
+        left: 156
+        right: 157
         height: 2
       - key: tweak.verify.check
-        value: 30
-        left: 123
-        right: 129
+        value: 60
+        left: 155
+        right: 158
         height: 3
-      - key: tweak.build.execute
-        value: 19
-        left: 122
-        right: 130
+      - key: tweak.open
+        value: 44
+        left: 154
+        right: 159
         height: 4
+      - key: tweak.verify.check.evidence
+        value: 67
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 64
+        left: 161
+        right: 157
+        height: 2
+      - key: tweak.verify.check
+        value: 66
+        left: 155
+        right: 162
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 154
+        right: 163
+        height: 4
+      - key: tweak.archive.confirm
+        value: 68
+        left: null
+        right: null
+        height: 1
       - key: tweak.archive.prepare
-        value: 33
+        value: 69
+        left: 165
+        right: null
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 166
+        right: 153
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 167
+        right: 163
+        height: 4
+      - key: tweak.archive.confirm
+        value: 68
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 69
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.preflight
+        value: 70
+        left: 169
+        right: 170
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 171
+        right: 153
+        height: 3
+      - key: tweak.open
+        value: 44
+        left: 172
+        right: 163
+        height: 4
+      - key: tweak.open.evidence
+        value: 72
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 71
+        left: null
+        right: 174
+        height: 2
+      - key: tweak.build.execute
+        value: 73
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 44
+        left: 176
+        right: 177
+        height: 2
+      - key: tweak.build.execute
+        value: 74
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 72
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 71
+        left: 179
+        right: 180
+        height: 2
+      - key: tweak.build.check
+        value: 75
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 74
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 76
+        left: 182
+        right: 183
+        height: 2
+      - key: tweak.open
+        value: 71
+        left: 184
+        right: 180
+        height: 3
+      - key: tweak.open.evidence
+        value: 72
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 78
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 77
+        left: 186
+        right: 187
+        height: 2
+      - key: tweak.open
+        value: 71
+        left: 184
+        right: 188
+        height: 3
+      - key: tweak.open.evidence
+        value: 72
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 80
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 79
+        left: 190
+        right: 191
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 77
+        left: 192
+        right: 187
+        height: 3
+      - key: tweak.open
+        value: 71
+        left: 184
+        right: 193
+        height: 4
+      - key: tweak.archive.confirm
+        value: 81
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 75
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 82
+        left: 195
+        right: 196
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 76
+        left: 197
+        right: 183
+        height: 3
+      - key: tweak.open
+        value: 71
+        left: 198
+        right: 193
+        height: 4
+      - key: tweak.archive.preflight
+        value: 83
         left: null
         right: null
         height: 1
       - key: tweak.archive.confirm
-        value: 32
+        value: 81
         left: null
-        right: 132
+        right: 200
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 76
+        left: 196
+        right: 183
+        height: 2
+      - key: tweak.archive.prepare
+        value: 82
+        left: 201
+        right: 202
+        height: 3
+      - key: tweak.open
+        value: 71
+        left: 203
+        right: 193
+        height: 4
+      - key: tweak.open.evidence
+        value: 85
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 84
+        left: null
+        right: 205
+        height: 2
+      - key: tweak.build.execute
+        value: 86
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 84
+        left: 207
+        right: 205
         height: 2
       - key: tweak.build.check
-        value: 17
-        left: 133
-        right: 109
+        value: 87
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 86
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 88
+        left: 209
+        right: 210
+        height: 2
+      - key: tweak.open
+        value: 84
+        left: 211
+        right: 205
         height: 3
-      - key: tweak.verify.check.evidence
-        value: 31
+      - key: tweak.open.evidence
+        value: 85
         left: null
         right: null
         height: 1
       - key: tweak.verify.run
-        value: 35
+        value: 90
         left: null
         right: null
         height: 1
       - key: tweak.verify.report.evidence
-        value: 28
-        left: 135
-        right: 136
+        value: 89
+        left: 213
+        right: 214
+        height: 2
+      - key: tweak.open
+        value: 84
+        left: 211
+        right: 215
+        height: 3
+      - key: tweak.open.evidence
+        value: 85
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check.evidence
+        value: 92
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 91
+        left: 217
+        right: 218
+        height: 2
+      - key: tweak.verify.report.evidence
+        value: 89
+        left: 219
+        right: 214
+        height: 3
+      - key: tweak.open
+        value: 84
+        left: 211
+        right: 220
+        height: 4
+      - key: tweak.build.check
+        value: 93
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 73
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 44
+        left: 223
+        right: 224
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 94
+        left: 222
+        right: 225
+        height: 3
+      - key: tweak.archive.confirm
+        value: 95
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 87
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 96
+        left: 227
+        right: 228
+        height: 2
+      - key: tweak.build.execute
+        value: 86
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 85
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 84
+        left: 230
+        right: 231
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 92
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 90
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 89
+        left: 233
+        right: 234
         height: 2
       - key: tweak.verify.check
-        value: 30
-        left: 123
-        right: 137
+        value: 91
+        left: 232
+        right: 235
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 88
+        left: 229
+        right: 236
+        height: 4
+      - key: tweak.archive.preflight
+        value: 97
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 95
+        left: null
+        right: 238
+        height: 2
+      - key: tweak.archive.prepare
+        value: 96
+        left: 239
+        right: 228
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 88
+        left: 240
+        right: 236
+        height: 4
+      - key: tweak.archive.confirm
+        value: 95
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.preflight
+        value: 97
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.execute
+        value: 98
+        left: 242
+        right: 243
+        height: 2
+      - key: tweak.archive.prepare
+        value: 96
+        left: 244
+        right: 228
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 88
+        left: 245
+        right: 236
+        height: 4
+      - key: tweak.build.check
+        value: 93
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.execute
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 44
+        left: 248
+        right: 249
+        height: 2
+      - key: tweak.build.check.evidence
+        value: 94
+        left: 247
+        right: 250
+        height: 3
+      - key: tweak.build.check
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 42
+        left: 252
+        right: 250
+        height: 3
+      - key: tweak.archive.prepare
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 41
+        left: 254
+        right: 255
+        height: 2
+      - key: tweak.open
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: 257
+        right: 258
+        height: 2
+      - key: tweak.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 46
+        left: null
+        right: 260
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 49
+        left: 259
+        right: 261
         height: 3
       - key: tweak.build.execute
-        value: 19
-        left: 134
-        right: 138
+        value: 43
+        left: 256
+        right: 262
+        height: 4
+      - key: tweak.archive.confirm
+        value: 99
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 51
+        left: 264
+        right: null
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 265
+        right: 255
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 266
+        right: 262
+        height: 4
+      - key: tweak.archive.confirm
+        value: 100
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 51
+        left: 268
+        right: null
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 269
+        right: 255
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 270
+        right: 262
+        height: 4
+      - key: tweak.archive.confirm
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 57
+        left: 272
+        right: null
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 273
+        right: 255
+        height: 3
+      - key: tweak.verify.check
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: 257
+        right: 275
+        height: 2
+      - key: tweak.verify.run
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 52
+        left: null
+        right: 277
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 55
+        left: 276
+        right: 278
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 274
+        right: 279
+        height: 4
+      - key: tweak.archive.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 63
+        left: 281
+        right: null
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 282
+        right: 255
+        height: 3
+      - key: tweak.verify.check
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: 257
+        right: 284
+        height: 2
+      - key: tweak.verify.run
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 58
+        left: null
+        right: 286
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 61
+        left: 285
+        right: 287
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 283
+        right: 288
+        height: 4
+      - key: tweak.archive.confirm
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.prepare
+        value: 69
+        left: 290
+        right: null
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 291
+        right: 255
+        height: 3
+      - key: tweak.verify.check
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: 257
+        right: 293
+        height: 2
+      - key: tweak.verify.run
+        value: 65
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 64
+        left: null
+        right: 295
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 67
+        left: 294
+        right: 296
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 292
+        right: 297
+        height: 4
+      - key: tweak.archive.prepare
+        value: 82
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 76
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 75
+        left: 299
+        right: 300
+        height: 2
+      - key: tweak.open
+        value: 71
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 79
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 72
+        left: 302
+        right: 303
+        height: 2
+      - key: tweak.verify.run
+        value: 78
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 77
+        left: null
+        right: 305
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 80
+        left: 304
+        right: 306
+        height: 3
+      - key: tweak.build.execute
+        value: 74
+        left: 301
+        right: 307
+        height: 4
+      - key: tweak.archive.prepare
+        value: 96
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check.evidence
+        value: 88
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 87
+        left: 309
+        right: 310
+        height: 2
+      - key: tweak.open
+        value: 84
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.check
+        value: 91
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 85
+        left: 312
+        right: 313
+        height: 2
+      - key: tweak.verify.run
+        value: 90
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 89
+        left: null
+        right: 315
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 92
+        left: 314
+        right: 316
+        height: 3
+      - key: tweak.build.execute
+        value: 86
+        left: 311
+        right: 317
+        height: 4
+      - key: tweak.open
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 93
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 44
+        left: null
+        right: 321
+        height: 2
+      - key: tweak.build.execute
+        value: 73
+        left: 320
+        right: 322
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 94
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 41
+        left: null
+        right: 324
+        height: 2
+      - key: tweak.build.execute
+        value: 43
+        left: 325
+        right: 322
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 41
+        left: null
+        right: 327
+        height: 2
+      - key: tweak.open
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 45
+        left: 329
+        right: 330
+        height: 2
+      - key: tweak.build.execute
+        value: 43
+        left: 328
+        right: 331
+        height: 3
+      - key: tweak.verify.check
+        value: 48
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 46
+        left: 333
+        right: 334
+        height: 2
+      - key: tweak.open.evidence
+        value: 45
+        left: 329
+        right: 335
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 328
+        right: 336
+        height: 4
+      - key: tweak.archive.prepare
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 50
+        left: null
+        right: 338
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 339
+        right: 327
+        height: 3
+      - key: tweak.open.evidence
+        value: 45
+        left: 329
+        right: null
+        height: 2
+      - key: tweak.verify.check.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 53
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 46
+        left: 342
+        right: 343
+        height: 2
+      - key: tweak.verify.check
+        value: 48
+        left: 341
+        right: 344
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 340
+        right: 345
+        height: 4
+      - key: tweak.verify.report.evidence
+        value: 52
+        left: 342
+        right: 343
+        height: 2
+      - key: tweak.verify.check
+        value: 54
+        left: 341
+        right: 347
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 340
+        right: 348
+        height: 4
+      - key: tweak.archive.prepare
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 56
+        left: null
+        right: 350
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 351
+        right: 327
+        height: 3
+      - key: tweak.verify.check.evidence
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 52
+        left: 353
+        right: 354
+        height: 2
+      - key: tweak.verify.check
+        value: 54
+        left: 341
+        right: 355
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 352
+        right: 356
+        height: 4
+      - key: tweak.verify.report.evidence
+        value: 58
+        left: 353
+        right: 354
+        height: 2
+      - key: tweak.verify.check
+        value: 60
+        left: 341
+        right: 358
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 352
+        right: 359
+        height: 4
+      - key: tweak.archive.prepare
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: tweak.archive.confirm
+        value: 62
+        left: null
+        right: 361
+        height: 2
+      - key: tweak.build.check
+        value: 41
+        left: 362
+        right: 327
+        height: 3
+      - key: tweak.verify.check.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 65
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 58
+        left: 364
+        right: 365
+        height: 2
+      - key: tweak.verify.check
+        value: 60
+        left: 341
+        right: 366
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 363
+        right: 367
+        height: 4
+      - key: tweak.verify.report.evidence
+        value: 64
+        left: 364
+        right: 365
+        height: 2
+      - key: tweak.verify.check
+        value: 66
+        left: 341
+        right: 369
+        height: 3
+      - key: tweak.build.execute
+        value: 43
+        left: 363
+        right: 370
+        height: 4
+      - key: tweak.open
+        value: 71
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 75
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 72
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 71
+        left: null
+        right: 374
+        height: 2
+      - key: tweak.build.execute
+        value: 74
+        left: 373
+        right: 375
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 76
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 75
+        left: null
+        right: 377
+        height: 2
+      - key: tweak.open
+        value: 71
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 78
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 72
+        left: 379
+        right: 380
+        height: 2
+      - key: tweak.build.execute
+        value: 74
+        left: 378
+        right: 381
+        height: 3
+      - key: tweak.verify.check
+        value: 79
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 78
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 77
+        left: 383
+        right: 384
+        height: 2
+      - key: tweak.open.evidence
+        value: 72
+        left: 379
+        right: 385
+        height: 3
+      - key: tweak.build.execute
+        value: 74
+        left: 378
+        right: 386
+        height: 4
+      - key: tweak.open
+        value: 84
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 87
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 85
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open
+        value: 84
+        left: null
+        right: 390
+        height: 2
+      - key: tweak.build.execute
+        value: 86
+        left: 389
+        right: 391
+        height: 3
+      - key: tweak.build.check.evidence
+        value: 88
+        left: null
+        right: null
+        height: 1
+      - key: tweak.build.check
+        value: 87
+        left: null
+        right: 393
+        height: 2
+      - key: tweak.open
+        value: 84
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 90
+        left: null
+        right: null
+        height: 1
+      - key: tweak.open.evidence
+        value: 85
+        left: 395
+        right: 396
+        height: 2
+      - key: tweak.build.execute
+        value: 86
+        left: 394
+        right: 397
+        height: 3
+      - key: tweak.verify.check
+        value: 91
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.run
+        value: 90
+        left: null
+        right: null
+        height: 1
+      - key: tweak.verify.report.evidence
+        value: 89
+        left: 399
+        right: 400
+        height: 2
+      - key: tweak.open.evidence
+        value: 85
+        left: 395
+        right: 401
+        height: 3
+      - key: tweak.build.execute
+        value: 86
+        left: 394
+        right: 402
         height: 4
     maps:
       - null
@@ -2049,30 +5348,84 @@ run_checkpoint:
       - 24
       - 28
       - 32
-      - 39
+      - 36
+      - 40
       - 44
-      - 49
-      - 52
-      - 56
-      - 60
-      - 63
+      - 48
+      - 53
+      - 55
+      - 57
+      - 61
       - 65
-      - 67
-      - 71
-      - 74
-      - 77
+      - 70
+      - 75
+      - 80
       - 84
       - 88
-      - 92
-      - 100
-      - 101
-      - 105
+      - 93
+      - 98
+      - 103
       - 108
-      - 114
-      - 119
+      - 115
+      - 120
+      - 125
       - 128
-      - 131
+      - 132
+      - 136
       - 139
+      - 143
+      - 147
+      - 149
+      - 160
+      - 164
+      - 168
+      - 173
+      - 175
+      - 178
+      - 181
+      - 185
+      - 189
+      - 194
+      - 199
+      - 204
+      - 206
+      - 208
+      - 212
+      - 216
+      - 221
+      - 226
+      - 237
+      - 241
+      - 246
+      - 251
+      - 253
+      - 263
+      - 267
+      - 271
+      - 280
+      - 289
+      - 298
+      - 308
+      - 318
+      - 319
+      - 323
+      - 326
+      - 332
+      - 337
+      - 346
+      - 349
+      - 357
+      - 360
+      - 368
+      - 371
+      - 372
+      - 376
+      - 382
+      - 387
+      - 388
+      - 392
+      - 398
+      - 403
     bindings:
       - path:
           - actions
@@ -2153,6 +5506,144 @@ run_checkpoint:
           - outputs
         map: 9
       - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "19"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "20"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "21"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actions
+          - "22"
+          - input
+          - outputs
+        map: 17
+      - path:
+          - actions
+          - "23"
+          - input
+          - outputs
+        map: 18
+      - path:
+          - actions
+          - "24"
+          - input
+          - outputs
+        map: 19
+      - path:
+          - actions
+          - "25"
+          - input
+          - outputs
+        map: 20
+      - path:
+          - actions
+          - "26"
+          - input
+          - outputs
+        map: 21
+      - path:
+          - actions
+          - "27"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "28"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "29"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actions
+          - "30"
+          - input
+          - outputs
+        map: 22
+      - path:
+          - actions
+          - "31"
+          - input
+          - outputs
+        map: 23
+      - path:
+          - actions
+          - "32"
+          - input
+          - outputs
+        map: 24
+      - path:
+          - actions
+          - "33"
+          - input
+          - outputs
+        map: 25
+      - path:
+          - actions
+          - "34"
+          - input
+          - outputs
+        map: 26
+      - path:
+          - actions
+          - "35"
+          - input
+          - outputs
+        map: 27
+      - path:
           - actionContexts
           - procuraai-best-practice-optimization:1
           - results
@@ -2161,124 +5652,314 @@ run_checkpoint:
           - actionContexts
           - procuraai-best-practice-optimization:11
           - results
-        map: 10
+        map: 28
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:13
           - results
-        map: 11
+        map: 29
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:17
           - results
-        map: 12
+        map: 30
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:19
           - results
-        map: 13
+        map: 31
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:21
           - results
-        map: 14
+        map: 32
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:23
           - results
-        map: 15
+        map: 33
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:25
           - results
-        map: 16
+        map: 34
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:27
+          - results
+        map: 35
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:29
+          - results
+        map: 36
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:3
           - results
-        map: 17
+        map: 37
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:31
+          - results
+        map: 38
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:33
+          - results
+        map: 39
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:35
+          - results
+        map: 40
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:36
+          - results
+        map: 41
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:37
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:39
+          - results
+        map: 42
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:4
           - results
-        map: 18
+        map: 43
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:40
+          - results
+        map: 44
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:42
+          - results
+        map: 45
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:44
+          - results
+        map: 46
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:46
+          - results
+        map: 47
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:48
+          - results
+        map: 48
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:49
+          - results
+        map: 49
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:50
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:52
+          - results
+        map: 50
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:53
+          - results
+        map: 51
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:55
+          - results
+        map: 52
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:57
+          - results
+        map: 53
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:59
+          - results
+        map: 54
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:6
           - results
-        map: 19
+        map: 55
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:61
+          - results
+        map: 56
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:62
+          - results
+        map: 57
+      - path:
+          - actionContexts
+          - procuraai-best-practice-optimization:63
+          - results
+        map: 58
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:7
           - results
-        map: 20
+        map: 59
       - path:
           - actionContexts
           - procuraai-best-practice-optimization:9
           - results
-        map: 21
+        map: 60
       - path:
           - outputs
-        map: 16
+        map: 58
       - path:
           - waits
           - "0"
           - results
-        map: 22
+        map: 61
       - path:
           - waits
           - "1"
           - results
-        map: 23
+        map: 62
       - path:
           - waits
           - "2"
           - results
-        map: 24
+        map: 63
       - path:
           - waits
           - "3"
           - results
-        map: 25
+        map: 64
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 65
+      - path:
+          - waits
+          - "5"
+          - results
+        map: 66
+      - path:
+          - waits
+          - "6"
+          - results
+        map: 67
+      - path:
+          - waits
+          - "7"
+          - results
+        map: 68
       - path:
           - evidenceWaits
           - "0"
           - results
-        map: 26
+        map: 69
       - path:
           - evidenceWaits
           - "1"
           - results
-        map: 27
+        map: 70
       - path:
           - evidenceWaits
           - "2"
           - results
-        map: 28
+        map: 71
       - path:
           - evidenceWaits
           - "3"
           - results
-        map: 29
+        map: 72
       - path:
           - evidenceWaits
           - "4"
           - results
-        map: 30
+        map: 73
       - path:
           - evidenceWaits
           - "5"
           - results
-        map: 31
+        map: 74
       - path:
           - evidenceWaits
           - "6"
           - results
-        map: 32
+        map: 75
       - path:
           - evidenceWaits
           - "7"
           - results
-        map: 33
-  storageHash: 3e65593a328a1ad72a99190c84e925be42f0e9d2102fb8d9244d502369201f7d
-check_epoch: 6
+        map: 76
+      - path:
+          - evidenceWaits
+          - "8"
+          - results
+        map: 77
+      - path:
+          - evidenceWaits
+          - "9"
+          - results
+        map: 78
+      - path:
+          - evidenceWaits
+          - "10"
+          - results
+        map: 79
+      - path:
+          - evidenceWaits
+          - "11"
+          - results
+        map: 80
+      - path:
+          - evidenceWaits
+          - "12"
+          - results
+        map: 81
+      - path:
+          - evidenceWaits
+          - "13"
+          - results
+        map: 82
+      - path:
+          - evidenceWaits
+          - "14"
+          - results
+        map: 83
+      - path:
+          - evidenceWaits
+          - "15"
+          - results
+        map: 84
+      - path:
+          - evidenceWaits
+          - "16"
+          - results
+        map: 85
+      - path:
+          - evidenceWaits
+          - "17"
+          - results
+        map: 86
+      - path:
+          - evidenceWaits
+          - "18"
+          - results
+        map: 87
+  storageHash: 03e9de6a248c9776f5e2f0fb6a2dd18313a5ce53dc7d7ef3a66cd5f6d98dcb8b
+check_epoch: 19
