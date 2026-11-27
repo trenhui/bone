@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 153,
+  "executableCount": 154,
   "retired": [],
   "entries": [
     {
