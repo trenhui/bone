@@ -1,3 +1,11 @@
+---
+comet_change: claim-tenant-analytics
+role: technical-design
+canonical_spec: openspec
+archived-with: 2026-11-27-claim-tenant-analytics
+status: final
+---
+
 ## Context
 
 现有 `ClaimAnalyticsApplicationService` 聚合终态分布/FALLBACK/影子自动化率/P50–P90 时长，自带 scopeNote 防造假；`ClaimAnalyticsController` 提供只读端点，前端 `/analytics` 已是正式菜单。缺的只是按 `tenantId` 分组的维度。详见 proposal.md 的 Why。

@@ -1,0 +1,2827 @@
+# comet-execution: managed-run
+change_id: 187686b3-27e1-4c79-82a9-e884bb169c12
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: executing-plans
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: thorough
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+design_doc: openspec/changes/claim-tenant-analytics/design.md
+plan: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+branch_status: pending
+created_at: 2026-11-23
+verified_at: 2026-11-27
+archive_confirmation: confirmed
+archived: false
+bound_branch: comet/claim-tenant-analytics
+direct_override: false
+handoff_context: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+handoff_hash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 8132e3a335328a1993e59ce201ce98fa2dd552ebd545033585b86961ccb04ff1
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-tenant-analytics
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 9aaeb7ba6e213b67490080f6d8c6e84e07a28a588ed1218de0f40f55d5d0eea2
+    input:
+      change: claim-tenant-analytics
+      changeDir: openspec/changes/claim-tenant-analytics
+      workspaceBaseline:
+        ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+    state:
+      archiveConfirmation: confirmed
+      archived: false
+      autoTransition: true
+      baseRef: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+      boundBranch: comet/claim-tenant-analytics
+      branchStatus: pending
+      buildMode: executing-plans
+      buildPause: null
+      checkEpoch: 5
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: openspec/changes/claim-tenant-analytics/design.md
+      directOverride: false
+      handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+      handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+      reviewMode: thorough
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+      verifiedAt: 2026-11-27
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 25
+    actions:
+      - attempt: 2
+        claim:
+          executorId: comet-classic-guard
+          token: portable-652a6b719e842abf17705bb539132e23e0008f5a8f0240ec04c22f8979f5285d
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:1
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 1c71a4ed9b186db91ea771df93e25d997d50209c71f94b54cbba7c3dd66a21c0
+        outcome:
+          actionId: claim-tenant-analytics:1
+          attempt: 2
+          claimToken: portable-652a6b719e842abf17705bb539132e23e0008f5a8f0240ec04c22f8979f5285d
+          inputHash: 1c71a4ed9b186db91ea771df93e25d997d50209c71f94b54cbba7c3dd66a21c0
+          outcomeId: 2203926c-a570-4c22-a067-65bf64a86493
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c439cc09ccda4baab584757b8ffb20f882bd9240a9dae585be93fa05b07d86fc
+            outcomeId: 2203926c-a570-4c22-a067-65bf64a86493
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：该 action 是进程内只读 Open
+                重校验(ref=classic-open-revalidate)，仅计算 change
+                目录内容哈希、不派发外部命令；recovery 显示
+                command=null、record.status=missing、receiptRef=null、manifestRef=null，无收据；原
+                guard --apply 执行器已结束无残留进程。重放该幂等只读计算安全。
+            resolution: not-executed
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-59857af77b1c399686709bbe2a9e54ea364b438aea5fe3adba6197e38697df74
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:4
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: e208639db3bbfb9de4fba966fa1614c3a1396bab5fa248c1fa5d940553559022
+        outcome:
+          actionId: claim-tenant-analytics:4
+          attempt: 1
+          claimToken: portable-59857af77b1c399686709bbe2a9e54ea364b438aea5fe3adba6197e38697df74
+          inputHash: e208639db3bbfb9de4fba966fa1614c3a1396bab5fa248c1fa5d940553559022
+          outcomeId: claim-tenant-analytics:4:1:executor-result
+          output:
+            contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d28c5c4c75c2365636cd690def684a0d70f4e28555a483e02b47ab3e1d83e521
+            outcomeId: claim-tenant-analytics:4:1:executor-result
+        reconciliations: []
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 8
+        claim:
+          executorId: comet-classic-state
+          token: portable-9655ea37bccfb6d301c7b69eb98b90d9bda3d8abe997b0a0f5b8b1f8d1dc8f2f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:5
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: e51b383346da72042df5eb51f3b23f6c61fb8b3a522d05504b2a9a55bb75e08c
+        outcome:
+          actionId: claim-tenant-analytics:5
+          attempt: 8
+          claimToken: portable-9655ea37bccfb6d301c7b69eb98b90d9bda3d8abe997b0a0f5b8b1f8d1dc8f2f
+          inputHash: e51b383346da72042df5eb51f3b23f6c61fb8b3a522d05504b2a9a55bb75e08c
+          outcomeId: b5fb4a8d-5e48-4829-a5c8-d5c69aef4e71
+          output:
+            handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+            handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+            proposal: 在现有 ClaimAnalyticsApplicationService 聚合内核之上叠加 tenantId
+              分组维度（决策1：外层内存分组，不改指标计算内核、不改仓储/SQL）。权限按决策2：查询层强制过滤
+              tenantId，不依赖前端传参；以 TenantContext
+              当前租户为边界，调用方显式传入权限允许的租户集合，超集合拒绝。决策3：无维度回退全量口径保持向后兼容。scopeNote
+              强制随每个分组结果返回。Non-Goals：不改指标定义、不新增 DDL、不改资金路径、不越权跨租户取数。
+            requirementsEvidence:
+              contentHash: ccf6e65436ddc9fac32e934584415810be595f7d4e9635edf256dce12214a925
+              ref: openspec/changes/claim-tenant-analytics
+            sourceEvidence:
+              contentHash: 97c6a9a871baae667acfefbe127b67f695c85da8b3014c965cf9d8d9970b5ba6
+              ref: openspec/changes/claim-tenant-analytics
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 985b34421b02471ca1fd10d2eb223793ef8f813f36bd31b249599e15c4dd7661
+            outcomeId: b5fb4a8d-5e48-4829-a5c8-d5c69aef4e71
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 3
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 4
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 5
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 6
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 7
+            evidence:
+              summary: 核对 runtime inspect：design handoff action 由 state next/锁重试自动认领，从未执行
+                design Skill 工作（无命令/收据/记录/证据/副作用），与同 run 既有 not-executed
+                先例一致，安全重放。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-c42a313b5dbc400d1484796b53567d6902a922df8ce528a26ad3d14f53a87dfc
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:7
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 826550f40e03d797e74cab7916701b02250fa2a3c6bb1f7cdc7c904c8f055a85
+        outcome:
+          actionId: claim-tenant-analytics:7
+          attempt: 1
+          claimToken: portable-c42a313b5dbc400d1484796b53567d6902a922df8ce528a26ad3d14f53a87dfc
+          inputHash: 826550f40e03d797e74cab7916701b02250fa2a3c6bb1f7cdc7c904c8f055a85
+          outcomeId: ef8721f4-a438-4dbf-8e38-13254b54bf65
+          output:
+            designDoc: openspec/changes/claim-tenant-analytics/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 95092789c4351905168d40a699ed21369735fff30d643203fb5b1eef3bce2fa7
+            outcomeId: ef8721f4-a438-4dbf-8e38-13254b54bf65
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-05f73e5eae8e2315144af3649761112915e6df428979eaa62061cb7f0a53a8c6
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:9
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: cb5e788144185b90cc7ac8825743d827070cafecd91c995eea4e731cb9d68633
+        outcome:
+          actionId: claim-tenant-analytics:9
+          attempt: 1
+          claimToken: portable-05f73e5eae8e2315144af3649761112915e6df428979eaa62061cb7f0a53a8c6
+          inputHash: cb5e788144185b90cc7ac8825743d827070cafecd91c995eea4e731cb9d68633
+          outcomeId: 6e3f435a-cd1e-414d-9831-e35d6427c3aa
+          output:
+            boundBranch: comet/claim-tenant-analytics
+            buildMode: executing-plans
+            directOverride: false
+            isolation: worktree
+            reviewMode: thorough
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1a296ec82309f844dbe89001fdd2617cc3281552779ef584457fe36b0f1743ef
+            outcomeId: 6e3f435a-cd1e-414d-9831-e35d6427c3aa
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-4d8f3f57f5b26967bea5f0d9eab8be1cf132ee02356959371394f00819b7a66a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:11
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 5b403e3a4f6afa6839b05d9e8896cce0a15c37402527cae1dbdd23f591d1b1f9
+        outcome:
+          actionId: claim-tenant-analytics:11
+          attempt: 2
+          claimToken: portable-4d8f3f57f5b26967bea5f0d9eab8be1cf132ee02356959371394f00819b7a66a
+          inputHash: 5b403e3a4f6afa6839b05d9e8896cce0a15c37402527cae1dbdd23f591d1b1f9
+          outcomeId: 31fa4b13-67dc-48f4-b961-a9b82035c529
+          output:
+            designEvidence:
+              contentHash: 2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d
+              ref: openspec/changes/claim-tenant-analytics/design.md
+            plan: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+            planEvidence:
+              contentHash: 9f87c4670462d154318b4c33510a374ca92e4138c9613a58371dadd62b7ea799
+              ref: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+            taskRevision: 8dcb2e36e9b42bb698a0f68ec954c6c87c8eba27bf9ee2e728b4e95a33a5b400
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 056bb2e2cba32569f5941bd0cb61eaca951d0d44305701db5c61f4682e1259eb
+            outcomeId: 31fa4b13-67dc-48f4-b961-a9b82035c529
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 runtime：该 action 由 CLI 自动认领后从未执行对应 Skill 工作，无命令/收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-tenant-analytics:13/1
+          token: portable-eafc112b09318d9ace1ab01ea6ab88a7d876569d27ce6d54890008ff5b08fdae
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:13
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 38bfaf2139f3e3a41cb3fa7eea7cc150d587a76505e1d432c55783befde9a399
+        outcome:
+          actionId: claim-tenant-analytics:13
+          attempt: 1
+          claimToken: portable-eafc112b09318d9ace1ab01ea6ab88a7d876569d27ce6d54890008ff5b08fdae
+          inputHash: 38bfaf2139f3e3a41cb3fa7eea7cc150d587a76505e1d432c55783befde9a399
+          outcomeId: 5594faea-1d96-4021-b61f-cdbedd7a9bb9
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: db599f755d368ced7138e733e5f06b38c614da0f6a63f1681fac5c3bc5a0c7da
+            outcomeId: 5594faea-1d96-4021-b61f-cdbedd7a9bb9
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-80034d47fdb02eede319adb692fe765818667e9f16e609fa99416df5b666dcd3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:14
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 237e98158be838ca5dcb0bcae2017be68fc79167d4a65a0a65d3c4024b456fa3
+        outcome:
+          actionId: claim-tenant-analytics:14
+          attempt: 1
+          claimToken: portable-80034d47fdb02eede319adb692fe765818667e9f16e609fa99416df5b666dcd3
+          inputHash: 237e98158be838ca5dcb0bcae2017be68fc79167d4a65a0a65d3c4024b456fa3
+          outcomeId: e32508e7-c669-413a-961f-6abade4e6f4c
+          output:
+            argv:
+              - mvn
+              - -o
+              - -q
+              - -pl
+              - bone-apps/synap-claim/synap-claim-app
+              - -am
+              - -Dtest=ClaimAnalyticsApplicationServiceTest
+              - -Dsurefire.failIfNoSpecifiedTests=false
+              - test
+            changedDuringExecution:
+              - docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+            checkEpoch: 2
+            contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+            cwd: .
+            environment: 150d8aa2a04e018181a35a4dc7f384589f04bdb7ed7263c48b39adbbfc0688da
+            exitCode: 0
+            inputAfter: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+            inputBefore: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+            manifestHash: 0226cd5e70a1cda8de93d983e8ecb3f65bc812f7d8f80517b16c1e52782a6a9d
+            manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/ec87c049-7fce-449a-a442-b3e8708d349c.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/32348e8f-2834-4056-b198-254cff246736.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: failed
+        protocolVersion: 1
+        receipts:
+          - hash: 7c588cb044967033e868bdf4e834c155e8aacc60ac05e543f26ab8a036fa756f
+            outcomeId: e32508e7-c669-413a-961f-6abade4e6f4c
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: failed
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-tenant-analytics:15/1
+          token: portable-9567e17d40913a3c47ba8b9c65564974b928afe2c3f82451cd3a1b4326008e2a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:15
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: ab7d7d0b75dce7a4a59c07973f454a829aa5ed1173d5fe6bf58fd661b1599b79
+        outcome:
+          actionId: claim-tenant-analytics:15
+          attempt: 1
+          claimToken: portable-9567e17d40913a3c47ba8b9c65564974b928afe2c3f82451cd3a1b4326008e2a
+          inputHash: ab7d7d0b75dce7a4a59c07973f454a829aa5ed1173d5fe6bf58fd661b1599b79
+          outcomeId: 6f44cdbc-615c-4adf-8b52-2cbb2b7d8914
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fda9889406f3b65563b523fd3eb9442de76f274a190fe60aaa7a592148845f92
+            outcomeId: 6f44cdbc-615c-4adf-8b52-2cbb2b7d8914
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-e47470c5bbc5363dcf1954b42e4f0fa443cf8eddd48ab74ce21dc1417f908f42
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:16
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: ab7d7d0b75dce7a4a59c07973f454a829aa5ed1173d5fe6bf58fd661b1599b79
+        outcome:
+          actionId: claim-tenant-analytics:16
+          attempt: 1
+          claimToken: portable-e47470c5bbc5363dcf1954b42e4f0fa443cf8eddd48ab74ce21dc1417f908f42
+          inputHash: ab7d7d0b75dce7a4a59c07973f454a829aa5ed1173d5fe6bf58fd661b1599b79
+          outcomeId: 8b70d222-19fa-4040-9321-d3fa72e53da2
+          output:
+            argv:
+              - mvn
+              - -o
+              - -q
+              - -pl
+              - bone-apps/synap-claim/synap-claim-app
+              - -am
+              - -Dtest=ClaimAnalyticsApplicationServiceTest
+              - -Dsurefire.failIfNoSpecifiedTests=false
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+            cwd: .
+            environment: 150d8aa2a04e018181a35a4dc7f384589f04bdb7ed7263c48b39adbbfc0688da
+            exitCode: 0
+            inputAfter: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+            inputBefore: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+            manifestHash: 0226cd5e70a1cda8de93d983e8ecb3f65bc812f7d8f80517b16c1e52782a6a9d
+            manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/d7a24137-efda-42fc-8593-543232a3a607.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/06e37401-2433-4694-a131-655260b3e0d8.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 06e2389e09487c2f66c1b9a055e6fd093f845acaa12f9068c5adbcd53f83cc02
+            outcomeId: 8b70d222-19fa-4040-9321-d3fa72e53da2
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-232c6f3b9f80cb2a7cf9edb832b48bb1b67e52ca479781a79a0b480a7649b875
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:18
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 6cafb95911a80d16ab6312e63f408649476c5d9b50d33299c3c6c04692ca3fd2
+        outcome:
+          actionId: claim-tenant-analytics:18
+          attempt: 1
+          claimToken: portable-232c6f3b9f80cb2a7cf9edb832b48bb1b67e52ca479781a79a0b480a7649b875
+          inputHash: 6cafb95911a80d16ab6312e63f408649476c5d9b50d33299c3c6c04692ca3fd2
+          outcomeId: a5806d52-ce42-4b37-814c-9e4c8bed0a8d
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: bacf39083db5b50fbbc42dbf6bc21b9d88b054790c9781e2db027eaf930b3fad
+            outcomeId: a5806d52-ce42-4b37-814c-9e4c8bed0a8d
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-dcd52690bb47af6226b4daf8ce448d1a22d0e2448ad3c2e3edc8bd3a644b63c2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:20
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: c73fefe4f6de75ce911bb0ad0871ace48d069208c094ca89735bfcf67b0fa759
+        outcome:
+          actionId: claim-tenant-analytics:20
+          attempt: 2
+          claimToken: portable-dcd52690bb47af6226b4daf8ce448d1a22d0e2448ad3c2e3edc8bd3a644b63c2
+          inputHash: c73fefe4f6de75ce911bb0ad0871ace48d069208c094ca89735bfcf67b0fa759
+          outcomeId: ff5e835b-90b2-4fba-a76d-812d9285902c
+          output:
+            argv:
+              - sh
+              - -c
+              - grep -q "tests=\"7\" errors=\"0\" skipped=\"0\" failures=\"0\""
+                bone-apps/synap-claim/synap-claim-app/target/surefire-reports/TEST-com.bone.claim.application.ClaimAnalyticsApplicationServiceTest.xml
+                && echo VERIFY_OK
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+            cwd: .
+            deliveryInputs:
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAnalyticsController.java: git:80ec292765dead4b28680974e8a4851556eb0c5c
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimAnalyticsApplicationService.java: git:d7045932bd9be66e23b1323f73f43f4cd85aaf40
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimAnalyticsApplicationServiceTest.java: git:a92044c2a31a15a950f15f335cb28aa3bf6bbb47
+              bone-frontend/apps/bone-claim-app/src/pages/AnalyticsDashboardPage.tsx: git:a22949e460e0f55040e63620d80faf365489d8ba
+              bone-frontend/apps/bone-claim-app/src/services/analytics.ts: git:84a9896f52dba78eb8b5ef09a3a9f201d79a0929
+            environment: dfedb9db1ec88406f36cf7fda843d6b09d256f14e8d14c0f6a9c0c036d1fc48c
+            exitCode: 0
+            inputAfter: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+            inputBefore: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+            manifestHash: a9490450c1c7e93b366194fa628f98ee20770d443a2dfb00440f2209e507021e
+            manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/cdf62bbf-3892-40b0-bc94-5725f701cb2c.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/b9cad3ac-8e13-4409-bce2-493495441729.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 33e2d6566f00122b1e648ebfa65da3a37d9bc89c258ba06dbf917bb7883693d3
+            outcomeId: ff5e835b-90b2-4fba-a76d-812d9285902c
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对：guard verify preview 为只读、未提交 verify 命令，action 无收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-159aae6e434cf3815cba5a1c5e10f7a2782b875a5c51c833cc50a4510acf3b5b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:22
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: abd7d3d1a8050f4ce36bc3720384ddf8cee6258ba922a38a85eff5436e8dbc94
+        outcome:
+          actionId: claim-tenant-analytics:22
+          attempt: 1
+          claimToken: portable-159aae6e434cf3815cba5a1c5e10f7a2782b875a5c51c833cc50a4510acf3b5b
+          inputHash: abd7d3d1a8050f4ce36bc3720384ddf8cee6258ba922a38a85eff5436e8dbc94
+          outcomeId: 1b85f30d-d3d1-4d42-b45b-0fcbc1294a08
+          output:
+            summary: 真功能实现收口：tenantId 分组 + 服务端强制租户隔离（TenantPort，不接收前端参数）+ scopeNote +
+              前端当前租户视图。10/10 任务完成；后端 7 测试 + 前端 12 测试 + tsc
+              全绿。不改指标内核/DDL/资金，不越权跨租户。
+            targetBranch: comet/claim-tenant-analytics
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 919f7af4d9f48bcd24876100e5e1aa5e9e277a21923ff4c27603f66036aec851
+            outcomeId: 1b85f30d-d3d1-4d42-b45b-0fcbc1294a08
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 3
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-441f804b4723e7d8be1533b35137a2b06edc494dfb2e47311ade67f79fec42a2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:24
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 7993f7101fe570cddc31f9d1cbeb3e67f35323587c16702c5e7f940a71c93529
+        outcome:
+          actionId: claim-tenant-analytics:24
+          attempt: 3
+          claimToken: portable-441f804b4723e7d8be1533b35137a2b06edc494dfb2e47311ade67f79fec42a2
+          inputHash: 7993f7101fe570cddc31f9d1cbeb3e67f35323587c16702c5e7f940a71c93529
+          outcomeId: f12f8969-64f4-4fdf-94ee-b3fa41e84dc2
+          output:
+            baseCommit: ae05cf9d70a37bb18e550ffb8a0858942747eddf
+            deliveryAction: local
+            targetBranch: comet/claim-tenant-analytics
+            verifiedBranch: comet/claim-tenant-analytics
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 22f8c5bcce2ee4df245ac840537bc05286c32707b10d9f54727b1f89be070e3a
+            outcomeId: f12f8969-64f4-4fdf-94ee-b3fa41e84dc2
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核对 runtime：preflight action 由 decide-archive 自动认领，guard archive
+                尚未执行，无收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+          - attempt: 2
+            evidence:
+              summary: 核对 runtime：action 由工具自动认领后未留下收据/记录/证据/副作用，安全重放。
+            resolution: not-executed
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-fcae8fd207ff0e0bf61e814d0e9b7700bd0c1fbed5b19886140fcf63fdc66f4f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-tenant-analytics:25
+        input:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs: {}
+        inputHash: 9585f49126d7df1cf55051a9011776a7051664ba22b6b11c57cef64ad86556dc
+        protocolVersion: 1
+        reason: Portable recovery requires reconciliation of external execution
+        receipts: []
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-tenant-analytics
+        status: unknown
+        stepId: full.archive.execute
+        type: call_tool
+    actionContexts:
+      claim-tenant-analytics:1:
+        results: {}
+        sequence: 1
+      claim-tenant-analytics:11:
+        results: {}
+        sequence: 11
+      claim-tenant-analytics:13:
+        results: {}
+        sequence: 13
+      claim-tenant-analytics:14:
+        results: {}
+        sequence: 14
+      claim-tenant-analytics:15:
+        results: {}
+        sequence: 15
+      claim-tenant-analytics:16:
+        results: {}
+        sequence: 16
+      claim-tenant-analytics:18:
+        results: {}
+        sequence: 18
+      claim-tenant-analytics:20:
+        results: {}
+        sequence: 20
+      claim-tenant-analytics:22:
+        results: {}
+        sequence: 22
+      claim-tenant-analytics:24:
+        results: {}
+        sequence: 24
+      claim-tenant-analytics:25:
+        results: {}
+        sequence: 25
+      claim-tenant-analytics:4:
+        results: {}
+        sequence: 4
+      claim-tenant-analytics:5:
+        results: {}
+        sequence: 5
+      claim-tenant-analytics:7:
+        results: {}
+        sequence: 7
+      claim-tenant-analytics:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: claim-tenant-analytics:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+              ref: openspec/changes/claim-tenant-analytics
+        proposalHash: 2ecb83c7379ba918bd95913a74c31157ef855c2eed35aa5823b9871940c674e5
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: dec-ta-open-confirm-20261123
+          choice: approved
+          proposalHash: 2ecb83c7379ba918bd95913a74c31157ef855c2eed35aa5823b9871940c674e5
+      - id: claim-tenant-analytics:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+              handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+              proposal: 在现有 ClaimAnalyticsApplicationService 聚合内核之上叠加 tenantId
+                分组维度（决策1：外层内存分组，不改指标计算内核、不改仓储/SQL）。权限按决策2：查询层强制过滤
+                tenantId，不依赖前端传参；以 TenantContext
+                当前租户为边界，调用方显式传入权限允许的租户集合，超集合拒绝。决策3：无维度回退全量口径保持向后兼容。scopeNote
+                强制随每个分组结果返回。Non-Goals：不改指标定义、不新增 DDL、不改资金路径、不越权跨租户取数。
+              requirementsEvidence:
+                contentHash: ccf6e65436ddc9fac32e934584415810be595f7d4e9635edf256dce12214a925
+                ref: openspec/changes/claim-tenant-analytics
+              sourceEvidence:
+                contentHash: 97c6a9a871baae667acfefbe127b67f695c85da8b3014c965cf9d8d9970b5ba6
+                ref: openspec/changes/claim-tenant-analytics
+        proposalHash: fa58d9afda9938209dab432baeaa4a771f7b578681537525c669a689f2f98573
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-fa58d9afda9938209dab432baeaa4a771f7b578681537525c669a689f2f98573-approved
+          choice: approved
+          proposalHash: fa58d9afda9938209dab432baeaa4a771f7b578681537525c669a689f2f98573
+      - id: claim-tenant-analytics:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-tenant-analytics
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 831208cc7353d2ce73b3af0e3a3f874d810e872bf130e5c0004090e887572728
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-831208cc7353d2ce73b3af0e3a3f874d810e872bf130e5c0004090e887572728-approved
+          choice: approved
+          proposalHash: 831208cc7353d2ce73b3af0e3a3f874d810e872bf130e5c0004090e887572728
+      - id: claim-tenant-analytics:23
+        stepId: full.archive.confirm
+        sequence: 23
+        status: resolved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.archive.prepare:
+              summary: 真功能实现收口：tenantId 分组 + 服务端强制租户隔离（TenantPort，不接收前端参数）+ scopeNote +
+                前端当前租户视图。10/10 任务完成；后端 7 测试 + 前端 12 测试 + tsc
+                全绿。不改指标内核/DDL/资金，不越权跨租户。
+              targetBranch: comet/claim-tenant-analytics
+        proposalHash: 3817c8b1d95de5c7fe4fea91c052baf1e20f8433116e4690f8c74029bb0684d0
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-3817c8b1d95de5c7fe4fea91c052baf1e20f8433116e4690f8c74029bb0684d0-local
+          choice: local
+          proposalHash: 3817c8b1d95de5c7fe4fea91c052baf1e20f8433116e4690f8c74029bb0684d0
+    evidenceWaits:
+      - id: claim-tenant-analytics:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-tenant-analytics
+          contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+          submissionId: 19620fa6-ae15-4abc-bf6d-93a6f9fdaf94
+      - id: claim-tenant-analytics:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-tenant-analytics/design.md
+          contentHash: 2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d
+          submissionId: c623c16c-2709-480b-943a-7aca69bf21a8
+      - id: claim-tenant-analytics:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+          contentHash: 9f87c4670462d154318b4c33510a374ca92e4138c9613a58371dadd62b7ea799
+          submissionId: 9dcd11f5-f7a3-4bb2-a41a-e0ec978d9f09
+      - id: claim-tenant-analytics:17
+        stepId: full.build.check.evidence
+        sequence: 17
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/06e37401-2433-4694-a131-655260b3e0d8.log
+          contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+          submissionId: cc32a921-34df-4184-8ae1-7cb9199adb94
+      - id: claim-tenant-analytics:19
+        stepId: full.verify.report.evidence
+        sequence: 19
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+          contentHash: 66882a9d4f3912ae3b7feb718f2ba32bd9a0bed24dc19f3029c88d237428db04
+          submissionId: e75c933e-1b91-4fa1-ba04-55e8d84f611a
+      - id: claim-tenant-analytics:21
+        stepId: full.verify.check.evidence
+        sequence: 21
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/b9cad3ac-8e13-4409-bce2-493495441729.log
+          contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+          submissionId: 665227a9-3e34-4a5d-96f1-2756a3bb0d38
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 76
+  sourceHash: c7f2db330c7820fc04d7a09fc2dc384722f7d366c6f83d10927ddcb1c5a16165
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+              ref: openspec/changes/claim-tenant-analytics
+      - contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+        ref: openspec/changes/claim-tenant-analytics
+      - contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+      - choice: approved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+              handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+              proposal: 在现有 ClaimAnalyticsApplicationService 聚合内核之上叠加 tenantId
+                分组维度（决策1：外层内存分组，不改指标计算内核、不改仓储/SQL）。权限按决策2：查询层强制过滤
+                tenantId，不依赖前端传参；以 TenantContext
+                当前租户为边界，调用方显式传入权限允许的租户集合，超集合拒绝。决策3：无维度回退全量口径保持向后兼容。scopeNote
+                强制随每个分组结果返回。Non-Goals：不改指标定义、不新增 DDL、不改资金路径、不越权跨租户取数。
+              requirementsEvidence:
+                contentHash: ccf6e65436ddc9fac32e934584415810be595f7d4e9635edf256dce12214a925
+                ref: openspec/changes/claim-tenant-analytics
+              sourceEvidence:
+                contentHash: 97c6a9a871baae667acfefbe127b67f695c85da8b3014c965cf9d8d9970b5ba6
+                ref: openspec/changes/claim-tenant-analytics
+      - handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+        handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+        proposal: 在现有 ClaimAnalyticsApplicationService 聚合内核之上叠加 tenantId
+          分组维度（决策1：外层内存分组，不改指标计算内核、不改仓储/SQL）。权限按决策2：查询层强制过滤 tenantId，不依赖前端传参；以
+          TenantContext
+          当前租户为边界，调用方显式传入权限允许的租户集合，超集合拒绝。决策3：无维度回退全量口径保持向后兼容。scopeNote
+          强制随每个分组结果返回。Non-Goals：不改指标定义、不新增 DDL、不改资金路径、不越权跨租户取数。
+        requirementsEvidence:
+          contentHash: ccf6e65436ddc9fac32e934584415810be595f7d4e9635edf256dce12214a925
+          ref: openspec/changes/claim-tenant-analytics
+        sourceEvidence:
+          contentHash: 97c6a9a871baae667acfefbe127b67f695c85da8b3014c965cf9d8d9970b5ba6
+          ref: openspec/changes/claim-tenant-analytics
+      - designDoc: openspec/changes/claim-tenant-analytics/design.md
+      - contentHash: 2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d
+        ref: openspec/changes/claim-tenant-analytics/design.md
+      - boundBranch: comet/claim-tenant-analytics
+        buildMode: executing-plans
+        directOverride: false
+        isolation: worktree
+        reviewMode: thorough
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-tenant-analytics
+              buildMode: executing-plans
+              directOverride: false
+              isolation: worktree
+              reviewMode: thorough
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d
+          ref: openspec/changes/claim-tenant-analytics/design.md
+        plan: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+        planEvidence:
+          contentHash: 9f87c4670462d154318b4c33510a374ca92e4138c9613a58371dadd62b7ea799
+          ref: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+        taskRevision: 8dcb2e36e9b42bb698a0f68ec954c6c87c8eba27bf9ee2e728b4e95a33a5b400
+      - contentHash: 9f87c4670462d154318b4c33510a374ca92e4138c9613a58371dadd62b7ea799
+        ref: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+      - event: build-complete
+      - argv:
+          - mvn
+          - -o
+          - -q
+          - -pl
+          - bone-apps/synap-claim/synap-claim-app
+          - -am
+          - -Dtest=ClaimAnalyticsApplicationServiceTest
+          - -Dsurefire.failIfNoSpecifiedTests=false
+          - test
+        changedDuringExecution:
+          - docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+        checkEpoch: 2
+        contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+        cwd: .
+        environment: 150d8aa2a04e018181a35a4dc7f384589f04bdb7ed7263c48b39adbbfc0688da
+        exitCode: 0
+        inputAfter: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+        inputBefore: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+        manifestHash: 0226cd5e70a1cda8de93d983e8ecb3f65bc812f7d8f80517b16c1e52782a6a9d
+        manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/ec87c049-7fce-449a-a442-b3e8708d349c.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/32348e8f-2834-4056-b198-254cff246736.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - argv:
+          - mvn
+          - -o
+          - -q
+          - -pl
+          - bone-apps/synap-claim/synap-claim-app
+          - -am
+          - -Dtest=ClaimAnalyticsApplicationServiceTest
+          - -Dsurefire.failIfNoSpecifiedTests=false
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+        cwd: .
+        environment: 150d8aa2a04e018181a35a4dc7f384589f04bdb7ed7263c48b39adbbfc0688da
+        exitCode: 0
+        inputAfter: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+        inputBefore: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+        manifestHash: 0226cd5e70a1cda8de93d983e8ecb3f65bc812f7d8f80517b16c1e52782a6a9d
+        manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/d7a24137-efda-42fc-8593-543232a3a607.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/06e37401-2433-4694-a131-655260b3e0d8.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+        ref: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/06e37401-2433-4694-a131-655260b3e0d8.log
+      - contentHash: 66882a9d4f3912ae3b7feb718f2ba32bd9a0bed24dc19f3029c88d237428db04
+        ref: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+      - argv:
+          - sh
+          - -c
+          - grep -q "tests=\"7\" errors=\"0\" skipped=\"0\" failures=\"0\""
+            bone-apps/synap-claim/synap-claim-app/target/surefire-reports/TEST-com.bone.claim.application.ClaimAnalyticsApplicationServiceTest.xml
+            && echo VERIFY_OK
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+        cwd: .
+        deliveryInputs:
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAnalyticsController.java: git:80ec292765dead4b28680974e8a4851556eb0c5c
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimAnalyticsApplicationService.java: git:d7045932bd9be66e23b1323f73f43f4cd85aaf40
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimAnalyticsApplicationServiceTest.java: git:a92044c2a31a15a950f15f335cb28aa3bf6bbb47
+          bone-frontend/apps/bone-claim-app/src/pages/AnalyticsDashboardPage.tsx: git:a22949e460e0f55040e63620d80faf365489d8ba
+          bone-frontend/apps/bone-claim-app/src/services/analytics.ts: git:84a9896f52dba78eb8b5ef09a3a9f201d79a0929
+        environment: dfedb9db1ec88406f36cf7fda843d6b09d256f14e8d14c0f6a9c0c036d1fc48c
+        exitCode: 0
+        inputAfter: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+        inputBefore: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+        manifestHash: a9490450c1c7e93b366194fa628f98ee20770d443a2dfb00440f2209e507021e
+        manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/cdf62bbf-3892-40b0-bc94-5725f701cb2c.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/b9cad3ac-8e13-4409-bce2-493495441729.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+        ref: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/b9cad3ac-8e13-4409-bce2-493495441729.log
+      - choice: local
+        proposal:
+          input:
+            change: claim-tenant-analytics
+            changeDir: openspec/changes/claim-tenant-analytics
+            workspaceBaseline:
+              ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+          outputs:
+            full.archive.prepare:
+              summary: 真功能实现收口：tenantId 分组 + 服务端强制租户隔离（TenantPort，不接收前端参数）+ scopeNote +
+                前端当前租户视图。10/10 任务完成；后端 7 测试 + 前端 12 测试 + tsc
+                全绿。不改指标内核/DDL/资金，不越权跨租户。
+              targetBranch: comet/claim-tenant-analytics
+      - summary: 真功能实现收口：tenantId 分组 + 服务端强制租户隔离（TenantPort，不接收前端参数）+ scopeNote +
+          前端当前租户视图。10/10 任务完成；后端 7 测试 + 前端 12 测试 + tsc 全绿。不改指标内核/DDL/资金，不越权跨租户。
+        targetBranch: comet/claim-tenant-analytics
+      - baseCommit: ae05cf9d70a37bb18e550ffb8a0858942747eddf
+        deliveryAction: local
+        targetBranch: comet/claim-tenant-analytics
+        verifiedBranch: comet/claim-tenant-analytics
+      - sequence: 9
+        value:
+          boundBranch: comet/claim-tenant-analytics
+          buildMode: executing-plans
+          directOverride: false
+          isolation: worktree
+          reviewMode: thorough
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-tenant-analytics
+              changeDir: openspec/changes/claim-tenant-analytics
+              workspaceBaseline:
+                ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+            outputs:
+              full.build.configure:
+                boundBranch: comet/claim-tenant-analytics
+                buildMode: executing-plans
+                directOverride: false
+                isolation: worktree
+                reviewMode: thorough
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-tenant-analytics
+              changeDir: openspec/changes/claim-tenant-analytics
+              workspaceBaseline:
+                ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+                handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+                proposal: 在现有 ClaimAnalyticsApplicationService 聚合内核之上叠加 tenantId
+                  分组维度（决策1：外层内存分组，不改指标计算内核、不改仓储/SQL）。权限按决策2：查询层强制过滤
+                  tenantId，不依赖前端传参；以 TenantContext
+                  当前租户为边界，调用方显式传入权限允许的租户集合，超集合拒绝。决策3：无维度回退全量口径保持向后兼容。scopeNote
+                  强制随每个分组结果返回。Non-Goals：不改指标定义、不新增 DDL、不改资金路径、不越权跨租户取数。
+                requirementsEvidence:
+                  contentHash: ccf6e65436ddc9fac32e934584415810be595f7d4e9635edf256dce12214a925
+                  ref: openspec/changes/claim-tenant-analytics
+                sourceEvidence:
+                  contentHash: 97c6a9a871baae667acfefbe127b67f695c85da8b3014c965cf9d8d9970b5ba6
+                  ref: openspec/changes/claim-tenant-analytics
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/claim-tenant-analytics/design.md
+      - sequence: 8
+        value:
+          contentHash: 2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d
+          ref: openspec/changes/claim-tenant-analytics/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/claim-tenant-analytics/.comet/handoff/design-context.json
+          handoffHash: d22a61d430bc9013fb343bbfa888f1de452e9e190a5a0dd313554e033d159e68
+          proposal: 在现有 ClaimAnalyticsApplicationService 聚合内核之上叠加 tenantId
+            分组维度（决策1：外层内存分组，不改指标计算内核、不改仓储/SQL）。权限按决策2：查询层强制过滤 tenantId，不依赖前端传参；以
+            TenantContext
+            当前租户为边界，调用方显式传入权限允许的租户集合，超集合拒绝。决策3：无维度回退全量口径保持向后兼容。scopeNote
+            强制随每个分组结果返回。Non-Goals：不改指标定义、不新增 DDL、不改资金路径、不越权跨租户取数。
+          requirementsEvidence:
+            contentHash: ccf6e65436ddc9fac32e934584415810be595f7d4e9635edf256dce12214a925
+            ref: openspec/changes/claim-tenant-analytics
+          sourceEvidence:
+            contentHash: 97c6a9a871baae667acfefbe127b67f695c85da8b3014c965cf9d8d9970b5ba6
+            ref: openspec/changes/claim-tenant-analytics
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-tenant-analytics
+              changeDir: openspec/changes/claim-tenant-analytics
+              workspaceBaseline:
+                ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+                ref: openspec/changes/claim-tenant-analytics
+      - sequence: 2
+        value:
+          contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+          ref: openspec/changes/claim-tenant-analytics
+      - sequence: 4
+        value:
+          contentHash: 46ae0396ccae1a0ad8d84a18455619810629816b856ab7fd6f1820bfe504ce89
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 2ef5bb1b022a9fbcf241d54f318fbaacbd3d6cf77f1dbce159b6006d6c48b38d
+            ref: openspec/changes/claim-tenant-analytics/design.md
+          plan: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+          planEvidence:
+            contentHash: 9f87c4670462d154318b4c33510a374ca92e4138c9613a58371dadd62b7ea799
+            ref: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+          taskRevision: 8dcb2e36e9b42bb698a0f68ec954c6c87c8eba27bf9ee2e728b4e95a33a5b400
+      - sequence: 12
+        value:
+          contentHash: 9f87c4670462d154318b4c33510a374ca92e4138c9613a58371dadd62b7ea799
+          ref: docs/superpowers/plans/2026-11-27-claim-tenant-analytics.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - mvn
+            - -o
+            - -q
+            - -pl
+            - bone-apps/synap-claim/synap-claim-app
+            - -am
+            - -Dtest=ClaimAnalyticsApplicationServiceTest
+            - -Dsurefire.failIfNoSpecifiedTests=false
+            - test
+          changedDuringExecution:
+            - docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+          checkEpoch: 2
+          contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+          cwd: .
+          environment: 150d8aa2a04e018181a35a4dc7f384589f04bdb7ed7263c48b39adbbfc0688da
+          exitCode: 0
+          inputAfter: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+          inputBefore: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+          manifestHash: 0226cd5e70a1cda8de93d983e8ecb3f65bc812f7d8f80517b16c1e52782a6a9d
+          manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/ec87c049-7fce-449a-a442-b3e8708d349c.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/32348e8f-2834-4056-b198-254cff246736.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          event: build-complete
+      - sequence: 16
+        value:
+          argv:
+            - mvn
+            - -o
+            - -q
+            - -pl
+            - bone-apps/synap-claim/synap-claim-app
+            - -am
+            - -Dtest=ClaimAnalyticsApplicationServiceTest
+            - -Dsurefire.failIfNoSpecifiedTests=false
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+          cwd: .
+          environment: 150d8aa2a04e018181a35a4dc7f384589f04bdb7ed7263c48b39adbbfc0688da
+          exitCode: 0
+          inputAfter: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+          inputBefore: e138a480e08976213b4122057d663bb9f381ed74fdfecda254caa608aa64ea4c
+          manifestHash: 0226cd5e70a1cda8de93d983e8ecb3f65bc812f7d8f80517b16c1e52782a6a9d
+          manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/d7a24137-efda-42fc-8593-543232a3a607.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/06e37401-2433-4694-a131-655260b3e0d8.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 17
+        value:
+          contentHash: af82ebdb17f75753c771f554633df8942578a1ce5326a00a69e495b7c3d97702
+          ref: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/06e37401-2433-4694-a131-655260b3e0d8.log
+      - sequence: 19
+        value:
+          contentHash: 66882a9d4f3912ae3b7feb718f2ba32bd9a0bed24dc19f3029c88d237428db04
+          ref: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+      - sequence: 18
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-27-claim-tenant-analytics-verify.md
+      - sequence: 20
+        value:
+          argv:
+            - sh
+            - -c
+            - grep -q "tests=\"7\" errors=\"0\" skipped=\"0\" failures=\"0\""
+              bone-apps/synap-claim/synap-claim-app/target/surefire-reports/TEST-com.bone.claim.application.ClaimAnalyticsApplicationServiceTest.xml
+              && echo VERIFY_OK
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+          cwd: .
+          deliveryInputs:
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAnalyticsController.java: git:80ec292765dead4b28680974e8a4851556eb0c5c
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/ClaimAnalyticsApplicationService.java: git:d7045932bd9be66e23b1323f73f43f4cd85aaf40
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/ClaimAnalyticsApplicationServiceTest.java: git:a92044c2a31a15a950f15f335cb28aa3bf6bbb47
+            bone-frontend/apps/bone-claim-app/src/pages/AnalyticsDashboardPage.tsx: git:a22949e460e0f55040e63620d80faf365489d8ba
+            bone-frontend/apps/bone-claim-app/src/services/analytics.ts: git:84a9896f52dba78eb8b5ef09a3a9f201d79a0929
+          environment: dfedb9db1ec88406f36cf7fda843d6b09d256f14e8d14c0f6a9c0c036d1fc48c
+          exitCode: 0
+          inputAfter: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+          inputBefore: 50191a54e86c64d00a51fd3057b943c6dfc0d4e4d1581437dd0873b046cd6056
+          manifestHash: a9490450c1c7e93b366194fa628f98ee20770d443a2dfb00440f2209e507021e
+          manifestRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/cdf62bbf-3892-40b0-bc94-5725f701cb2c.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/b9cad3ac-8e13-4409-bce2-493495441729.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 21
+        value:
+          contentHash: 01ea8fe3ef4e2db89a56f3a2b41e81e1d12252a696f06ca0ae4b9baac76aa787
+          ref: .comet/runtime/classic-sdk-checks/60fb045cd873e47c35482a2328487fefa09e2d506ac77ec434a796d56a5ef81b/b9cad3ac-8e13-4409-bce2-493495441729.log
+      - sequence: 23
+        value:
+          choice: local
+          proposal:
+            input:
+              change: claim-tenant-analytics
+              changeDir: openspec/changes/claim-tenant-analytics
+              workspaceBaseline:
+                ref: 1164c88b-8d5d-46cd-9075-50293fad0e4b
+            outputs:
+              full.archive.prepare:
+                summary: 真功能实现收口：tenantId 分组 + 服务端强制租户隔离（TenantPort，不接收前端参数）+ scopeNote +
+                  前端当前租户视图。10/10 任务完成；后端 7 测试 + 前端 12 测试 + tsc
+                  全绿。不改指标内核/DDL/资金，不越权跨租户。
+                targetBranch: comet/claim-tenant-analytics
+      - sequence: 22
+        value:
+          summary: 真功能实现收口：tenantId 分组 + 服务端强制租户隔离（TenantPort，不接收前端参数）+ scopeNote +
+            前端当前租户视图。10/10 任务完成；后端 7 测试 + 前端 12 测试 + tsc
+            全绿。不改指标内核/DDL/资金，不越权跨租户。
+          targetBranch: comet/claim-tenant-analytics
+      - sequence: 24
+        value:
+          baseCommit: ae05cf9d70a37bb18e550ffb8a0858942747eddf
+          deliveryAction: local
+          targetBranch: comet/claim-tenant-analytics
+          verifiedBranch: comet/claim-tenant-analytics
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: 32
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 34
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 25
+        height: 5
+      - key: full.build.check
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 15
+        left: 37
+        right: 38
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 39
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 40
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 17
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: null
+        right: 44
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 43
+        right: 45
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 46
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 47
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 43
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 16
+        left: 50
+        right: 44
+        height: 2
+      - key: full.verify.check
+        value: 18
+        left: 49
+        right: 51
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 52
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 41
+        right: 53
+        height: 5
+      - key: full.archive.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 21
+        left: 55
+        right: 56
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 38
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 15
+        left: 57
+        right: 58
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 59
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 60
+        right: 53
+        height: 5
+      - key: full.archive.preflight
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 20
+        left: null
+        right: 62
+        height: 2
+      - key: full.archive.prepare
+        value: 21
+        left: 63
+        right: 56
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 58
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 15
+        left: 64
+        right: 65
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 66
+        right: 53
+        height: 5
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 68
+        right: 69
+        height: 2
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 71
+        right: 72
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 74
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 73
+        right: 75
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 70
+        right: 76
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 78
+        right: 79
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 68
+        right: 80
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 81
+        right: 76
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 68
+        right: 83
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 79
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 84
+        right: 85
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 86
+        right: 76
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 88
+        right: null
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 89
+        right: 83
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 90
+        right: 85
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 91
+        right: 76
+        height: 5
+      - key: full.build.execute
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 89
+        right: 93
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 94
+        right: 85
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 95
+        right: 76
+        height: 5
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 39
+        left: 97
+        right: 98
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 99
+        right: 93
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 100
+        right: 85
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 101
+        right: 76
+        height: 5
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 40
+        left: null
+        right: 104
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: 103
+        right: 105
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 73
+        right: 106
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 101
+        right: 107
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: 103
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 40
+        left: 110
+        right: 104
+        height: 2
+      - key: full.verify.check
+        value: 42
+        left: 109
+        right: 111
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 73
+        right: 112
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 101
+        right: 113
+        height: 5
+      - key: full.archive.confirm
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 45
+        left: 115
+        right: 116
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 98
+        right: 93
+        height: 2
+      - key: full.build.check.evidence
+        value: 39
+        left: 117
+        right: 118
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 119
+        right: 85
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 120
+        right: 113
+        height: 5
+      - key: full.archive.preflight
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 44
+        left: null
+        right: 122
+        height: 2
+      - key: full.archive.prepare
+        value: 45
+        left: 123
+        right: 116
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 118
+        right: 85
+        height: 3
+      - key: full.build.check.evidence
+        value: 39
+        left: 124
+        right: 125
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 126
+        right: 113
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: 128
+        right: 129
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 131
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 128
+        right: 132
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 134
+        right: 135
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 136
+        right: 132
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 138
+        right: 139
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: 140
+        right: 135
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 141
+        right: 132
+        height: 4
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: 143
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 146
+        right: 147
+        height: 2
+      - key: full.open
+        value: 29
+        left: 145
+        right: 148
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 151
+        right: 152
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 150
+        right: 153
+        height: 3
+      - key: full.open
+        value: 29
+        left: 154
+        right: 148
+        height: 4
+      - key: full.archive.prepare
+        value: 45
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 38
+        left: 156
+        right: 157
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 160
+        height: 2
+      - key: full.build.execute
+        value: 37
+        left: 159
+        right: 161
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: 158
+        right: 162
+        height: 4
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 146
+        right: 164
+        height: 2
+      - key: full.verify.check.evidence
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 40
+        left: 166
+        right: 167
+        height: 2
+      - key: full.verify.check
+        value: 42
+        left: 165
+        right: 168
+        height: 3
+      - key: full.open
+        value: 29
+        left: 153
+        right: 169
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 163
+        right: 170
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 173
+        right: 174
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 176
+        right: 177
+        height: 2
+      - key: full.open
+        value: 29
+        left: 175
+        right: 178
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 180
+        right: 181
+        height: 2
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 183
+        right: 184
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 182
+        right: 185
+        height: 3
+      - key: full.open
+        value: 29
+        left: 186
+        right: 178
+        height: 4
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 188
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: 190
+        right: 191
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 189
+        right: 192
+        height: 3
+      - key: full.open
+        value: 29
+        left: 185
+        right: 178
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: 193
+        right: 194
+        height: 4
+      - key: full.build.check
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 39
+        left: 196
+        right: 197
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 198
+        right: 192
+        height: 3
+      - key: full.verify.run
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: 200
+        height: 2
+      - key: full.open.evidence
+        value: 31
+        left: 176
+        right: 201
+        height: 3
+      - key: full.open
+        value: 29
+        left: 185
+        right: 202
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 199
+        right: 203
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 176
+        right: 205
+        height: 2
+      - key: full.verify.report.evidence
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 41
+        left: 207
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 42
+        left: 206
+        right: 208
+        height: 3
+      - key: full.open
+        value: 29
+        left: 185
+        right: 209
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 199
+        right: 210
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 36
+      - 42
+      - 48
+      - 54
+      - 61
+      - 67
+      - 77
+      - 82
+      - 87
+      - 92
+      - 96
+      - 102
+      - 108
+      - 114
+      - 121
+      - 127
+      - 130
+      - 133
+      - 137
+      - 142
+      - 144
+      - 149
+      - 155
+      - 171
+      - 172
+      - 179
+      - 187
+      - 195
+      - 204
+      - 211
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:14
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:15
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:16
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:18
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:20
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:22
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:25
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:4
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:5
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:7
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - claim-tenant-analytics:9
+          - results
+        map: 27
+      - path:
+          - outputs
+        map: 23
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 30
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 36
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 37
+  storageHash: 284d0538d48f80db1c4a680ad336e864ec6552c96a1269bde82740850bb05541
+check_epoch: 5

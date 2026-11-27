@@ -3286,7 +3286,18 @@
    "path": "/api/v1/claims/analytics/summary",
    "controller": "ClaimAnalyticsController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAnalyticsController.java",
-   "cases": []
+   "cases": [
+    "claim-tenant-analytics-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/analytics/by-tenant",
+   "controller": "ClaimAnalyticsController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimAnalyticsController.java",
+   "cases": [
+    "claim-tenant-analytics-e2e.py"
+   ]
   },
   {
    "http": "GET",
@@ -5298,8 +5309,8 @@
   }
  ],
  "summary": {
-  "endpoints": 640,
-  "covered": 254,
-  "uncovered": 386
+  "endpoints": 641,
+  "covered": 256,
+  "uncovered": 385
  }
 }

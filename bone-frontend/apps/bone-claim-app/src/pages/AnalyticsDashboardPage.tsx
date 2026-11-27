@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Alert, Button, Card, Col, Row, Select, Space, Spin, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, Row, Segmented, Select, Space, Spin, Statistic, Table, Tag, Typography } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
@@ -14,6 +14,7 @@ import {
   reviewRateText,
   shadowRateText,
   type AnalyticsSummary,
+  type TenantAnalyticsSummary,
 } from '../services/analytics';
 import { aiFeedbackApi, type AiFeedbackSummaryResp } from '../services/aiFeedback';
 
@@ -38,6 +39,8 @@ const WINDOW_OPTIONS = [
 
 export function AnalyticsDashboardPage(): ReactElement {
   const [days, setDays] = useState(7);
+  const [scope, setScope] = useState<'all' | 'tenant'>('all');
+  const [tenantLoad, setTenantLoad] = useState<Load<TenantAnalyticsSummary>>({ state: 'loading' });
   const [load, setLoad] = useState<Load<AnalyticsSummary>>({ state: 'loading' });
   /** AI 采纳率来自 aiFeedback summary（30 天滚动窗口），失败只降级该卡，不连坐主指标。 */
   const [aiSummary, setAiSummary] = useState<AiFeedbackSummaryResp | null>(null);
@@ -63,11 +66,27 @@ export function AnalyticsDashboardPage(): ReactElement {
     }
   }, [window.from, window.to]);
 
+  const loadTenant = useCallback(async () => {
+    setTenantLoad({ state: 'loading' });
+    try {
+      const resp = await analyticsApi.byTenant(window.from, window.to);
+      if (resp?.code !== 200) {
+        setTenantLoad({ state: 'error', error: resp?.message || '当前租户指标查询被拒绝' });
+        return;
+      }
+      setTenantLoad({ state: 'ok', data: resp?.data ?? undefined });
+    } catch (err) {
+      setTenantLoad({ state: 'error', error: resolveErrorMessage(err, '当前租户指标查询失败') });
+    }
+  }, [window.from, window.to]);
+
   useEffect(() => {
     void loadSummary();
-  }, [loadSummary]);
+    void loadTenant();
+  }, [loadSummary, loadTenant]);
 
   const data = load.state === 'ok' ? load.data : undefined;
+  const tenantData = tenantLoad.state === 'ok' ? tenantLoad.data : undefined;
 
   const distribution = useMemo(
     () =>
@@ -89,6 +108,15 @@ export function AnalyticsDashboardPage(): ReactElement {
         description="决策终态分布 · AI 降级 · 平均耗时 · 影子自动化率（只读，窗口最多 31 天）"
         extra={
           <Space>
+            <Segmented
+              aria-label="统计口径"
+              value={scope}
+              options={[
+                { value: 'all', label: '全量口径' },
+                { value: 'tenant', label: '当前租户' },
+              ]}
+              onChange={(v) => setScope(v as 'all' | 'tenant')}
+            />
             <Select
               aria-label="统计时间窗"
               value={days}
@@ -113,6 +141,45 @@ export function AnalyticsDashboardPage(): ReactElement {
             ?? '影子自动化率 = AUTO_APPROVE / 已收敛执行数；自动放款开关默认关闭、E1/E2 未交付，此值不等于实际出金率'
         }
       />
+
+      {scope === 'tenant' && (
+        <Card
+          title="当前租户口径"
+          data-testid="tenant-analytics-card"
+          style={{ marginBottom: 16 }}
+          extra={<Typography.Text type="secondary">租户身份取自认证主体，前端不可切换（防越权）</Typography.Text>}
+        >
+          {tenantLoad.state === 'loading' ? (
+            <Spin />
+          ) : tenantLoad.state === 'error' || !tenantData ? (
+            <Alert type="error" showIcon message="当前租户指标不可用" description={tenantLoad.error ?? '端点未返回数据'} />
+          ) : (
+            <>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} md={6}>
+                  <Statistic title="租户ID" value={String(tenantData.tenantId)} data-testid="tenant-id" />
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Statistic title="已收敛执行数" value={analyticsCountText(tenantData.converged)} data-testid="tenant-converged" />
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Statistic title="FALLBACK 降级数" value={analyticsCountText(tenantData.fallbackCount)} data-testid="tenant-fallback" />
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Statistic title="影子自动化率" value={shadowRateText(tenantData.shadowAutomationRate)} data-testid="tenant-shadow-rate" />
+                </Col>
+              </Row>
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 16 }}
+                message="分组口径边界"
+                description="本视图只含可按租户拆分的可复算指标；单案时长分位/复核率/推送成功率无租户维度，请在「全量口径」查看。"
+              />
+            </>
+          )}
+        </Card>
+      )}
 
       {load.state === 'loading' ? (
         <Card><Spin /></Card>
