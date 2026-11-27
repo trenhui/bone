@@ -41,6 +41,22 @@ export interface BatchDecisionResp {
 /** 后端上限 20 单；前端同步收口，避免发过去换 400。 */
 export const MAX_BATCH_DECISION = 20;
 
+/**
+ * 批量决策允许的决策类型：仅「通过」。
+ *
+ * <p>拒赔必须逐案填写结构化五要素（事实认定 + 条款依据 + 证据位置 + 申诉渠道 + 法定时限），
+ * 一批案件的事实与条款各不相同，共用一套五要素本身即不合规，故不能批量。
+ *
+ * <p>此外后端批量端点 `ReviewTaskController#batchDecision` 的 `BatchDecisionItem` 根本没有
+ * `rejection` / `comment` 字段，构造单案请求时把两者写死为 null，域层 `ClaimCase.decide`
+ * 的 REJECTED 分支会因 comment 为空必抛异常 ⇒ **批量拒赔 100% 落入 failed 列表**
+ * （code=SC_CLAIM_STATUS_CONFLICT），从来就没有成功过。与其让用户点了必失败，不如在前端
+ * 显式禁止并引导逐案拒赔。解禁的前提是后端 DTO + 校验链路改造完成，届时改本函数一处即可。
+ */
+export function isBatchDecisionAllowed(decision: Decision): boolean {
+  return decision === 'APPROVED';
+}
+
 const reviewClient = createApiClient('/api/v1/review');
 
 export const reviewTaskApi = {

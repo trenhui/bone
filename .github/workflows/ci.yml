@@ -142,8 +142,8 @@ jobs:
       # A10.17 守护：CI / check.sh G0 / check-procura-ci.sh 三处判据集合受控一致，
       # 防止「本地全绿但 CI 少一条」的静默漂移；且解析 run: 可执行命令，拦截
       # continue-on-error / if: 条件跳过 / 注释 run / --self-test 子串冒充 docGate。
-      # CI 与本地一键入口跑全集（9 判据，含 frontmatter / persistence 主判据+注入反证），
-      # check.sh G0 跑快反馈子集（5 判据，不含注入式 --self-test）。
+      # CI 与本地一键入口跑 FULL_GATE_KEYS 全集（含 frontmatter / persistence / event chain /
+      # business aggregate 主判据与注入反证），check.sh G0 跑 FAST_GATE_KEYS 快反馈子集。
       - name: ProcuraAI AsyncAPI Zero-Drift Gate (blocking)
         run: /usr/bin/env python3 doc/ai-product/procuraAI/detailed-design/contracts/generate_asyncapi.py --check
 
@@ -161,6 +161,22 @@ jobs:
 
       - name: ProcuraAI Persistence Negative Probes (blocking)
         run: /usr/bin/env python3 tools/check_procura_persistence.py --self-test
+
+      # A10.17 / D-11：ContractReviewed 事件闭环三表、三类负向探针与三入口判据集合，
+      # 与本地入口及快反馈入口共用同一组判据 key，由本文件 blocking 步骤守护。
+      - name: ProcuraAI Event Chain Gate (blocking)
+        run: /usr/bin/env python3 tools/check_procura_event_chain.py
+
+      - name: ProcuraAI Event Chain Negative Probes (blocking)
+        run: /usr/bin/env python3 tools/check_procura_event_chain.py --self-test
+
+      # procuraAI 持久业务聚合四表：/audit/迁移规范/SDK 持久化/身份边界/三入口，
+      # 与 check.sh G0、本地一键入口共用同一判据 key；生产库与生产 MQ 仍不在范围。
+      - name: ProcuraAI Business Aggregate Gate (blocking)
+        run: /usr/bin/env python3 tools/check_procura_business_aggregates.py
+
+      - name: ProcuraAI Business Aggregate Negative Probes (blocking)
+        run: /usr/bin/env python3 tools/check_procura_business_aggregates.py --self-test
 
       # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
       # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，

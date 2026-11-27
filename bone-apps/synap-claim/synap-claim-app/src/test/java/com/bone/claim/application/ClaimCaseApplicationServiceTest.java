@@ -52,6 +52,7 @@ class ClaimCaseApplicationServiceTest {
   @Mock private CodeMappingApplicationService codeMappingApplicationService;
   @Mock private com.bone.claim.domain.repository.ClaimInsurerRepository claimInsurerRepository;
   @Mock private com.bone.claim.application.port.out.ClaimIntakePort claimIntakePort;
+  @Mock private ClaimSignApplicationService signService;
   @InjectMocks private ClaimCaseApplicationService service;
 
   private PolicyQueryPort.PolicySnapshot snapshot;

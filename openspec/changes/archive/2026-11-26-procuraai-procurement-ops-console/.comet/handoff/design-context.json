@@ -1,0 +1,17 @@
+{
+  "change": "procuraai-procurement-ops-console",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "fbad28322252fb227815d54ed6f029a0819078b251830e3f00be6cf8311e7ac6",
+  "files": [
+    { "path": "openspec/changes/procuraai-procurement-ops-console/proposal.md", "sha256": "fd86989627862a2eed6c47d2d63ea8c7a84f8088d4edfa6039f7f9c416fe162e" },
+    { "path": "openspec/changes/procuraai-procurement-ops-console/design.md", "sha256": "29383ffa39279f59778e6457c8cf0c4110de3b224eff8a4aa813d746426275c2" },
+    { "path": "openspec/changes/procuraai-procurement-ops-console/tasks.md", "sha256": "8a5f655bdc47e0369a475f42aea6fd64ad7709f1fbcbc47906d70c2c2631463c" },
+    { "path": "openspec/changes/procuraai-procurement-ops-console/.openspec.yaml", "sha256": "4492318684c90914e715dee55afe9b23f60f7465350ada31d1d9437964f126f8" },
+    { "path": "openspec/changes/procuraai-procurement-ops-console/specs/procurement/sourcing-console/spec.md", "sha256": "26dc29a8118fb893fe1e03b7a595cffd107db12d180fdfaee50edd5159bcaa09" },
+    { "path": "openspec/changes/procuraai-procurement-ops-console/specs/procurement/supplier-risk-console/spec.md", "sha256": "286a9b86765cbc42b314a208314f040bc617eb182a5a07ea8f8a299d6b398a28" }
+  ]
+}

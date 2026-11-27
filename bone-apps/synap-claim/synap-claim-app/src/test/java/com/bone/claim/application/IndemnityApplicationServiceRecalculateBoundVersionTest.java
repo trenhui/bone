@@ -74,7 +74,8 @@ class IndemnityApplicationServiceRecalculateBoundVersionTest {
             mock(QuotaYearResolver.class),
             mock(TenantPort.class),
             mock(com.bone.core.domain.event.DomainEventPublisher.class),
-            mock(LiabilityRuleReadGate.class));
+            mock(LiabilityRuleReadGate.class),
+            mock(FactorMatrixApplicationService.class));
 
     when(adjustmentRepository.findLatestByClaimId(CLAIM))
         .thenReturn(

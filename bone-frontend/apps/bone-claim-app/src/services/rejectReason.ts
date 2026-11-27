@@ -14,8 +14,9 @@
  *       未经改动，避免改变在途案件的统计口径）。
  * </ul>
  *
- * <p>注意：后端目前只校验 `rejectType` 非空（{@code ClaimCase#decide}），尚未按白名单强校验，
- * 因此「前端只给受控选项」是当前唯一的口径收口点——不要在此处再放自由文本入口。
+ * <p>白名单现为前后端同源：本字典由后端 `ClaimDictApplicationService.REJECT_REASON_CODES` codegen 生成，
+ * 后端 `ReviewDecisionAssembler#requireRejectType` 写入期复用同一集合强校验（非法码 400）。新增码只改后端真源 +
+ * 跑 `npm run gen:dicts`，切勿在本文件手写自由码——否则前端选项与后端校验脱节。
  */
 
 import { REJECT_REASON_DICT, ZERO_REASON_DICT } from '../constants/dicts.generated';
@@ -30,11 +31,19 @@ export interface RejectReasonOption {
 }
 
 const REJECT_REASON_GROUP: Record<string, RejectReasonOption['group']> = {
+  '01': '材料与合规',
+  '02': '材料与合规',
   '03': '金额与责任',
   '04': '金额与责任',
   '05': '金额与责任',
   '06': '金额与责任',
+  '07': '金额与责任',
+  '08': '材料与合规',
   '09': '金额与责任',
+  '10': '材料与合规',
+  '11': '材料与合规',
+  '12': '金额与责任',
+  '13': '材料与合规',
   '20': '金额与责任',
   '30': '材料与合规',
   '40': '风险',

@@ -25,8 +25,6 @@ import {
   EditOutlined,
   MoreOutlined,
   PlusOutlined,
-  ReloadOutlined,
-  SearchOutlined,
   StopOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
@@ -38,6 +36,9 @@ import { formatMoney } from '../services/money';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
+import { useClaimQuery } from '../hooks/useClaimQuery';
+import { useSavedViews } from '../hooks/useSavedViews';
 import { FORM_VALIDATION_MESSAGE, isFormValidationError } from '../utils/formError';
 import { usePolicyOptions } from '../hooks/usePolicyOptions';
 import { csvFilename, downloadBlob } from '../utils/downloadBlob';
@@ -81,15 +82,19 @@ export function QuotaConfigPage(): ReactElement {
   const [quotaTab, setQuotaTab] = useState<'personal' | 'public'>(
     searchParams.get('tab') === 'public' ? 'public' : 'personal',
   );
-  // 分页与筛选（后端分页：账号多的保单全量拉取会超时/撑爆内存）
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  /**
+   * 查询状态进 URL（统一查询基座）：关键字 / 减人状态 / 页码 / 每页条数。
+   *
+   * <p><b>policyNo 不迁进 f_ 前缀</b>：它是页面上下文（从保单配置页深链跳入），
+   * 既有 `?policyNo=` 已是唯一真源；再立一个 `f_policyNo` 会造成「同一语义两处配置源」，
+   * 切换保单后 URL 与界面打架。保存视图因此只保存查询条件，不含保单上下文。
+   */
+  const { query, setKeyword, setFilter, setPage, setSize, applyQueryString } = useClaimQuery();
+  const savedViews = useSavedViews();
+  const { keyword, page, size: pageSize } = query;
+  const removedRaw = query.filters.removed;
+  const removedFilter = removedRaw === 'true' ? true : removedRaw === 'false' ? false : undefined;
   const [total, setTotal] = useState(0);
-  /** 输入框里的草稿值（回车/点搜索才生效，避免每敲一个字打一次后端）。 */
-  const [keywordDraft, setKeywordDraft] = useState('');
-  /** 已生效的关键字（个账按被保人假名化 ID 搜，公账同表亦可按该列搜）。 */
-  const [keyword, setKeyword] = useState('');
-  const [removedFilter, setRemovedFilter] = useState<boolean | undefined>();
   /** 公账汇总（责任额度池按责任 UUID 聚合），仅公账视图加载。 */
   const [publicSummary, setPublicSummary] = useState<PublicQuotaSummaryView[]>([]);
   const [exporting, setExporting] = useState(false);
@@ -205,28 +210,23 @@ export function QuotaConfigPage(): ReactElement {
     void loadPublicSummary();
   }, [loadPublicSummary]);
 
-  /** 换保单时重置筛选与页码：跨保单沿用上一保单的筛选/页码会看到空页（以为数据丢了）。 */
+  /**
+   * 换保单 / 换账本时清空查询条件：跨保单沿用筛选与页码会看到空页（以为数据丢了）。
+   *
+   * <p>用一次 applyQueryString('') 清掉全部托管键，而不是逐个 setKeyword / setFilter /
+   * setPage —— 同一事件内多次调用 functional setSearchParams 会基于同一个渲染快照，
+   * 后一次覆盖前一次（表现为「清了关键字但页码还在」）。
+   */
+  const clearQuery = () => applyQueryString('');
+
   const changePolicy = (v: string) => {
     setPolicyNo(v);
-    setKeywordDraft('');
-    setKeyword('');
-    setRemovedFilter(undefined);
-    setPage(1);
+    clearQuery();
   };
 
-  /** 切换公账/个账视图：清空筛选并回第 1 页，页码与筛选在两本账间没有延续意义。 */
   const changeTab = (v: 'personal' | 'public') => {
     setQuotaTab(v);
-    setKeywordDraft('');
-    setKeyword('');
-    setRemovedFilter(undefined);
-    setPage(1);
-  };
-
-  /** 筛选变更统一回到第 1 页：留在第 3 页而筛选后只剩 1 页会显示空表。 */
-  const applyFilter = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v);
-    setPage(1);
+    clearQuery();
   };
 
   const exportCsv = async () => {
@@ -402,76 +402,89 @@ export function QuotaConfigPage(): ReactElement {
       <Card>
         {/* 公账/个账分视图：两本账共用额度账户表，但维度列与可用操作不同
             （个账按被保人保全、减人；公账按责任 UUID 监控额度池占用）。 */}
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Segmented
-            value={quotaTab}
-            onChange={(v) => changeTab(v as 'personal' | 'public')}
-            options={[
-              { label: '个账额度（被保人）', value: 'personal' },
-              { label: '公账额度（责任池）', value: 'public' },
-            ]}
-          />
-          {quotaTab === 'personal' && isIndividualPolicy && (
-            <Typography.Text type="secondary">
-              个人保单为单人单账户，不提供「减人」；退保请到保单管理停用该保单
-            </Typography.Text>
-          )}
-          <Select
-            placeholder="选择保单"
-            style={{ width: 300 }}
-            showSearch
-            optionFilterProp="label"
-            value={policyNo || undefined}
-            onChange={changePolicy}
-            options={policies.map((p) => ({
-              value: p.policyNo,
-              label: `${p.policyNo}${p.policyName ? ` · ${p.policyName}` : ''}`,
-            }))}
-          />
-          <Input.Search
+        <div style={{ marginBottom: 16 }}>
+          <ClaimQueryBar
+            keyword={keyword}
+            onKeyword={setKeyword}
             placeholder={quotaTab === 'personal' ? '被保人假名化 ID' : '被保人假名化 ID / 责任 UUID'}
-            style={{ width: 260 }}
-            allowClear
-            enterButton={<SearchOutlined />}
-            value={keywordDraft}
-            onChange={(e) => setKeywordDraft(e.target.value)}
-            onSearch={(v) => applyFilter(setKeyword)(v.trim())}
+            onRefresh={() => void loadAccounts()}
+            views={savedViews.views}
+            onApplyView={(view) => applyQueryString(view.queryString)}
+            onSaveView={(name) =>
+              savedViews.save(
+                name,
+                new URLSearchParams({
+                  ...(keyword ? { q: keyword } : {}),
+                  ...(removedFilter !== undefined ? { f_removed: String(removedFilter) } : {}),
+                  ...(page > 1 ? { page: String(page) } : {}),
+                  ...(pageSize !== 20 ? { size: String(pageSize) } : {}),
+                }).toString(),
+              )
+            }
+            onRemoveView={savedViews.remove}
+            onTogglePin={savedViews.togglePin}
+            actions={
+              <>
+                <Segmented
+                  value={quotaTab}
+                  onChange={(v) => changeTab(v as 'personal' | 'public')}
+                  options={[
+                    { label: '个账额度（被保人）', value: 'personal' },
+                    { label: '公账额度（责任池）', value: 'public' },
+                  ]}
+                />
+                {quotaTab === 'personal' && isIndividualPolicy && (
+                  <Typography.Text type="secondary">
+                    个人保单为单人单账户，不提供「减人」；退保请到保单管理停用该保单
+                  </Typography.Text>
+                )}
+                <Select
+                  placeholder="选择保单"
+                  style={{ width: 300 }}
+                  showSearch
+                  optionFilterProp="label"
+                  value={policyNo || undefined}
+                  onChange={changePolicy}
+                  options={policies.map((p) => ({
+                    value: p.policyNo,
+                    label: `${p.policyNo}${p.policyName ? ` · ${p.policyName}` : ''}`,
+                  }))}
+                />
+                {quotaTab === 'personal' && (
+                  <Select
+                    placeholder="减人状态"
+                    style={{ width: 130 }}
+                    allowClear
+                    value={removedFilter}
+                    onChange={(v) => setFilter('removed', v === undefined ? '' : String(v))}
+                    options={[
+                      { value: false, label: '正常' },
+                      { value: true, label: '已减人' },
+                    ]}
+                  />
+                )}
+                <AuthButton
+                  code={PERMISSIONS.QUOTA_READ}
+                  icon={<DownloadOutlined />}
+                  loading={exporting}
+                  disabled={!policyNo}
+                  onClick={() => void exportCsv()}
+                >
+                  导出 CSV
+                </AuthButton>
+                <AuthButton
+                  code={PERMISSIONS.QUOTA_WRITE}
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  disabled={!policyNo}
+                  onClick={openCreate}
+                >
+                  {quotaTab === 'personal' ? '开户' : '初始化责任额度'}
+                </AuthButton>
+              </>
+            }
           />
-          {quotaTab === 'personal' && (
-            <Select
-              placeholder="减人状态"
-              style={{ width: 130 }}
-              allowClear
-              value={removedFilter}
-              onChange={applyFilter(setRemovedFilter)}
-              options={[
-                { value: false, label: '正常' },
-                { value: true, label: '已减人' },
-              ]}
-            />
-          )}
-          <Button icon={<ReloadOutlined />} onClick={() => void loadAccounts()}>
-            刷新
-          </Button>
-          <AuthButton
-            code={PERMISSIONS.QUOTA_READ}
-            icon={<DownloadOutlined />}
-            loading={exporting}
-            disabled={!policyNo}
-            onClick={() => void exportCsv()}
-          >
-            导出 CSV
-          </AuthButton>
-          <AuthButton
-            code={PERMISSIONS.QUOTA_WRITE}
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={!policyNo}
-            onClick={openCreate}
-          >
-            {quotaTab === 'personal' ? '开户' : '初始化责任额度'}
-          </AuthButton>
-        </Space>
+        </div>
 
         {/* 统计口径是「本页」而非全量：后端分页后前端只有当前页数据，
             标成"合计"会让运营拿它对账（差一个数量级才发现是页内小计）。 */}
@@ -479,6 +492,7 @@ export function QuotaConfigPage(): ReactElement {
             池级风险（某责任快赔完）在明细里翻页看不出来，必须聚合呈现。 */}
         {quotaTab === 'public' && (
           <Table<PublicQuotaSummaryView>
+          aria-label="公账责任额度池汇总"
             size="small"
             style={{ marginBottom: 16 }}
             rowKey={(r) => `${r.policyNo}-${r.planId}-${r.liabilityUuid}`}
@@ -538,6 +552,7 @@ export function QuotaConfigPage(): ReactElement {
         </Space>
 
         <Table<QuotaAccountView>
+        aria-label="额度账户列表"
           rowKey="quotaAccountId"
           loading={loading}
           dataSource={accounts}
@@ -552,8 +567,9 @@ export function QuotaConfigPage(): ReactElement {
             pageSizeOptions: [20, 50, 100],
             showTotal: (t) => `共 ${t} 条`,
             onChange: (p, ps) => {
-              setPage(p);
-              setPageSize(ps);
+              // setSize 内部已回第 1 页；只发一次 URL 更新，避免中间态覆盖。
+              if (ps !== pageSize) setSize(ps);
+              else setPage(p);
             },
           }}
           columns={[

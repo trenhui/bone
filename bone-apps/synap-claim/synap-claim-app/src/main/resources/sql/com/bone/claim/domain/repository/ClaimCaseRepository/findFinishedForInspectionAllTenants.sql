@@ -4,7 +4,7 @@ SELECT
        c.claim_no,
        c.status
 FROM t_claim_case c
-WHERE c.status = 'FINISHED'
+WHERE c.status IN ('FINISHED', 'CLOSED_REJECTED')
   AND c.deleted = 0
   AND NOT EXISTS (
     SELECT 1

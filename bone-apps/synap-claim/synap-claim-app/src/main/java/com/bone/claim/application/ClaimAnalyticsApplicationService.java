@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.claim.projection.CaseDurationProjection;
@@ -38,6 +39,7 @@ public class ClaimAnalyticsApplicationService {
   private final DecisionExecutionRepository decisionExecutionRepository;
   private final ClaimCaseRepository claimCaseRepository;
   private final DomainEventOutboxRepository domainEventOutboxRepository;
+  private final TenantPort tenantPort;
 
   /** 推送成功/失败状态（与 {@code DomainEventOutbox#STATUS_SENT} 同源，死信计入失败）。 */
   private static final String OUTBOX_SENT = "SENT";
@@ -52,27 +54,7 @@ public class ClaimAnalyticsApplicationService {
       rows = List.of();
     }
 
-    Map<String, Long> byResult = new LinkedHashMap<>();
-    for (DecisionExecution execution : rows) {
-      if (execution == null) {
-        continue;
-      }
-      String key =
-          execution.getDecisionResult() == null || execution.getDecisionResult().isBlank()
-              ? "UNKNOWN"
-              : execution.getDecisionResult();
-      byResult.merge(key, 1L, Long::sum);
-    }
-    long fallback =
-        rows.stream().filter(e -> e != null && "FALLBACK".equals(e.getStatus())).count();
-    long auto = byResult.getOrDefault("AUTO_APPROVE", 0L);
-    double shadowRate = rows.isEmpty() ? 0.0 : (double) auto / rows.size();
-    double avgDurationMs =
-        rows.stream()
-            .filter(Objects::nonNull)
-            .mapToLong(e -> e.getDurationMs() == null ? 0L : e.getDurationMs().longValue())
-            .average()
-            .orElse(0.0);
+    DecisionAggregate agg = aggregateDecisions(rows);
 
     // ---- 复核 / 单案时长 / 推送：三条独立统计口径，同一时间窗 ----
     Timestamp windowFrom = Timestamp.from(from);
@@ -101,11 +83,11 @@ public class ClaimAnalyticsApplicationService {
         from,
         to,
         rows.size(),
-        Map.copyOf(byResult),
-        fallback,
-        shadowRate,
-        avgDurationMs,
-        "影子自动化率 = AUTO_APPROVE / 已收敛执行数；自动放款开关默认关闭、E1/E2 未交付，此值不等于实际出金率",
+        Map.copyOf(agg.byResult()),
+        agg.fallback(),
+        agg.shadowRate(),
+        agg.avgDurationMs(),
+        SCOPE_NOTE,
         reviewedCount,
         secondReviewedCount,
         percentile(durations, 0.5),
@@ -113,6 +95,69 @@ public class ClaimAnalyticsApplicationService {
         pushSucceeded,
         pushFailed);
   }
+
+  /** 影子口径固定说明：任何分组结果都必须原样带回，禁止改写成「实际出金率」。 */
+  private static final String SCOPE_NOTE =
+      "影子自动化率 = AUTO_APPROVE / 已收敛执行数；自动放款开关默认关闭、E1/E2 未交付，此值不等于实际出金率";
+
+  /**
+   * 按当前租户分组的只读运营指标（租户隔离在服务端强制）。
+   *
+   * <p>租户身份来自 {@link TenantPort#currentTenantId()}（认证主体唯一权威，ArchUnit 禁止本层直读
+   * TenantContext），不接收前端传参；因此调用方无法越权查他人租户。只聚合可从 {@link DecisionExecution} 拆分的可复算指标；case
+   * 时长分位/复核率/推送无 tenant 维度，不在此端点返回（不造可拆分的假象）。无维度场景请继续用 {@link #summary(Instant, Instant)}。
+   */
+  public TenantAnalyticsSummary summaryByTenant(Instant from, Instant to) {
+    requireWindow(from, to);
+    long tenantId = tenantPort.currentTenantId();
+    List<DecisionExecution> all = decisionExecutionRepository.findConvergedInWindow(from, to);
+    List<DecisionExecution> rows =
+        all == null
+            ? List.of()
+            : all.stream()
+                .filter(e -> e != null && Long.valueOf(tenantId).equals(e.getTenantId()))
+                .toList();
+    DecisionAggregate agg = aggregateDecisions(rows);
+    return new TenantAnalyticsSummary(
+        tenantId,
+        from,
+        to,
+        rows.size(),
+        Map.copyOf(agg.byResult()),
+        agg.fallback(),
+        agg.shadowRate(),
+        agg.avgDurationMs(),
+        SCOPE_NOTE);
+  }
+
+  /** 决策执行记录的共用聚合内核：原全量 summary 与租户分组 summary 复用同一口径。 */
+  private static DecisionAggregate aggregateDecisions(List<DecisionExecution> rows) {
+    Map<String, Long> byResult = new LinkedHashMap<>();
+    for (DecisionExecution execution : rows) {
+      if (execution == null) {
+        continue;
+      }
+      String key =
+          execution.getDecisionResult() == null || execution.getDecisionResult().isBlank()
+              ? "UNKNOWN"
+              : execution.getDecisionResult();
+      byResult.merge(key, 1L, Long::sum);
+    }
+    long fallback =
+        rows.stream().filter(e -> e != null && "FALLBACK".equals(e.getStatus())).count();
+    long auto = byResult.getOrDefault("AUTO_APPROVE", 0L);
+    double shadowRate = rows.isEmpty() ? 0.0 : (double) auto / rows.size();
+    double avgDurationMs =
+        rows.stream()
+            .filter(Objects::nonNull)
+            .mapToLong(e -> e.getDurationMs() == null ? 0L : e.getDurationMs().longValue())
+            .average()
+            .orElse(0.0);
+    return new DecisionAggregate(byResult, fallback, shadowRate, avgDurationMs);
+  }
+
+  private record DecisionAggregate(
+      Map<String, Long> byResult, long fallback, double shadowRate, double avgDurationMs) {}
 
   /**
    * 排序后取第 {@code ceil(p*n)} 个（1-based）样本：<b>不是平均值冒充分位数</b>。
@@ -166,4 +211,21 @@ public class ClaimAnalyticsApplicationService {
       Double caseDurationP90Ms,
       long pushSucceeded,
       long pushFailed) {}
+
+  /**
+   * 当前租户分组指标（只读、服务端强制隔离）。
+   *
+   * <p>只含可从 {@link DecisionExecution} 按 tenantId 拆分的可复算指标；case 时长分位/复核率/推送因仓储无 tenant
+   * 维度不在本结果内，避免伪造可拆分假象。{@code scopeNote} 必随结果返回，禁止把影子自动化率表述为实际出金率。
+   */
+  public record TenantAnalyticsSummary(
+      long tenantId,
+      Instant windowFrom,
+      Instant windowTo,
+      long converged,
+      Map<String, Long> byDecisionResult,
+      long fallbackCount,
+      double shadowAutomationRate,
+      double avgDurationMs,
+      String scopeNote) {}
 }

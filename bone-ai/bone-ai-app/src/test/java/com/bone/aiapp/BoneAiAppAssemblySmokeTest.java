@@ -17,6 +17,7 @@ import com.bone.aiorch.application.HitlApplicationService;
 import com.bone.aiorch.application.OrchestrationApplicationService;
 import com.bone.aiorch.domain.hitl.HitlDispositionRepository;
 import com.bone.aiorch.domain.hitl.HitlItemRepository;
+import com.bone.airag.application.RagAnswerService;
 import com.bone.airag.application.RagApplicationService;
 import com.bone.airag.domain.repository.ChunkRepository;
 import com.bone.airules.application.RuleApplicationService;
@@ -86,6 +87,9 @@ class BoneAiAppAssemblySmokeTest {
 
     // 检索（生产拓扑独有）：ChunkRepository 的 @ConditionalOnBean(name=...) 修复在此验收
     assertUnique(RagApplicationService.class, "RAG 检索服务必须装配（ChunkRepository 已注册）");
+    assertUnique(
+        RagAnswerService.class,
+        "RAG 回答闭环必须装配（ragService 声明先于回答闭环，@ConditionalOnBean(name=ragService) 才命中）");
     assertUnique(ChunkRepository.class, "SDK 必须为 ChunkRepository 生成实现（FactoryBean 类型条件已改按名）");
 
     // 证据链
@@ -128,6 +132,7 @@ class BoneAiAppAssemblySmokeTest {
   void keyBeansAreReallyInstantiated() {
     assertThat(context.getBean(OrchestrationApplicationService.class)).isNotNull();
     assertThat(context.getBean(RagApplicationService.class)).isNotNull();
+    assertThat(context.getBean(RagAnswerService.class)).isNotNull();
     assertThat(context.getBean(IntegrationApplicationService.class)).isNotNull();
     assertThat(context.getBean(EvalManagementApplicationService.class)).isNotNull();
     assertThat(context.getBean(LimitLedger.class)).isNotNull();

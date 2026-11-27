@@ -217,6 +217,10 @@
       <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
       <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
       <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+      <a href="settlement.html"><span class="ic">￥</span>资金结算与四向对账<span class="cur-tag">NEW</span></a>
+      <a href="ai-governance.html"><span class="ic">◈</span>AI 治理与评测回放<span class="cur-tag">NEW</span></a>
+      <a href="mapping.html"><span class="ic">⇄</span>主数据映射<span class="cur-tag">NEW</span></a>
+      <a href="role-views.html"><span class="ic">◉</span>角色视角切换<span class="cur-tag">NEW</span></a>
     </div>
   </div>
   <div class="right">
@@ -419,7 +423,7 @@
   window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
   window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
   window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
-  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测'],['settlement.html','￥','资金结算与四向对账','结算'],['ai-governance.html','◈','AI 治理与评测回放','治理'],['mapping.html','⇄','主数据映射','映射'],['role-views.html','◉','角色视角切换','角色']];
   var sel=0,shown=[];
   window.uxCmdRender=function(){
     var q=(inp.value||'').trim().toLowerCase();

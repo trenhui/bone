@@ -2,8 +2,8 @@
   "schema": "bone.registry.v1",
   "source": "scripts/check.sh",
   "counts": {
-    "checks": 62,
-    "groups": 41
+    "checks": 63,
+    "groups": 42
   },
   "groups": [
     "application",
@@ -39,6 +39,7 @@
     "orphan",
     "paging",
     "runtime",
+    "sclaim",
     "sdk",
     "security",
     "seed",
@@ -861,6 +862,25 @@
       "cmd": [
         "python3",
         "scripts/check-engineering-evidence.py",
+        "--check"
+      ]
+    },
+    {
+      "id": "check-sclaim-naming",
+      "path": "scripts/check-sclaim-naming.py",
+      "group": "sclaim",
+      "args": [
+        "--check"
+      ],
+      "self_tests": [
+        [
+          "--self-test"
+        ]
+      ],
+      "scope": [],
+      "cmd": [
+        "python3",
+        "scripts/check-sclaim-naming.py",
         "--check"
       ]
     }

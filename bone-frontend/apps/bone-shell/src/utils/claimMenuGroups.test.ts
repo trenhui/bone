@@ -8,7 +8,7 @@ import {
 const VISIBLE_HASHES = [
   '/pre-exam', '/review', '/adjust', '/evidence', '/fund', '/appeal', '/suspend',
   '/inspection', '/submit', '/progress', '/policy', '/quota', '/library',
-  '/insurers', '/mappings', '/ai-governance', '/analytics',
+  '/insurers', '/mappings', '/ai-governance', '/analytics', '/sign',
 ];
 
 const asLeaf = (hash: string, path = '/claim') => ({ hash, path, key: `k-${hash}` });
@@ -20,22 +20,22 @@ describe('智能理赔侧栏四空间常驻分组（纯展示层）', () => {
     expect(UNGROUPED_TITLE).toBe('未分组');
   });
 
-  it('映射表精确覆盖 17 条可见菜单，且四组分别 8 / 2 / 3 / 4 条', () => {
-    expect(Object.keys(CLAIM_MENU_GROUP_BY_HASH)).toHaveLength(17);
+  it('映射表精确覆盖 18 条可见菜单，且四组分别 8 / 2 / 3 / 5 条', () => {
+    expect(Object.keys(CLAIM_MENU_GROUP_BY_HASH)).toHaveLength(18);
     for (const hash of VISIBLE_HASHES) {
       expect(groupForClaimHash(hash)).toBe(CLAIM_MENU_GROUP_BY_HASH[hash]);
     }
     const counts = CLAIM_NAV_GROUP_TITLES.map(
       (title) => Object.values(CLAIM_MENU_GROUP_BY_HASH).filter((g) => g === title).length,
     );
-    expect(counts).toEqual([8, 2, 3, 4]);
+    expect(counts).toEqual([8, 2, 3, 5]);
   });
 
   it('四组是声明顺序上的连续区段：展平后逐项相等，菜单顺序一字不改', () => {
     const leaves = VISIBLE_HASHES.map((h) => asLeaf(h));
     const groups = groupClaimMenuItems(leaves);
     expect(groups.map((g) => g.title)).toEqual(['作业', '查询', '配置', '治理']);
-    expect(groups.map((g) => g.items.length)).toEqual([8, 2, 3, 4]);
+    expect(groups.map((g) => g.items.length)).toEqual([8, 2, 3, 5]);
     expect(groups.flatMap((g) => g.items)).toEqual(leaves);
     expect(groups.flatMap((g) => g.items.map((i) => i.hash))).toEqual(VISIBLE_HASHES);
   });
@@ -64,6 +64,8 @@ describe('智能理赔侧栏四空间常驻分组（纯展示层）', () => {
     expect(claimHashOf({ path: '/sclaim/claim/ai-governance' })).toBe('/ai-governance');
     expect(isClaimMenuLeaf({ path: '/sclaim/claim/review' })).toBe(true);
     expect(groupForClaimHash(claimHashOf({ path: '/sclaim/claim/fund' }))).toBe('作业');
+    expect(groupForClaimHash(claimHashOf({ path: '/sclaim/claim/sign' }))).toBe('治理');
+    expect(isClaimMenuLeaf({ path: '/sclaim/claim/sign' })).toBe(true);
     // 负向：非 sclaim 前缀、且非旧 /claim 域，不得被误判。
     expect(isClaimMenuLeaf({ path: '/procurement/pr/list' })).toBe(false);
     expect(claimHashOf({ path: '/sclaim/claim' })).toBe(null);

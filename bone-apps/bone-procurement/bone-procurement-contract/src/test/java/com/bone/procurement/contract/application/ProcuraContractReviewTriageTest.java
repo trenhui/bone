@@ -59,7 +59,8 @@ class ProcuraContractReviewTriageTest {
             () -> "t-1",
             () -> "reviewer-green",
             new AiDisclosureService(),
-            new ContractReviewedConsumer(tracePort));
+            new ContractReviewedEventPublisher(
+                new InMemoryContractReviewStore(), new InMemoryContractReviewedEventStore()));
 
     ReviewReport report =
         service.submit(
@@ -151,6 +152,7 @@ class ProcuraContractReviewTriageTest {
         () -> "t-1",
         () -> "reviewer-triage",
         new AiDisclosureService(),
-        new ContractReviewedConsumer(tracePort));
+        new ContractReviewedEventPublisher(
+            new InMemoryContractReviewStore(), new InMemoryContractReviewedEventStore()));
   }
 }

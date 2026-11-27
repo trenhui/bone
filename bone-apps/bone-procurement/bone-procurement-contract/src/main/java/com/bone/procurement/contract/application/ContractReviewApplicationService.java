@@ -42,7 +42,7 @@ public class ContractReviewApplicationService {
   private final ContractReviewTenantPort tenantPort;
   private final ContractReviewIdentityPort identityPort;
   private final AiDisclosureService disclosureService;
-  private final ContractReviewedConsumer reviewedConsumer;
+  private final ContractReviewedEventPublisher eventPublisher;
   private final HitlRoutingPolicy hitlPolicy = new HitlRoutingPolicy();
 
   public ContractReviewApplicationService(
@@ -53,7 +53,7 @@ public class ContractReviewApplicationService {
       ContractReviewTenantPort tenantPort,
       ContractReviewIdentityPort identityPort,
       AiDisclosureService disclosureService,
-      ContractReviewedConsumer reviewedConsumer) {
+      ContractReviewedEventPublisher eventPublisher) {
     this.parsePort = Objects.requireNonNull(parsePort, "parsePort");
     this.reviewPort = Objects.requireNonNull(reviewPort, "reviewPort");
     this.tracePort = Objects.requireNonNull(tracePort, "tracePort");
@@ -61,7 +61,7 @@ public class ContractReviewApplicationService {
     this.tenantPort = Objects.requireNonNull(tenantPort, "tenantPort");
     this.identityPort = Objects.requireNonNull(identityPort, "identityPort");
     this.disclosureService = Objects.requireNonNull(disclosureService, "disclosureService");
-    this.reviewedConsumer = Objects.requireNonNull(reviewedConsumer, "reviewedConsumer");
+    this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
   }
 
   /** 用例一：提交审查。解析 → AI 建议（仅建议）→ 确定性 HITL → 停在人工复核，不自动终决。 */
@@ -170,13 +170,11 @@ public class ContractReviewApplicationService {
             "HUMAN_OVERRIDE",
             "reviewer=" + reviewer + ", final=" + input.finalRiskLevel()));
     review.snapshot(ReviewSnapshotRef.of("snap://override/" + reviewId));
-    store.save(requireTenant(), review);
 
-    // walking skeleton 的「发布-消费」闭环：审查完成事件在进程内直连交给消费用例，
-    // 以 reviewId 幂等挂结论；真实 MQ producer/listener 与 Outbox/Inbox 属 L3，尚未接线，
-    // 不得把本直连表述为已交付的生产 MQ 行为。
+    // 审查结论落库与 Outbox 插入同一事务；消费由显式驱动扫描 Outbox 完成（本地模拟投递）。
+    // 生产 MQ producer/listener 仍属 L3，不得把显式驱动表述为已交付的生产 MQ 行为。
     ContractReviewedEvent event = ReviewEventAssembler.assemble(review);
-    reviewedConsumer.consume(event);
+    eventPublisher.publishWithConclusion(requireTenant(), review, event);
     return toReport(review);
   }
 

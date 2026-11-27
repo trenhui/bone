@@ -253,7 +253,7 @@ try {
   check('[核赔] 拒赔弹窗展开结构化五要素', allFive);
   await page.getByPlaceholder('可核对的案件事实（不要写情绪化措辞）').fill('材料缺少费用明细');
   await page.getByPlaceholder('具体条款号与约定摘要').fill('条款 3.2');
-  await page.getByPlaceholder('如 EV-001, EV-004；须可在证据集定位').fill('EV-001');
+  await page.getByPlaceholder('如 EV-001, EV-004#p2；#p 为影像页码，须可在证据集定位').fill('EV-001');
   await page.getByPlaceholder('客户可使用的申诉/复议入口').fill('小程序-申诉复议');
   await page.getByPlaceholder('如 收到通知书起 30 日内').fill('30 日内');
   await page.locator('.ant-modal .ant-select').last().click();

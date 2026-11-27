@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>变更说明 · 让采购 AI 骨架真正可达、可判定、可操作：默认启动不再缺 Bean，Mock 不再冒充可用，新增如实公示的只读就绪度端点与人工复核闭环，补齐前端三页，并在最终审查中闭合一个跨租户读缺口。</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #fafbfc;
+  --ink: #202a35;
+  --muted: #566575;
+  --line: #dbe2e8;
+  --accent: #245b85;
+  --highlight: #edf3f7;
+  --hover: #e9eef3;
+  --code-bg: #edf0f4;
+  --code-ink: #263443;
+  --success: #236d4f;
+  --failure: #a83131;
+  --text: 15px;
+  --small: 13px;
+  --label: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #181d23;
+    --ink: #e4eaf0;
+    --muted: #a4b1be;
+    --line: #35404b;
+    --accent: #94c6ec;
+    --highlight: #222e39;
+    --hover: #27323d;
+    --code-bg: #10161d;
+    --code-ink: #e0e8f0;
+    --success: #8ed8b5;
+    --failure: #ffb0a8;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: var(--text)/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1040px; margin: auto; padding: 32px 32px 48px; }
+.eyebrow { color: var(--accent); font-size: var(--label); font-weight: 500; letter-spacing: .08em; }
+h1 { margin: 8px 0 12px; max-width: 32em; font-size: 28px; font-weight: 500; line-height: 1.4; letter-spacing: -.02em; overflow-wrap: anywhere; }
+h2 { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+h3 { margin: 0 0 4px; color: var(--muted); font-size: var(--label); font-weight: 500; }
+p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+strong { font-weight: 500; }
+.meta { margin-bottom: 24px; color: var(--muted); font-size: var(--small); overflow-wrap: anywhere; }
+.meta p + p { margin-top: 2px; }
+article { padding: 20px 0 12px; border-top: 1px solid var(--line); }
+article header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.number { color: var(--muted); font: var(--label)/1.5 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.comparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.comparison section { min-width: 0; padding: 12px; }
+.after { background: var(--highlight); border-radius: 4px; }
+.after h3 { color: var(--accent); }
+.reason { margin-top: 12px; font-size: var(--small); color: var(--muted); }
+.reason strong { margin-right: 8px; color: var(--ink); }
+summary { min-height: 44px; padding: 10px 4px; cursor: pointer; font-size: var(--small); font-weight: 500; border-radius: 4px; }
+summary:hover { background: var(--hover); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count, .tag { color: var(--muted); font-size: var(--label); font-weight: 400; }
+.count { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.file { min-width: 0; padding: 0 0 16px; scroll-margin-top: 20px; }
+.file:target { outline: 2px solid var(--accent); outline-offset: 4px; }
+.file-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.file-heading code { min-width: 0; font-size: var(--small); overflow-wrap: anywhere; }
+.tag { white-space: nowrap; }
+pre { margin: 8px 0 0; padding: 12px 16px; overflow: auto; background: var(--code-bg); color: var(--code-ink); border-radius: 4px; font: var(--small)/1.65 ui-monospace, Consolas, monospace; tab-size: 2; }
+footer { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+footer h2 { margin-bottom: 8px; }
+.check { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.status { padding-top: 2px; font-size: var(--label); font-weight: 500; }
+.passed { color: var(--success); }
+.failed { color: var(--failure); }
+.not-run, .unknown { color: var(--muted); }
+.check p { margin-top: 2px; color: var(--muted); font-size: var(--small); }
+.more { border-top: 1px solid var(--line); }
+.more > summary { padding-block: 12px; }
+.diagram { margin: 0; padding: 20px 0; border-top: 1px solid var(--line); }
+.diagram figcaption { margin-bottom: 12px; font-size: 18px; font-weight: 500; overflow-wrap: anywhere; }
+.diagram-svg { display: block; max-width: 100%; height: auto; margin: auto; overflow: visible; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.diagram-svg text { fill: var(--ink); }
+.diagram-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.diagram-svg marker path { fill: var(--muted); }
+.diagram-edge-label { fill: var(--page); }
+.diagram-svg .diagram-edge-text { fill: var(--muted); font-size: 12px; }
+.diagram-node rect { fill: var(--page); stroke: var(--line); stroke-width: 1.5; }
+.diagram-node.modified rect { fill: var(--highlight); stroke: var(--accent); }
+.diagram-node.added rect { stroke: var(--success); }
+.diagram-node.deleted rect { stroke: var(--failure); stroke-dasharray: 4 3; }
+.diagram-svg .diagram-kind { fill: var(--muted); font-size: 11px; }
+.diagram-node[href] { cursor: pointer; }
+.diagram-node[href]:hover rect, .diagram-node[href]:focus-visible rect { stroke: var(--accent); stroke-width: 2.5; }
+.diagram-node[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.diagram-hint { margin-top: 12px; color: var(--muted); font-size: var(--small); text-align: center; }
+.diagram-comparison { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; }
+.diagram-comparison > section { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 4px; }
+.diagram-comparison > section > h3 { margin-bottom: 12px; }
+.diagram-compact { display: none; }
+@media (max-width: 999px) {
+  .diagram-wide { display: none; }
+  .diagram-compact { display: block; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 16px 32px; }
+  h1 { font-size: 24px; }
+  .meta { margin-bottom: 20px; }
+  article { padding-top: 16px; }
+  article header { gap: 8px; }
+  .comparison { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .check { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
+  pre { padding: 12px; }
+  .diagram-comparison { grid-template-columns: minmax(0,1fr); }
+  .diagram-comparison > section { padding: 12px 0; border: 0; }
+}
+</style></head><body><main><div class="eyebrow">COMET / 变更说明</div><h1>让采购 AI 骨架真正可达、可判定、可操作：默认启动不再缺 Bean，Mock 不再冒充可用，新增如实公示的只读就绪度端点与人工复核闭环，补齐前端三页，并在最终审查中闭合一个跨租户读缺口。</h1><div class="meta"><p>比较范围 · 已知比较范围：HEAD(c0f26a741) 与本次工作区差异为本轮审查修复 4 文件；change 主体实现见提交 3e5b5f77c（63 文件）。两个 synapclaim 未跟踪目录属他人并行工作，不在本次成果内。</p><p>生成时间 · 2026-11-24T01:57:30.440Z</p></div><figure class="diagram"><figcaption>证照读回的登录态权威校验</figcaption><div class="diagram-wide"><svg class="diagram-svg" width="786" height="102" viewBox="0 0 786 102" role="group" aria-labelledby="walkthrough-diagram-0-wide-title walkthrough-diagram-0-wide-description"><title id="walkthrough-diagram-0-wide-title">证照读回的登录态权威校验</title><desc id="walkthrough-diagram-0-wide-description">findOne 请求(id+tenantId) → 登录态 current(); 登录态 current() → tenantId 一致性校验 (无登录态即拒); tenantId 一致性校验 → 按登录态租户查询 (不一致即拒)</desc><defs><marker id="walkthrough-diagram-0-wide-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><path class="diagram-edge" d="M 132 51 C 179 51, 179 51, 223 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><path class="diagram-edge" d="M 346 51 C 393 51, 393 51, 437 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><rect class="diagram-edge-label" x="350" y="40" width="86" height="22"/><text class="diagram-edge-text" x="393" y="55" text-anchor="middle"><tspan x="393" dy="0">无登录态即拒</tspan></text><path class="diagram-edge" d="M 560 51 C 607 51, 607 51, 651 51" marker-end="url(#walkthrough-diagram-0-wide-arrow)"/><rect class="diagram-edge-label" x="570.5" y="40" width="73" height="22"/><text class="diagram-edge-text" x="607" y="55" text-anchor="middle"><tspan x="607" dy="0">不一致即拒</tspan></text><g class="diagram-node "><rect x="12" y="12" width="120" height="78" rx="5"/><text class="" x="72" y="37" text-anchor="middle"><tspan x="72" dy="0">findOne</tspan><tspan x="72" dy="18">请求(id+tenant</tspan><tspan x="72" dy="18">Id)</tspan></text></g><a class="diagram-node modified" href="#walkthrough-file-1-0" aria-label="登录态 current() · bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60"><rect x="226" y="12" width="120" height="78" rx="5"/><text class="diagram-kind" x="286" y="29" text-anchor="middle"><tspan x="286" dy="0">修改</tspan></text><text class="" x="286" y="47" text-anchor="middle"><tspan x="286" dy="0">登录态</tspan><tspan x="286" dy="18">current()</tspan></text></a><a class="diagram-node modified" href="#walkthrough-file-1-0" aria-label="tenantId 一致性校验 · bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60"><rect x="440" y="12" width="120" height="78" rx="5"/><text class="diagram-kind" x="500" y="29" text-anchor="middle"><tspan x="500" dy="0">修改</tspan></text><text class="" x="500" y="47" text-anchor="middle"><tspan x="500" dy="0">tenantId</tspan><tspan x="500" dy="18">一致性校验</tspan></text></a><a class="diagram-node modified" href="#walkthrough-file-1-0" aria-label="按登录态租户查询 · bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60"><rect x="654" y="12" width="120" height="78" rx="5"/><text class="diagram-kind" x="714" y="29" text-anchor="middle"><tspan x="714" dy="0">修改</tspan></text><text class="" x="714" y="47" text-anchor="middle"><tspan x="714" dy="0">按登录态租户查</tspan><tspan x="714" dy="18">询</tspan></text></a></svg></div><div class="diagram-compact"><svg class="diagram-svg" width="272" height="444" viewBox="0 0 272 444" role="group" aria-labelledby="walkthrough-diagram-0-compact-title walkthrough-diagram-0-compact-description"><title id="walkthrough-diagram-0-compact-title">证照读回的登录态权威校验</title><desc id="walkthrough-diagram-0-compact-description">findOne 请求(id+tenantId) → 登录态 current(); 登录态 current() → tenantId 一致性校验 (无登录态即拒); tenantId 一致性校验 → 按登录态租户查询 (不一致即拒)</desc><defs><marker id="walkthrough-diagram-0-compact-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><path class="diagram-edge" d="M 136 90 C 136 108, 136 108, 136 123" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><path class="diagram-edge" d="M 136 204 C 136 222, 136 222, 136 237" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><rect class="diagram-edge-label" x="93" y="211" width="86" height="22"/><text class="diagram-edge-text" x="136" y="226" text-anchor="middle"><tspan x="136" dy="0">无登录态即拒</tspan></text><path class="diagram-edge" d="M 136 318 C 136 336, 136 336, 136 351" marker-end="url(#walkthrough-diagram-0-compact-arrow)"/><rect class="diagram-edge-label" x="99.5" y="325" width="73" height="22"/><text class="diagram-edge-text" x="136" y="340" text-anchor="middle"><tspan x="136" dy="0">不一致即拒</tspan></text><g class="diagram-node "><rect x="80" y="12" width="112" height="78" rx="5"/><text class="" x="136" y="37" text-anchor="middle"><tspan x="136" dy="0">findOne</tspan><tspan x="136" dy="18">请求(id+tena</tspan><tspan x="136" dy="18">ntId)</tspan></text></g><a class="diagram-node modified" href="#walkthrough-file-1-0" aria-label="登录态 current() · bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60"><rect x="80" y="126" width="112" height="78" rx="5"/><text class="diagram-kind" x="136" y="143" text-anchor="middle"><tspan x="136" dy="0">修改</tspan></text><text class="" x="136" y="161" text-anchor="middle"><tspan x="136" dy="0">登录态</tspan><tspan x="136" dy="18">current()</tspan></text></a><a class="diagram-node modified" href="#walkthrough-file-1-0" aria-label="tenantId 一致性校验 · bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60"><rect x="80" y="240" width="112" height="78" rx="5"/><text class="diagram-kind" x="136" y="257" text-anchor="middle"><tspan x="136" dy="0">修改</tspan></text><text class="" x="136" y="275" text-anchor="middle"><tspan x="136" dy="0">tenantId</tspan><tspan x="136" dy="18">一致性校验</tspan></text></a><a class="diagram-node modified" href="#walkthrough-file-1-0" aria-label="按登录态租户查询 · bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60"><rect x="80" y="354" width="112" height="78" rx="5"/><text class="diagram-kind" x="136" y="371" text-anchor="middle"><tspan x="136" dy="0">修改</tspan></text><text class="" x="136" y="389" text-anchor="middle"><tspan x="136" dy="0">按登录态租户</tspan><tspan x="136" dy="18">查询</tspan></text></a></svg></div><p class="diagram-hint">点击带链接的节点查看相关代码。</p></figure><article><header><span class="number">01</span><h2>就绪度端点与 fail-closed 判词</h2></header><div class="comparison"><section><h3>原来</h3><p>没有任何端点公示 AI 参与/模型配置/评测状态/总闸，Mock 回显可能被误读为模型参与。</p></section><section class="after"><h3>现在</h3><p>GET /api/v1/procurement/ai-readiness 聚合四类事实给出 AVAILABLE/DEGRADED/UNKNOWN，未知一律 fail-closed，并声明部署门禁通过不等于授标/放款许可。</p></section></div><p class="reason"><strong>原因</strong> 让状态可判定且不被乐观误读，守住&#39;AI 不碰钱&#39;基线。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-0-0"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/readiness/AiReadinessEvaluator.java</code></div><pre><code>四类事实 → AVAILABLE/DEGRADED/UNKNOWN，未知 fail-closed</code></pre></div><div class="file" id="walkthrough-file-0-1"><div class="file-heading"><span class="tag">新增</span><code>bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/readiness/AiReadinessController.java</code></div><pre><code>GET /api/v1/procurement/ai-readiness</code></pre></div></details></article><article><header><span class="number">02</span><h2>跨租户读缺口修复（本轮审查）</h2></header><div class="comparison"><section><h3>原来</h3><p>证照读回端点 findOne 用 URL 请求参数 tenantId 查询，篡改参数可跨租户读取证照。</p></section><section class="after"><h3>现在</h3><p>findOne 改用登录态权威 tenantId；请求参数与登录态不一致即拒绝，无登录态即拒绝；与 reviewOcr/approve 安全模型一致。</p></section></div><p class="reason"><strong>原因</strong> 最终集成审查发现 IMPORTANT，按登录态权威身份铁律修复。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-1-0"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-procurement/bone-procurement-qualification/src/main/java/com/bone/procurement/qualification/adapter/web/controller/QualificationController.java:60</code></div><pre><code>findOne 取 reviewIdentity.current().tenantId()，请求参数不一致即拒绝</code></pre></div><div class="file" id="walkthrough-file-1-1"><div class="file-heading"><span class="tag">修改</span><code>bone-apps/bone-procurement/bone-procurement-qualification/src/test/java/com/bone/procurement/qualification/adapter/web/ReviewIdentityBindingTest.java</code></div><pre><code>新增证照读回无登录态/跨租户/一致/缺省 4 用例 + 复核字段校验 2 用例</code></pre></div></details></article><article><header><span class="number">03</span><h2>未知判词告警样式（本轮审查）</h2></header><div class="comparison"><section><h3>原来</h3><p>UNKNOWN 与未映射判词显示灰色 default，不满足规格要求的告警样式。</p></section><section class="after"><h3>现在</h3><p>UNKNOWN/null/undefined/未映射码统一显示红色告警色，仍保留原始码与&#39;无法确认&#39;文案，不乐观映射。</p></section></div><p class="reason"><strong>原因</strong> 满足 ai-readiness spec 对未知判词告警样式的要求。</p><details><summary>查看文件和关键代码 <span class="count">2</span></summary><div class="file" id="walkthrough-file-2-0"><div class="file-heading"><span class="tag">修改</span><code>bone-frontend/apps/bone-procurement-app/src/types/readinessView.ts:15</code></div><pre><code>UNKNOWN.color=&#39;red&#39;；verdictColor 对缺失/未映射码返回 red</code></pre></div><div class="file" id="walkthrough-file-2-1"><div class="file-heading"><span class="tag">修改</span><code>bone-frontend/apps/bone-procurement-app/src/types/readinessView.test.ts</code></div><pre><code>新增 3 条告警色断言</code></pre></div></details></article><footer><h2>实际验证</h2><div class="check"><span class="status passed">通过</span><div><strong>Builder 自检</strong><p>采购全量 mvn test BUILD SUCCESS（10 模块）；qualification 47 例全过；前端 tsc exit0、vitest 107 例、eslint errorCount=0；6 项 procuraAI 门禁全绿</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>Runtime 检查</strong><p>full.build.check guard 真实执行采购全量测试并提交收据</p></div></div><div class="check"><span class="status passed">通过</span><div><strong>独立验收</strong><p>两轮独立审查：首轮 1 IMPORTANT 已修复，复审 CRITICAL=0/IMPORTANT=0 可 PASS</p></div></div><div class="check"><span class="status not-run">未执行</span><div><strong>浏览器实操/DB 直查（本轮）</strong><p>由提交 3e5b5f77c 记录与 internal-poc-verify.py 取证脚本承接；本轮未重新执行，无新增截图</p></div></div></footer></main><template id="walkthrough-data">eyJzdW1tYXJ5Ijoi6K6p6YeH6LStIEFJIOmqqOaetuecn+ato+WPr+i+vuOAgeWPr+WIpOWumuOAgeWPr+aTjeS9nO+8mum7mOiupOWQr+WKqOS4jeWGjee8uiBCZWFu77yMTW9jayDkuI3lho3lhpLlhYXlj6/nlKjvvIzmlrDlop7lpoLlrp7lhaznpLrnmoTlj6ror7vlsLHnu6rluqbnq6/ngrnkuI7kurrlt6XlpI3moLjpl63njq/vvIzooaXpvZDliY3nq6/kuInpobXvvIzlubblnKjmnIDnu4jlrqHmn6XkuK3pl63lkIjkuIDkuKrot6jnp5/miLfor7vnvLrlj6PjgIIiLCJzY29wZSI6IuW3suefpeavlOi+g+iMg+WbtO+8mkhFQUQoYzBmMjZhNzQxKSDkuI7mnKzmrKHlt6XkvZzljLrlt67lvILkuLrmnKzova7lrqHmn6Xkv67lpI0gNCDmlofku7bvvJtjaGFuZ2Ug5Li75L2T5a6e546w6KeB5o+Q5LqkIDNlNWI1Zjc3Y++8iDYzIOaWh+S7tu+8ieOAguS4pOS4qiBzeW5hcGNsYWltIOacqui3n+i4quebruW9leWxnuS7luS6uuW5tuihjOW3peS9nO+8jOS4jeWcqOacrOasoeaIkOaenOWGheOAgiIsImNoYW5nZXMiOlt7InRpdGxlIjoi5bCx57uq5bqm56uv54K55LiOIGZhaWwtY2xvc2VkIOWIpOivjSIsImJlZm9yZSI6IuayoeacieS7u+S9leerr+eCueWFrOekuiBBSSDlj4LkuI4v5qih5Z6L6YWN572uL+ivhOa1i+eKtuaAgS/mgLvpl7jvvIxNb2NrIOWbnuaYvuWPr+iDveiiq+ivr+ivu+S4uuaooeWei+WPguS4juOAgiIsImFmdGVyIjoiR0VUIC9hcGkvdjEvcHJvY3VyZW1lbnQvYWktcmVhZGluZXNzIOiBmuWQiOWbm+exu+S6i+Wunue7meWHuiBBVkFJTEFCTEUvREVHUkFERUQvVU5LTk9XTu+8jOacquefpeS4gOW+iyBmYWlsLWNsb3NlZO+8jOW5tuWjsOaYjumDqOe9sumXqOemgemAmui/h+S4jeetieS6juaOiOaghy/mlL7mrL7orrjlj6/jgIIiLCJyZWFzb24iOiLorqnnirbmgIHlj6/liKTlrprkuJTkuI3ooqvkuZDop4Lor6/or7vvvIzlrojkvY8nQUkg5LiN56Kw6ZKxJ+Wfuue6v+OAgiIsImZpbGVzIjpbeyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1hcHAvc3JjL21haW4vamF2YS9jb20vYm9uZS9wcm9jdXJlbWVudC9yZWFkaW5lc3MvQWlSZWFkaW5lc3NFdmFsdWF0b3IuamF2YSIsImtpbmQiOiJhZGRlZCIsImNvZGUiOiLlm5vnsbvkuovlrp4g4oaSIEFWQUlMQUJMRS9ERUdSQURFRC9VTktOT1dO77yM5pyq55+lIGZhaWwtY2xvc2VkIn0seyJwYXRoIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1hcHAvc3JjL21haW4vamF2YS9jb20vYm9uZS9wcm9jdXJlbWVudC9yZWFkaW5lc3MvQWlSZWFkaW5lc3NDb250cm9sbGVyLmphdmEiLCJraW5kIjoiYWRkZWQiLCJjb2RlIjoiR0VUIC9hcGkvdjEvcHJvY3VyZW1lbnQvYWktcmVhZGluZXNzIn1dfSx7InRpdGxlIjoi6Leo56ef5oi36K+757y65Y+j5L+u5aSN77yI5pys6L2u5a6h5p+l77yJIiwiYmVmb3JlIjoi6K+B54Wn6K+75Zue56uv54K5IGZpbmRPbmUg55SoIFVSTCDor7fmsYLlj4LmlbAgdGVuYW50SWQg5p+l6K+i77yM56+h5pS55Y+C5pWw5Y+v6Leo56ef5oi36K+75Y+W6K+B54Wn44CCIiwiYWZ0ZXIiOiJmaW5kT25lIOaUueeUqOeZu+W9leaAgeadg+WogSB0ZW5hbnRJZO+8m+ivt+axguWPguaVsOS4jueZu+W9leaAgeS4jeS4gOiHtOWNs+aLkue7ne+8jOaXoOeZu+W9leaAgeWNs+aLkue7ne+8m+S4jiByZXZpZXdPY3IvYXBwcm92ZSDlronlhajmqKHlnovkuIDoh7TjgIIiLCJyZWFzb24iOiLmnIDnu4jpm4bmiJDlrqHmn6Xlj5HnjrAgSU1QT1JUQU5U77yM5oyJ55m75b2V5oCB5p2D5aiB6Lqr5Lu96ZOB5b6L5L+u5aSN44CCIiwiZmlsZXMiOlt7InBhdGgiOiJib25lLWFwcHMvYm9uZS1wcm9jdXJlbWVudC9ib25lLXByb2N1cmVtZW50LXF1YWxpZmljYXRpb24vc3JjL21haW4vamF2YS9jb20vYm9uZS9wcm9jdXJlbWVudC9xdWFsaWZpY2F0aW9uL2FkYXB0ZXIvd2ViL2NvbnRyb2xsZXIvUXVhbGlmaWNhdGlvbkNvbnRyb2xsZXIuamF2YTo2MCIsImtpbmQiOiJtb2RpZmllZCIsImNvZGUiOiJmaW5kT25lIOWPliByZXZpZXdJZGVudGl0eS5jdXJyZW50KCkudGVuYW50SWQoKe+8jOivt+axguWPguaVsOS4jeS4gOiHtOWNs+aLkue7nSJ9LHsicGF0aCI6ImJvbmUtYXBwcy9ib25lLXByb2N1cmVtZW50L2JvbmUtcHJvY3VyZW1lbnQtcXVhbGlmaWNhdGlvbi9zcmMvdGVzdC9qYXZhL2NvbS9ib25lL3Byb2N1cmVtZW50L3F1YWxpZmljYXRpb24vYWRhcHRlci93ZWIvUmV2aWV3SWRlbnRpdHlCaW5kaW5nVGVzdC5qYXZhIiwia2luZCI6Im1vZGlmaWVkIiwiY29kZSI6IuaWsOWinuivgeeFp+ivu+WbnuaXoOeZu+W9leaAgS/ot6jnp5/miLcv5LiA6Ie0L+e8uuecgSA0IOeUqOS+iyArIOWkjeaguOWtl+auteagoemqjCAyIOeUqOS+iyJ9XX0seyJ0aXRsZSI6IuacquefpeWIpOivjeWRiuitpuagt+W8j++8iOacrOi9ruWuoeafpe+8iSIsImJlZm9yZSI6IlVOS05PV04g5LiO5pyq5pig5bCE5Yik6K+N5pi+56S654Gw6ImyIGRlZmF1bHTvvIzkuI3mu6HotrPop4TmoLzopoHmsYLnmoTlkYrorabmoLflvI/jgIIiLCJhZnRlciI6IlVOS05PV04vbnVsbC91bmRlZmluZWQv5pyq5pig5bCE56CB57uf5LiA5pi+56S657qi6Imy5ZGK6K2m6Imy77yM5LuN5L+d55WZ5Y6f5aeL56CB5LiOJ+aXoOazleehruiupCfmlofmoYjvvIzkuI3kuZDop4LmmKDlsITjgIIiLCJyZWFzb24iOiLmu6HotrMgYWktcmVhZGluZXNzIHNwZWMg5a+55pyq55+l5Yik6K+N5ZGK6K2m5qC35byP55qE6KaB5rGC44CCIiwiZmlsZXMiOlt7InBhdGgiOiJib25lLWZyb250ZW5kL2FwcHMvYm9uZS1wcm9jdXJlbWVudC1hcHAvc3JjL3R5cGVzL3JlYWRpbmVzc1ZpZXcudHM6MTUiLCJraW5kIjoibW9kaWZpZWQiLCJjb2RlIjoiVU5LTk9XTi5jb2xvcj0ncmVkJ++8m3ZlcmRpY3RDb2xvciDlr7nnvLrlpLEv5pyq5pig5bCE56CB6L+U5ZueIHJlZCJ9LHsicGF0aCI6ImJvbmUtZnJvbnRlbmQvYXBwcy9ib25lLXByb2N1cmVtZW50LWFwcC9zcmMvdHlwZXMvcmVhZGluZXNzVmlldy50ZXN0LnRzIiwia2luZCI6Im1vZGlmaWVkIiwiY29kZSI6IuaWsOWiniAzIOadoeWRiuitpuiJsuaWreiogCJ9XX1dLCJ2ZXJpZmljYXRpb24iOlt7ImxhYmVsIjoiQnVpbGRlciDoh6rmo4AiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiLph4fotK3lhajph48gbXZuIHRlc3QgQlVJTEQgU1VDQ0VTU++8iDEwIOaooeWdl++8ie+8m3F1YWxpZmljYXRpb24gNDcg5L6L5YWo6L+H77yb5YmN56uvIHRzYyBleGl0MOOAgXZpdGVzdCAxMDcg5L6L44CBZXNsaW50IGVycm9yQ291bnQ9MO+8mzYg6aG5IHByb2N1cmFBSSDpl6jnpoHlhajnu78ifSx7ImxhYmVsIjoiUnVudGltZSDmo4Dmn6UiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiJmdWxsLmJ1aWxkLmNoZWNrIGd1YXJkIOecn+WunuaJp+ihjOmHh+i0reWFqOmHj+a1i+ivleW5tuaPkOS6pOaUtuaNriJ9LHsibGFiZWwiOiLni6znq4vpqozmlLYiLCJzdGF0dXMiOiJwYXNzZWQiLCJkZXRhaWwiOiLkuKTova7ni6znq4vlrqHmn6XvvJrpppbova4gMSBJTVBPUlRBTlQg5bey5L+u5aSN77yM5aSN5a6hIENSSVRJQ0FMPTAvSU1QT1JUQU5UPTAg5Y+vIFBBU1MifSx7ImxhYmVsIjoi5rWP6KeI5Zmo5a6e5pONL0RCIOebtOafpe+8iOacrOi9ru+8iSIsInN0YXR1cyI6Im5vdC1ydW4iLCJkZXRhaWwiOiLnlLHmj5DkuqQgM2U1YjVmNzdjIOiusOW9leS4jiBpbnRlcm5hbC1wb2MtdmVyaWZ5LnB5IOWPluivgeiEmuacrOaJv+aOpe+8m+acrOi9ruacqumHjeaWsOaJp+ihjO+8jOaXoOaWsOWinuaIquWbviJ9XSwiZGlhZ3JhbXMiOlt7InR5cGUiOiJmbG93IiwidGl0bGUiOiLor4Hnhafor7vlm57nmoTnmbvlvZXmgIHmnYPlqIHmoKHpqowiLCJub2RlcyI6W3siaWQiOiJyZXEiLCJsYWJlbCI6ImZpbmRPbmUg6K+35rGCKGlkK3RlbmFudElkKSJ9LHsiaWQiOiJhdXRoIiwibGFiZWwiOiLnmbvlvZXmgIEgY3VycmVudCgpIiwiZmlsZSI6ImJvbmUtYXBwcy9ib25lLXByb2N1cmVtZW50L2JvbmUtcHJvY3VyZW1lbnQtcXVhbGlmaWNhdGlvbi9zcmMvbWFpbi9qYXZhL2NvbS9ib25lL3Byb2N1cmVtZW50L3F1YWxpZmljYXRpb24vYWRhcHRlci93ZWIvY29udHJvbGxlci9RdWFsaWZpY2F0aW9uQ29udHJvbGxlci5qYXZhOjYwIiwia2luZCI6Im1vZGlmaWVkIn0seyJpZCI6ImNoZWNrIiwibGFiZWwiOiJ0ZW5hbnRJZCDkuIDoh7TmgKfmoKHpqowiLCJmaWxlIjoiYm9uZS1hcHBzL2JvbmUtcHJvY3VyZW1lbnQvYm9uZS1wcm9jdXJlbWVudC1xdWFsaWZpY2F0aW9uL3NyYy9tYWluL2phdmEvY29tL2JvbmUvcHJvY3VyZW1lbnQvcXVhbGlmaWNhdGlvbi9hZGFwdGVyL3dlYi9jb250cm9sbGVyL1F1YWxpZmljYXRpb25Db250cm9sbGVyLmphdmE6NjAiLCJraW5kIjoibW9kaWZpZWQifSx7ImlkIjoicXVlcnkiLCJsYWJlbCI6IuaMieeZu+W9leaAgeenn+aIt+afpeivoiIsImZpbGUiOiJib25lLWFwcHMvYm9uZS1wcm9jdXJlbWVudC9ib25lLXByb2N1cmVtZW50LXF1YWxpZmljYXRpb24vc3JjL21haW4vamF2YS9jb20vYm9uZS9wcm9jdXJlbWVudC9xdWFsaWZpY2F0aW9uL2FkYXB0ZXIvd2ViL2NvbnRyb2xsZXIvUXVhbGlmaWNhdGlvbkNvbnRyb2xsZXIuamF2YTo2MCIsImtpbmQiOiJtb2RpZmllZCJ9XSwiZWRnZXMiOlt7ImZyb20iOiJyZXEiLCJ0byI6ImF1dGgifSx7ImZyb20iOiJhdXRoIiwidG8iOiJjaGVjayIsImxhYmVsIjoi5peg55m75b2V5oCB5Y2z5ouSIn0seyJmcm9tIjoiY2hlY2siLCJ0byI6InF1ZXJ5IiwibGFiZWwiOiLkuI3kuIDoh7TljbPmi5IifV19XX0=</template></body></html>

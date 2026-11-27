@@ -40,4 +40,9 @@ public class InMemoryHumanDecisionLedger implements HumanDecisionLedger {
         .filter(HumanFinalDecision::isOverride)
         .count();
   }
+
+  @Override
+  public List<HumanFinalDecision> findByCapability(CapabilityCode code) {
+    return byId.values().stream().filter(d -> d.capabilityCode().equals(code)).toList();
+  }
 }

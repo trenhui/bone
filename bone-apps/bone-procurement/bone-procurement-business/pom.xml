@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.bone.procurement</groupId>
+        <artifactId>bone-procurement</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>bone-procurement-business</artifactId>
+    <name>bone-procurement-business</name>
+    <description>procuraAI 持久业务聚合：Bid / Quotation / Award / CAPA 的领域不变量、SDK 持久化与人工终决边界。</description>
+    <dependencies>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-core</artifactId></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-security</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-web</artifactId></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-metadata-sdk</artifactId></dependency>
+        <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>com.tngtech.archunit</groupId><artifactId>archunit-junit5</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>com.bone</groupId><artifactId>bone-architecture-test</artifactId><scope>test</scope></dependency>
+    </dependencies>
+</project>

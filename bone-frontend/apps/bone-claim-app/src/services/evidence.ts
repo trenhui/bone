@@ -48,6 +48,25 @@ export const evidenceApi = {
       { items },
     );
   },
+  /**
+   * 存量材料重新分类：传 originalName 时按文件名自动识别，也可显式传 docType 覆盖。
+   * 返回实际更新条数；已锁定材料会被服务端拒绝。
+   */
+  reclassify(
+    claimId: string,
+    items: {
+      evidenceId: string;
+      originalName?: string;
+      imageType?: string;
+      imageSignals?: import('./types').DocTypeImageSignals;
+      docType?: string;
+    }[],
+  ): Promise<ApiResponse<number>> {
+    return client.post<{ items: typeof items }, ApiResponse<number>>(
+      `/${claimId}/evidences/reclassify`,
+      { items },
+    );
+  },
   /** 回填解析结果（OCR/LLM 回调或人工补录）。 */
   markParsed(
     claimId: string,

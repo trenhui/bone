@@ -1,0 +1,16 @@
+{
+  "change": "procuraai-oversight-effectiveness",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "2b2426d43f4e520118ca0649a3736e1b688405148ec50235a6bc2fe0a096d3ea",
+  "files": [
+    { "path": "openspec/changes/procuraai-oversight-effectiveness/proposal.md", "sha256": "8ac1e048c93face4032f02be06697dfa9570233b2860243b27f9c49536987e9a" },
+    { "path": "openspec/changes/procuraai-oversight-effectiveness/design.md", "sha256": "ffebdcf00b8aab61d6af0e323fabbe736e9ddc0e326fecae4f92e337e6c2c543" },
+    { "path": "openspec/changes/procuraai-oversight-effectiveness/tasks.md", "sha256": "da0a94ea77bb94188688c91fe6814ebdcce516d9716a201f6a917846fe6764c7" },
+    { "path": "openspec/changes/procuraai-oversight-effectiveness/.openspec.yaml", "sha256": "3c3c72cd1a100807c59ef8347538654b4d2d22269f59561c985b01cb44c39491" },
+    { "path": "openspec/changes/procuraai-oversight-effectiveness/specs/procurement/ai-oversight-effectiveness/spec.md", "sha256": "173f930d71e32daff3300a5240ad69c12a81fa45d0bf2ff9cbfe47d3eac5d6cd" }
+  ]
+}

@@ -6,6 +6,7 @@ import com.bone.claim.common.ClaimErrorCodes;
 import com.bone.claim.common.ClaimErrors;
 import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
+import com.bone.claim.domain.model.evidence.valueobject.DocTypeClassifier;
 import com.bone.claim.domain.model.evidence.valueobject.ImageClarity;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.claim.domain.repository.EvidenceRepository;
@@ -35,6 +36,14 @@ public class EvidenceApplicationService {
   /** 登记材料入参。 */
   public record RegisterEvidence(
       long claimId, DocType docType, String fileRef, String contentHash, String verifyValid) {}
+
+  /** 存量材料重新分类项：类型为空时按「文件名 + 版式信号」融合识别。 */
+  public record ReclassifyItem(
+      long evidenceId,
+      String originalName,
+      String imageType,
+      DocTypeClassifier.ImageSignals imageSignals,
+      DocType docType) {}
 
   /** 批量清晰度标注命令（P0-A）。 */
   public record UpdateClarity(List<Item> items) {
@@ -83,6 +92,78 @@ public class EvidenceApplicationService {
     evidenceRepository.insert(evidence);
     domainEventPublisher.publishFrom(evidence);
     return evidence.getId();
+  }
+
+  /**
+   * 存量材料重新分类（自动识别或人工指定）。
+   *
+   * <p>只改材料类型，不碰 OCR 结果/验真/清晰度；按案件 ID 校验归属，防止跨案件改类型。
+   */
+  @Transactional
+  public int reclassify(long claimId, List<ReclassifyItem> items) {
+    int updated = 0;
+    for (ReclassifyItem item : items) {
+      Evidence evidence = load(item.evidenceId());
+      if (evidence.getClaimId() != null && evidence.getClaimId() != claimId) {
+        throw ClaimErrors.of(ClaimErrorCodes.CLAIM_EVIDENCE_NOT_FOUND, item.evidenceId());
+      }
+      DocType next =
+          item.docType() != null
+              ? item.docType()
+              : DocTypeClassifier.classifyDetailed(
+                      new DocTypeClassifier.ClassificationInput(
+                          item.originalName(), item.imageType(), item.imageSignals(), null))
+                  .docType();
+      evidence.reclassify(next);
+      evidenceRepository.save(evidence);
+      domainEventPublisher.publishFrom(evidence);
+      updated++;
+    }
+    return updated;
+  }
+
+  /**
+   * 签收兜底分类（补偿 A1 申报式签收 vs A2 影像后置上传的时序差）。
+   *
+   * <p><b>为什么只处理 OTHER</b>：主分类发生在材料登记时（前端上传版式信号，能把 hash 文件名的签名图归为 SIGNATURE）。
+   * 签收事件发生在建案阶段、通常此时还没有影像；对 TPA 导入等"先有证据后签收"的场景，登记时若未提供文件名会落 OTHER。 本方法在签收时对仍为 OTHER
+   * 的证据用可得信息再评估一次。绝不重分类已明确类型的证据——签收时拿不到版式信号， 全量重算会把登记时靠内容信号分好的签名图打回 OTHER（破坏性回归）。fileRef 可能携带 hash
+   * 文件名以外的语义， 例如 {@code .../{原文件名}}；若能解析则作为文件名再试一次，否则保持 OTHER 由人工在材料页确认。
+   */
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+  public int autoClassifyOnAcceptance(long claimId) {
+    int updated = 0;
+    for (Evidence evidence : evidenceRepository.findByClaimId(claimId)) {
+      if (evidence.docTypeEnum() != DocType.OTHER) {
+        continue;
+      }
+      String fileNameFromRef = deriveFileName(evidence.getFileRef());
+      if (fileNameFromRef == null) {
+        continue;
+      }
+      DocType result =
+          DocTypeClassifier.classifyDetailed(
+                  new DocTypeClassifier.ClassificationInput(
+                      fileNameFromRef, null, DocTypeClassifier.ImageSignals.EMPTY, null))
+              .docType();
+      if (result != DocType.OTHER) {
+        evidence.reclassify(result);
+        evidenceRepository.save(evidence);
+        domainEventPublisher.publishFrom(evidence);
+        updated++;
+      }
+    }
+    return updated;
+  }
+
+  /** 从 fileRef 末段提取可能的文件名；纯 UUID/hash 引用（无扩展名）返回 null。 */
+  private static String deriveFileName(String fileRef) {
+    if (fileRef == null || fileRef.isBlank()) {
+      return null;
+    }
+    String last = fileRef.substring(fileRef.lastIndexOf('/') + 1);
+    // 形如 0-20261125-uuid.jpg 的 objectName 末段是 UUID，不含业务语义；只认带明确中文/票据关键词的名字
+    return last.matches(".*[\\p{Han}].*|.*\\.(pdf|doc|docx|xls|xlsx)$") ? last : null;
   }
 
   /**

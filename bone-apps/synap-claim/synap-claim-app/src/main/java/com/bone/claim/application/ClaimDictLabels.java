@@ -51,14 +51,28 @@ public final class ClaimDictLabels {
           Map.entry("ZERO_LIMIT_EXHAUSTED", "责任额度已耗尽（历史占额已封顶）"),
           Map.entry("ZERO_NOT_COVERED", "不在保障范围"));
 
-  /** 人工拒赔数字受控码标签（rejectionCodeOf 派生）。 */
+  /**
+   * 人工拒赔数字受控码标签（§8.3 完整 16 码，逐字对齐设计文档 §8.2 实证分类）。
+   *
+   * <p>01-13 为零赔付/拒赔底层字典，20/30/40 为分类码；键集合必须与 {@link
+   * ClaimDictApplicationService#REJECT_REASON_CODES} 完全一致，否则字典出口 codegen 会产出空 label。 07/06
+   * 在设计文档同义（均为未达免赔），按 pk-tpa-saas 实证保留两码，不擅自合并——合并会改变在途案件统计口径。
+   */
   public static final Map<String, String> REJECT_REASON =
       Map.ofEntries(
+          Map.entry("01", "01 发票就诊日期不在保单有效期内"),
+          Map.entry("02", "02 发票姓名与出险人不一致"),
           Map.entry("03", "03 就诊医院不符合责任医院规则"),
           Map.entry("04", "04 诊断不符合责任免赔规则"),
-          Map.entry("05", "05 合理费用 / 赔付比例为 0（不合理费用、非保障范围）"),
-          Map.entry("06", "06 未达免赔额（免赔未消抵完）"),
+          Map.entry("05", "05 发票计算合理金额为 0（不合理费用、非保障范围）"),
+          Map.entry("06", "06 未达免赔额致合理金额为 0"),
+          Map.entry("07", "07 未达免赔额致合理金额为 0（历史实证码，与 06 同义）"),
+          Map.entry("08", "08 强制使用医保的责任但未使用医保卡就诊"),
           Map.entry("09", "09 无剩余保额（责任额度已用尽/封顶）"),
+          Map.entry("10", "10 发票类就诊类型不符合责任定义"),
+          Map.entry("11", "11 责任不包含特需区域就诊"),
+          Map.entry("12", "12 不满足等待期"),
+          Map.entry("13", "13 该类票据暂不支持理赔"),
           Map.entry("20", "20 目录外费用不赔付"),
           Map.entry("30", "30 责任范围除外"),
           Map.entry("40", "40 风险标记（转人工核实）"));

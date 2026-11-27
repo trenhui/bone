@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   App as AntApp,
-  Button,
   Card,
   DatePicker,
   Descriptions,
@@ -26,20 +25,22 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
   PlusOutlined,
-  ReloadOutlined,
   SettingOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { AuthButton } from '@bone/ui';
+import { useClaimQuery } from '../hooks/useClaimQuery';
 import { useConfirmAction } from '../hooks/useConfirmAction';
+import { useSavedViews } from '../hooks/useSavedViews';
 import { useConfirmDiscard } from '../hooks/useConfirmDiscard';
 import { PERMISSIONS } from '../constants/permissions';
 import { formatMoney } from '../services/money';
 import { ERROR_CODES } from '../constants/errorCodes';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
 import { PolicyNoLink } from '../components/PolicyNoLink';
 import { parsePolicyNoFromSearch } from '../workbench/policyDeepLinks';
 import { isStandalonePath } from '../workbench/sclaimRoutes';
@@ -127,10 +128,13 @@ export function PolicyManagementPage(): ReactElement {
   const [rows, setRows] = useState<PolicyView[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [keyword, setKeyword] = useState('');
-  const [configStatus, setConfigStatus] = useState<PolicyConfigStatus | undefined>(undefined);
+  // 查询状态进 URL（统一查询基座）：筛选可分享、可前进后退，跨页恢复不丢。
+  // 保单页既有每页 10 条口径，通过 defaultSize 保留，避免接线改变默认分页大小。
+  const { query, setKeyword, setFilter, setPage, setSize, applyQueryString } = useClaimQuery(10);
+  const savedViews = useSavedViews();
+  const { keyword, page, size: pageSize } = query;
+  const configStatusRaw = query.filters.configStatus;
+  const configStatus = (configStatusRaw || undefined) as PolicyConfigStatus | undefined;
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
@@ -405,32 +409,34 @@ export function PolicyManagementPage(): ReactElement {
 
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
-          <Input.Search
+          <ClaimQueryBar
+            keyword={keyword}
+            onKeyword={setKeyword}
+            onRefresh={() => void load()}
             placeholder="保单号 / 保司保单号 / 名称"
-            allowClear
-            style={{ width: 280 }}
-            onSearch={(v) => {
-              setKeyword(v);
-              setPage(1);
-            }}
+            views={savedViews.views}
+            onApplyView={(view) => applyQueryString(view.queryString)}
+            onSaveView={(name) => savedViews.save(name, new URLSearchParams({
+              ...(keyword ? { q: keyword } : {}),
+              ...(page > 1 ? { page: String(page) } : {}),
+              ...(configStatus ? { f_configStatus: configStatus } : {}),
+            }).toString())}
+            onRemoveView={savedViews.remove}
+            onTogglePin={savedViews.togglePin}
+            actions={
+              <Select
+                placeholder="规则开关"
+                allowClear
+                style={{ width: 160 }}
+                value={configStatus}
+                onChange={(v) => setFilter('configStatus', v ?? '')}
+                options={Object.entries(POLICY_CONFIG_STATUS_META).map(([value, meta]) => ({
+                  value,
+                  label: meta.label,
+                }))}
+              />
+            }
           />
-          <Select
-            placeholder="规则开关"
-            allowClear
-            style={{ width: 160 }}
-            value={configStatus}
-            onChange={(v) => {
-              setConfigStatus(v);
-              setPage(1);
-            }}
-            options={Object.entries(POLICY_CONFIG_STATUS_META).map(([value, meta]) => ({
-              value,
-              label: meta.label,
-            }))}
-          />
-          <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-            刷新
-          </Button>
           <AuthButton
             code={PERMISSIONS.POLICY_READ}
             icon={<DownloadOutlined />}
@@ -465,6 +471,7 @@ export function PolicyManagementPage(): ReactElement {
         </Space>
 
         <Table<PolicyView>
+        aria-label="保单列表"
           rowKey="policyNo"
           loading={loading}
           dataSource={rows}
@@ -481,7 +488,7 @@ export function PolicyManagementPage(): ReactElement {
             // 写 `p.current` 拿到的是 filters 而不是分页对象。
             onChange: (p, s) => {
               setPage(p ?? 1);
-              setPageSize(s ?? 10);
+              setSize(s ?? 10);
             },
           }}
           columns={[
@@ -798,7 +805,8 @@ export function PolicyManagementPage(): ReactElement {
             >
               <InsurerSelect
                 style={{ width: '100%' }}
-                onChange={(_code, name) => form.setFieldsValue({ insurerName: name })}
+                // 编辑弹窗绑定 editForm；用新建弹窗的 form 实例会静默不更新隐藏的 insurerName。
+                onChange={(_code, name) => editForm.setFieldsValue({ insurerName: name })}
               />
             </Form.Item>
             <Form.Item name="insurerName" hidden>
@@ -1013,6 +1021,7 @@ export function PolicyManagementPage(): ReactElement {
                       </Typography.Text>
                     ) : (
                       <Table
+                      aria-label="承保主体映射健康度"
                         rowKey="domain"
                         size="small"
                         pagination={false}
@@ -1075,6 +1084,7 @@ export function PolicyManagementPage(): ReactElement {
                             title={`${plan.planName}（${plan.planCode}）`}
                           >
                             <Table
+                            aria-label="计划责任列表"
                               rowKey="liabilityUuid"
                               size="small"
                               pagination={false}
@@ -1166,6 +1176,7 @@ export function PolicyManagementPage(): ReactElement {
                           名单来自保单快照，仅展示假名化 ID，不展示明文证件；额度为该被保人名下账户汇总。
                         </Typography.Paragraph>
                         <Table
+                        aria-label="被保人名单"
                           rowKey={(r: PolicyInsuredRosterRow) => r.insuredIdHash}
                           size="small"
                           pagination={false}
@@ -1219,6 +1230,7 @@ export function PolicyManagementPage(): ReactElement {
                       </Typography.Text>
                     ) : (
                       <Table
+                      aria-label="额度账户明细"
                         rowKey={(r: PolicyQuotaAccountRow) =>
                           `${r.insuredIdHash}:${r.planId}:${r.quotaYear}:${r.quotaType}:${r.liabilityUuid}`
                         }

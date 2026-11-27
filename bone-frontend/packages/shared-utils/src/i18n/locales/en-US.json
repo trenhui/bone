@@ -9,6 +9,8 @@
     "AI_GATEWAY_REDLINE_BLOCKED": "Request blocked by cost redline before reaching the model",
     "SC_CLAIM_NOT_FOUND": "Claim not found or not visible (unified 404 under tenant isolation; prevents enumeration)",
     "SC_CLAIM_STATUS_CONFLICT": "Claim status conflict (current status does not allow this action)",
+    "SC_CLAIM_REPORT_NOT_FOUND": "Report not found or not visible",
+    "SC_CLAIM_REPORT_CLOSED": "Report is closed; no new claim can be added",
     "SC_CLAIM_RECON_DIFF_NOT_FOUND": "Reconciliation difference not found or not visible (uniform 404 semantics under tenant isolation, prevents enumeration)",
     "SC_CLAIM_RECON_DIFF_CONFLICT": "Reconciliation difference state conflict (already disposed cannot be disposed again / illegal resolution; never silently idempotent)",
     "SC_CLAIM_EVAL_SAMPLE_QUERY_INVALID": "Invalid eval sample export parameters (time window required and must not exceed 31 days; limit must be 1..500)",
@@ -112,6 +114,7 @@
     "COMMON_NOT_FOUND": "Requested resource not found",
     "COMMON_NOT_IMPLEMENTED": "Capability not implemented",
     "COMMON_RATE_LIMITED": "Too many requests, please retry later",
+    "COMMON_RATE_LIMITED_RETRY": "Too many requests; please retry in about {{seconds}} seconds",
     "COMMON_UNAUTHORIZED": "Sign in required or session expired",
     "COMMON_UNSUPPORTED_MEDIA_TYPE": "Unsupported Content-Type; upload endpoints require multipart/form-data",
     "COMMON_VALIDATION_FAILED": "Validation failed: {{errors}}",
@@ -300,7 +303,13 @@
     "SC_CLAIM_AI_GATE_BLOCKED": "AI capability readiness gate not passed; auto-approval was blocked and routed to manual review (fail-closed, never release funds on a green display)",
     "SC_CLAIM_REPORT_NOT_FOUND": "Report not found or not visible: make sure you entered a report number (starting with RP), not a claim number",
     "SC_CLAIM_REPORT_CLOSED": "This report is closed and cannot accept new claim cases; file a new report if further payment is needed",
-    "SC_CLAIM_REPORT_CONTEXT_MISMATCH": "An additional claim case cannot change the policy, plan, insured person, or loss time: these are inherited from the report, and the request carried fields it must not"
+    "SC_CLAIM_REPORT_CONTEXT_MISMATCH": "An additional claim case cannot change the policy, plan, insured person, or loss time: these are inherited from the report, and the request carried fields it must not",
+    "SC_CLAIM_REJECT_EVIDENCE_REF_INVALID": "Invalid rejection evidence locator: use a locatable reference (e.g. EV-001 or EV-001#p2, where #p is the image page), not free text",
+    "SC_CLAIM_REJECT_REASON_INVALID": "Invalid controlled rejection reason code: pick one from the controlled list (01-13/20/30/40); free text or codes outside the dictionary are not allowed",
+    "SC_CLAIM_SIGN_BATCH_NOT_FOUND": "Sign batch not found, or not visible in the current tenant",
+    "SC_CLAIM_SIGN_STATUS_CONFLICT": "Sign batch status conflict: the current state does not allow this action, or the batch was already signed by someone else. Please refresh and retry",
+    "SC_CLAIM_SIGN_PUSH_INVALID": "Invalid online sign acknowledgement: businessKey is missing, or the Idempotency-Key exceeds 64 characters",
+    "SC_CLAIM_SIGN_PARTICIPANTS_EMPTY": "Offline sign batch has no participants: import at least one claim case before proceeding"
   },
   "enums": {
     "ORDER_STATUS": {

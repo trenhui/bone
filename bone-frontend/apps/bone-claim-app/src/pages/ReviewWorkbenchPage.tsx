@@ -19,10 +19,11 @@ import {
   Table,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
-import { ReloadOutlined, NodeIndexOutlined, CheckCircleOutlined, RobotOutlined } from '@ant-design/icons';
+import { NodeIndexOutlined, CheckCircleOutlined, RobotOutlined } from '@ant-design/icons';
 import {
   claimApi,
   reviewTaskApi,
@@ -35,8 +36,18 @@ import {
   type ReviewTaskStatus,
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
+import {
+  ClaimQueryFields,
+  formValuesToQueryString,
+  queryParamsFromState,
+  type ClaimQueryFormValues,
+} from '../components/ClaimQueryFields';
+import { useClaimQuery } from '../hooks/useClaimQuery';
+import { useSavedViews } from '../hooks/useSavedViews';
 import { ClaimIdLink } from '../components/ClaimIdLink';
 import { PolicyNoLink } from '../components/PolicyNoLink';
+import { EvidenceGallery } from '../components/EvidenceGallery';
 import { AiDisclosureCard } from '../components/AiDisclosureCard';
 import { AiSuggestionCard } from '../components/AiSuggestionCard';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
@@ -47,6 +58,7 @@ import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import {
   MAX_BATCH_DECISION,
+  isBatchDecisionAllowed,
   type BatchDecisionItem,
   type BatchDecisionResp,
 } from '../services/reviewTask';
@@ -121,16 +133,31 @@ export function ReviewWorkbenchPage(): ReactElement {
   /** 批量处置选择：rowKey 即 claimId；后端整批上限 20，前端同步收口。 */
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [batching, setBatching] = useState(false);
-  const [taskFilter, setTaskFilter] = useState<ReviewTaskStatus | undefined>(undefined);
   /**
-   * 服务端分页状态（page / pageSize / total）。
+   * 查询状态进 URL（统一查询基座）：任务维 / 关键字 / 状态 / 案件ID / 时间 / 金额都可分享。
    *
-   * <p><b>为什么必须真分页</b>：此前固定取 `size: 50` 再由 antd 按 `pageSize: 20` 前端切片，
-   * 第 3 页起就是空白，而 `total` 仍显示全部——用户看到「共 N 条」却翻不到，属数据正确性缺陷而非体验问题
-   * （design §13.4 / D5：total 由服务端同一 COUNT(*) 口径产出，前端只传 page/size）。
+   * <p>默认视图仍走 `/review/tasks` 的任务维口径；一旦输入查询条件，切到
+   * `GET /claims/query` 由后端真分页 + 真过滤，避免「只在当前页过滤」的假查询。
+   * 任务维到案件状态集的映射仍在后端 ReviewTaskStatusMapper，前端不另造口径。
    */
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const {
+    query,
+    setKeyword,
+    setFilter,
+    setPage,
+    setSize,
+    reset,
+    applyQueryString,
+    currentQueryString,
+  } = useClaimQuery();
+  const savedViews = useSavedViews();
+  const taskFilterRaw = query.filters.taskStatus;
+  const taskFilter = (taskFilterRaw || undefined) as ReviewTaskStatus | undefined;
+  const { page, size: pageSize } = query;
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const hasQuery =
+    Boolean(query.keyword) ||
+    Object.keys(query.filters).some((key) => key !== 'taskStatus' || Boolean(taskFilter));
   const [total, setTotal] = useState(0);
   /**
    * 任务维服务端计数（三个独立 `size:1` 查询的 total）。
@@ -146,6 +173,8 @@ export function ReviewWorkbenchPage(): ReactElement {
   });
   const [countsLoading, setCountsLoading] = useState(false);
   /** AI 结论抽屉：把建议从案件 360 抬到核赔主决策面，但不改变任何结论与金额。 */
+  /** 影像件抽屉目标案件：只读查看，不触碰领取/决策等写操作。 */
+  const [evidenceClaimId, setEvidenceClaimId] = useState<string | null>(null);
   const [aiTarget, setAiTarget] = useState<ClaimHeadProjection | null>(null);
 
   /**
@@ -284,25 +313,24 @@ export function ReviewWorkbenchPage(): ReactElement {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // 不传 status = 后端默认待办（40+41）。先前传 ['PENDING_ADJUST'] 只覆盖 40，
-      // 领取后进入 41 的案件会整行消失，「通过/拒赔/补件」再无处可点。
-      const resp = await reviewTaskApi.tasks({ status: taskFilter, page, size: pageSize });
+      // 默认待办口径由后端 ReviewTaskStatusMapper 决定（40+41）；查询态切到专用接口做服务端过滤。
+      const resp = hasQuery
+        ? await claimApi.query({
+            ...queryParamsFromState(query),
+            statuses: undefined,
+            taskStatus: taskFilter,
+          })
+        : await reviewTaskApi.tasks({ status: taskFilter, page, size: pageSize });
       setRows(resp?.data?.records ?? []);
-      // total 取后端同源 COUNT(*)：前端不再用 rows.length 冒充总数（那会让「共 1 条」永远正确）。
       setTotal(normalizeTotal(resp?.data?.total));
     } catch (err) {
-      // 展示后端真实原因：createApiClient 已把 errorCode / message 挂到错误对象上，
-      // 先前这里把它一律概括成「待办加载失败」，用户只能截图求助、无法自助判断。
       message.error({ content: resolveErrorMessage(err, '待办加载失败'), key: MSG_KEY_LOAD });
     } finally {
       setLoading(false);
     }
-  }, [taskFilter, page, pageSize]);
+  }, [hasQuery, query, taskFilter, page, pageSize]);
 
-  /** 切换任务维筛选回到第 1 页：否则从第 3 页切到只有 1 页数据的筛选条件会看到空表。 */
-  useEffect(() => {
-    setPage(1);
-  }, [taskFilter]);
+  // 切筛选回第 1 页由 setFilter 统一完成（URL 真源），本页不再另设 useEffect 副作用。
 
   useEffect(() => {
     void load();
@@ -460,6 +488,12 @@ export function ReviewWorkbenchPage(): ReactElement {
   }
 
   async function runBatch(decision: Decision) {
+    // 拒赔不可批量：后端批量 DTO 无五要素字段，且一批案件的事实/条款各不相同，共用一套五要素不合规。
+    // 前端按钮已禁用，此处为纵深防御（防止程序化调用绕过 UI）。
+    if (!isBatchDecisionAllowed(decision)) {
+      message.warning('拒赔须逐案填写结构化五要素，不支持批量；请逐案进入详情拒赔');
+      return;
+    }
     const ids = selectedRowKeys.map(String);
     if (ids.length === 0) return;
     if (ids.length > MAX_BATCH_DECISION) {
@@ -485,6 +519,10 @@ export function ReviewWorkbenchPage(): ReactElement {
   }
 
   async function retryFailed(claimId: string, decision: Decision) {
+    if (!isBatchDecisionAllowed(decision)) {
+      message.warning('拒赔须逐案填写结构化五要素，不支持批量重试；请逐案进入详情拒赔');
+      return;
+    }
     setBatching(true);
     try {
       const outcome = await callBatch([{ claimId, decision }]);
@@ -616,16 +654,11 @@ export function ReviewWorkbenchPage(): ReactElement {
                   <Button type="primary" loading={batching}
                     disabled={selectedRowKeys.length > MAX_BATCH_DECISION}>批量通过</Button>
                 </Popconfirm>
-                <Popconfirm
-                  title={`批量拒赔 ${selectedRowKeys.length} 单？`}
-                  description="逐案写入拒赔决策；拒赔五要素须在单案中已完成填写。"
-                  okText="确认"
-                  cancelText="取消"
-                  onConfirm={() => void runBatch('REJECTED')}
-                >
-                  <Button danger loading={batching}
-                    disabled={selectedRowKeys.length > MAX_BATCH_DECISION}>批量拒赔</Button>
-                </Popconfirm>
+                <Tooltip title="拒赔须逐案填写结构化五要素（事实认定/条款依据/证据位置/申诉渠道/法定时限），不可批量；请逐案进入详情拒赔">
+                  <Button danger disabled>
+                    批量拒赔（需逐案填写五要素）
+                  </Button>
+                </Tooltip>
               </Space>
             </Auth>
           </Space>
@@ -635,22 +668,35 @@ export function ReviewWorkbenchPage(): ReactElement {
       <Card
         size="small"
         extra={
-          <Space>
-            <Select<ReviewTaskStatus | undefined>
-              allowClear
-              placeholder="全部待办（待领取 + 处理中）"
-              style={{ width: 240 }}
-              value={taskFilter}
-              onChange={(v) => setTaskFilter(v)}
-              options={TASK_FILTER_OPTIONS}
-            />
-            <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-              刷新
-            </Button>
-          </Space>
+          <ClaimQueryBar
+            keyword={query.keyword}
+            onKeyword={setKeyword}
+            placeholder="案件ID / 赔案号 / 保单号 / 发票号"
+            onRefresh={() => void load()}
+            views={savedViews.views}
+            onApplyView={(view) => applyQueryString(view.queryString)}
+            onSaveView={(name) => savedViews.save(name, currentQueryString())}
+            onRemoveView={savedViews.remove}
+            onTogglePin={savedViews.togglePin}
+            actions={
+              <Space size={8} wrap>
+                <Select<ReviewTaskStatus | undefined>
+                  allowClear
+                  placeholder="全部待办（待领取 + 处理中）"
+                  style={{ width: 240 }}
+                  value={taskFilter}
+                  onChange={(v) => setFilter('taskStatus', v ?? '')}
+                  options={TASK_FILTER_OPTIONS}
+                />
+                <Button onClick={() => setAdvancedOpen(true)}>高级查询</Button>
+                {hasQuery && <Button onClick={reset}>清空条件</Button>}
+              </Space>
+            }
+          />
         }
       >
         <Table<ClaimHeadProjection>
+          aria-label="核赔待办列表"
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
@@ -668,21 +714,27 @@ export function ReviewWorkbenchPage(): ReactElement {
             pageSizeOptions: ['20', '50', '100'],
             showTotal: (t) => `共 ${t} 条`,
             onChange: (nextPage, nextSize) => {
-              setPage(nextPage);
-              if (nextSize !== pageSize) {
-                setPageSize(nextSize);
-                setPage(1);
-              }
+              // setSize 内部已回第 1 页；只发一次 URL 更新，避免连发两次产生中间态。
+              if (nextSize !== pageSize) setSize(nextSize);
+              else setPage(nextPage);
             },
           }}
           columns={[
             {
+              // 1:N：报案号（RP）是一次事故告知，一个报案下可有多笔赔案。
               title: '报案号',
-              dataIndex: 'claimNo',
-              // 存量报案号 28 字符，列宽按最大值取 + 省略兜底，避免溢出覆盖保单号列。
+              dataIndex: 'reportNo',
               width: 250,
               ellipsis: { showTitle: false },
-              // 点报案号直接下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string | null) =>
+                v ? <Tooltip title={v}>{v}</Tooltip> : <span style={{ color: '#999' }}>—</span>,
+            },
+            {
+              // 赔案号（CL）是每笔赔付的处理单元，点它下钻案件详情（下钻用 claimId）。
+              title: '赔案号',
+              dataIndex: 'claimNo',
+              width: 250,
+              ellipsis: { showTitle: false },
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`review-case-link-${row.claimId}`} />
               ),
@@ -737,7 +789,7 @@ export function ReviewWorkbenchPage(): ReactElement {
             { title: '受理时间', dataIndex: 'createdAt', width: 180 },
             {
               title: '操作',
-              width: 260,
+              width: 330,
               render: (_, row) => (
                 <Space size={4} wrap>
                   <Button
@@ -829,12 +881,41 @@ export function ReviewWorkbenchPage(): ReactElement {
                       复核结论
                     </AuthButton>
                   )}
+                  <Button
+                    type="link"
+                    size="small"
+                    data-testid={`review-evidence-${row.claimId}`}
+                    onClick={() => setEvidenceClaimId(row.claimId)}
+                  >
+                    影像件
+                  </Button>
                 </Space>
               ),
             },
           ]}
         />
       </Card>
+
+      <Drawer
+        title="核赔工作台 · 高级查询"
+        width={720}
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        destroyOnHidden
+      >
+        <ClaimQueryFields
+          query={query}
+          showTaskStatus
+          onSubmit={(values: ClaimQueryFormValues) => {
+            applyQueryString(formValuesToQueryString(values));
+            setAdvancedOpen(false);
+          }}
+          onReset={() => {
+            reset();
+            setAdvancedOpen(false);
+          }}
+        />
+      </Drawer>
 
       <Modal
         title={`审核决策 · ${decisionTarget?.claimNo ?? ''}`}
@@ -907,9 +988,28 @@ export function ReviewWorkbenchPage(): ReactElement {
                   <Form.Item
                     name="evidenceRefs"
                     label="③ 证据位置（多个用逗号分隔）"
-                    rules={[{ required: true, whitespace: true, message: '拒赔必填：证据位置' }]}
+                    rules={[
+                      { required: true, whitespace: true, message: '拒赔必填：证据位置' },
+                      {
+                        validator: (_, value: string | undefined) => {
+                          const refs = (value ?? '')
+                            .split(/[,，;；\s]+/)
+                            .map((v) => v.trim())
+                            .filter(Boolean);
+                          const ok =
+                            refs.length > 0 &&
+                            refs.length <= 20 &&
+                            refs.every((r) => /^EV-\d{3,6}(#p[1-9]\d{0,3})?$/.test(r));
+                          return ok
+                            ? Promise.resolve()
+                            : Promise.reject(
+                                new Error('须为可定位原件的位置，如 EV-001 或 EV-001#p2（#p 为影像页码）'),
+                              );
+                        },
+                      },
+                    ]}
                   >
-                    <Input placeholder="如 EV-001, EV-004；须可在证据集定位" />
+                    <Input placeholder="如 EV-001, EV-004#p2；#p 为影像页码，须可在证据集定位" />
                   </Form.Item>
                   <Form.Item
                     name="appealChannel"
@@ -1113,6 +1213,12 @@ export function ReviewWorkbenchPage(): ReactElement {
         />
         {aiTarget ? <AiSuggestionCard claimId={String(aiTarget.claimId)} scene="review" /> : null}
       </Drawer>
+
+      <EvidenceGallery
+        claimId={evidenceClaimId}
+        open={Boolean(evidenceClaimId)}
+        onClose={() => setEvidenceClaimId(null)}
+      />
     </div>
   );
 }

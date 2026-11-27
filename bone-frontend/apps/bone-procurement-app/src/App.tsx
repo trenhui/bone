@@ -10,6 +10,9 @@ import AiReadiness from './pages/AiReadiness';
 import AdvisoryConsole from './pages/AdvisoryConsole';
 import HumanReviewConsole from './pages/HumanReviewConsole';
 import GovernanceStatus from './pages/GovernanceStatus';
+import SourcingConsole from './pages/SourcingConsole';
+import SupplierOnboarding from './pages/SupplierOnboarding';
+import SupplierRisk from './pages/SupplierRisk';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -39,6 +42,9 @@ const AppContent: React.FC = () => {
           <Route path="/advisory" element={<AdvisoryConsole />} />
           <Route path="/human-review" element={<HumanReviewConsole />} />
           <Route path="/governance" element={<GovernanceStatus />} />
+          <Route path="/sourcing" element={<SourcingConsole />} />
+          <Route path="/supplier-onboarding" element={<SupplierOnboarding />} />
+          <Route path="/supplier-risk" element={<SupplierRisk />} />
           <Route path="/" element={<Navigate to="/transactions" replace />} />
         </Routes>
       </Router>

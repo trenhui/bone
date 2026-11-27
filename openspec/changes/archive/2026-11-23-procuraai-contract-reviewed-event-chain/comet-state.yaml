@@ -1,0 +1,2799 @@
+# comet-execution: managed-run
+change_id: 68979686-f5ab-4ebf-b657-69dbcaee0b7a
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: 39dc8de767c098812801bce346772a8aebbf8552
+design_doc: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain/design.md
+plan: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+branch_status: pending
+created_at: 2026-11-23
+verified_at: 2026-11-23
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+handoff_hash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 3f54596f3ec8c769fe628e443c8d78c3fbb92a6e50573b86a26962d3a2f9258f
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-contract-reviewed-event-chain
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: 195a7e3c59f09ad6a7752e711f0d8b743bd8af5f02c3fd8440fb4a739f4965d3
+    input:
+      change: procuraai-contract-reviewed-event-chain
+      changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+      workspaceBaseline:
+        ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 39dc8de767c098812801bce346772a8aebbf8552
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+      handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+      verifiedAt: 2026-11-23
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 24
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-ff81a547b00f7cad46bbea46cf2732d600fc105e3d95df04780f5e15a6145b96
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:1
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 7b558888442c7a6fb996f5729d7198b48216c6aa054d1f9cbad69ec10f8e9873
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:1
+          attempt: 1
+          claimToken: portable-ff81a547b00f7cad46bbea46cf2732d600fc105e3d95df04780f5e15a6145b96
+          inputHash: 7b558888442c7a6fb996f5729d7198b48216c6aa054d1f9cbad69ec10f8e9873
+          outcomeId: 1f469b9e-af5f-498b-b99f-86c3046c4e95
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: fa235cc2a1bf6b03292e97c3afc60930ffa2e67375b2ce423600bac3cfa1cb9b
+            outcomeId: 1f469b9e-af5f-498b-b99f-86c3046c4e95
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-0f0e012048d12266d548c82442ff214e7fd74f52a5a5a97dbaadc0987549afa6
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:4
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: ece8f697a579e63a1b5d2b611503fee4c151632165c84a3a2adf08734ee3e386
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:4
+          attempt: 2
+          claimToken: portable-0f0e012048d12266d548c82442ff214e7fd74f52a5a5a97dbaadc0987549afa6
+          inputHash: ece8f697a579e63a1b5d2b611503fee4c151632165c84a3a2adf08734ee3e386
+          outcomeId: procuraai-contract-reviewed-event-chain:4:2:executor-result
+          output:
+            contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: eaffd152f50c9e64277faedfc81d0aa61b0fcf4dca6d0d60645339f9b77e41d7
+            outcomeId: procuraai-contract-reviewed-event-chain:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: inspect(runId=procuraai-contract-reviewed-event-chain) 显示 action
+                full.open.revalidate :4 attempt1 状态由 running 转为
+                unknown，record=null、result 与 receipt 均缺失，evidence
+                目录无收据/manifest；guard open --apply 命令以 exit 1 返回、执行器进程已停止，本次
+                attempt 的 revalidate 结果从未落地。not-executed 仅指 SDK 记账与收据未落地，不代表
+                OpenSpec 产物未生成（proposal/specs/design/tasks 已由 artifacts 校验为
+                done）。据此按 not-executed 重试，重跑真实 revalidate。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-9c2337868e1d8c5edffbbc3109578772b8957fbc981d682d5dde1677f549bdfa
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:5
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: d399983b830cd72fd4b9d50228b0db551e5206b23b4b55e338eb74e0180a0303
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:5
+          attempt: 1
+          claimToken: portable-9c2337868e1d8c5edffbbc3109578772b8957fbc981d682d5dde1677f549bdfa
+          inputHash: d399983b830cd72fd4b9d50228b0db551e5206b23b4b55e338eb74e0180a0303
+          outcomeId: a68ea594-d394-4047-9e22-99a461860696
+          output:
+            handoffContext: openspec/changes/procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+            handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+            proposal: 候选方案：把 ContractReviewed 从进程内 ConcurrentHashMap 直连升级为持久化
+              Outbox/Inbox/DLQ 幂等消费闭环。6 项决策——(1) 新增
+              t_proc_contract_outbox/inbox/dlq 三表，以 tenant_id+review_id
+              唯一约束去重（否决：复用 append-only 的 review_trace）；(2) 审查结论与 Outbox
+              同事务，唯一键冲突判定幂等（否决：业务层 SELECT FOR UPDATE，AGENTS.md 禁止）；(3) 以消费方
+              TenantContext 校验事件租户，不一致拒绝并留痕（否决：信任事件 tenant）；(4) 消费失败入 DLQ、按
+              review_id 显式重放（否决：无限自动重试）；(5) 事件 7 字段/PII 禁入/UNKNOWN 隔离/AI
+              披露三态/快照不可变全部保持；(6) 按 A10.17 D-11 四入口一致流程在 GATE_KEYS 追加
+              eventChainGate/eventChainProbe，同步
+              ci.yml/check.sh/check-procura-ci.sh + 门禁常量 +
+              注入必红反证。风险：三入口并行冲突→fetch+rebase 收敛；persistence 门禁 6 表断言需扩展；Outbox
+              只存 7 字段避免 PII。Spec Patch：无（design.md 4 Requirement 与 delta spec
+              一致）。
+            requirementsEvidence:
+              contentHash: 54ca35ce7df568a42631284f6d920f76b72cf0f0a07bcdf445b6e528f22bec14
+              ref: openspec/changes/procuraai-contract-reviewed-event-chain
+            sourceEvidence:
+              contentHash: d2844175cbf51b535c1dc22259a15d539c73eb627283647f35405e4ad79715a0
+              ref: openspec/changes/procuraai-contract-reviewed-event-chain
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8f446a4fb8b04f5fe92d6d60797e263a3bb602e714443dbbce900e4e01fcfdde
+            outcomeId: a68ea594-d394-4047-9e22-99a461860696
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-822fe1e9fe4150cdd90bdb2d845143b2a95f5692d27a5bf3ee0b87eec2843a93
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:7
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: b3261058e2adf2a1da122ca31401562f18e334c72688aac2764bf0246345bb74
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:7
+          attempt: 1
+          claimToken: portable-822fe1e9fe4150cdd90bdb2d845143b2a95f5692d27a5bf3ee0b87eec2843a93
+          inputHash: b3261058e2adf2a1da122ca31401562f18e334c72688aac2764bf0246345bb74
+          outcomeId: cb56cb4c-4b7c-41f9-906b-21eb55facca2
+          output:
+            designDoc: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: a32c61e9b59b1802ba9a536cf70a1b53329510629c57dfce08933f9682f7b65b
+            outcomeId: cb56cb4c-4b7c-41f9-906b-21eb55facca2
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-7a3022cca41da8522b5fc1587c9fc113ffcc8e60d4721807459124e05c4d94aa
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:9
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 407eddd73ab06c57717038c7e11db9554dc793cc9890fd582952e4961be597b1
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:9
+          attempt: 1
+          claimToken: portable-7a3022cca41da8522b5fc1587c9fc113ffcc8e60d4721807459124e05c4d94aa
+          inputHash: 407eddd73ab06c57717038c7e11db9554dc793cc9890fd582952e4961be597b1
+          outcomeId: ebe21277-72d5-453e-8f76-8f1151f4e2ba
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 27f5732198cb974c7961243f5714b724c64a72ce3b90b865976422b9e23ff3e1
+            outcomeId: ebe21277-72d5-453e-8f76-8f1151f4e2ba
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-a43d827eda43df7b567eacbfb117cc13ca1867e47eb90f7b2773a0842bda42ce
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:11
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: b8c583f501acd97a238b26104031709e2169e999a94a266a3a6e315b4f021df5
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:11
+          attempt: 1
+          claimToken: portable-a43d827eda43df7b567eacbfb117cc13ca1867e47eb90f7b2773a0842bda42ce
+          inputHash: b8c583f501acd97a238b26104031709e2169e999a94a266a3a6e315b4f021df5
+          outcomeId: 120fa1c5-ac82-4539-8035-a0baceb22f4b
+          output:
+            designEvidence:
+              contentHash: 806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2
+              ref: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+            plan: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+            planEvidence:
+              contentHash: 68a104df819cd975be8be61255e2d604907ec53557e16899da9143fd63098cc5
+              ref: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+            taskRevision: 7693df60422c45eca767d76967424fe56257bf68749427a3de8ccd879d6c2667
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4ef2f2377c2b55909cc75c3945f32c8578d163ff401a27370b20ae74f350c8ad
+            outcomeId: 120fa1c5-ac82-4539-8035-a0baceb22f4b
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-contract-reviewed-event-chain:13/1
+          token: portable-ab768c269780d29d95071a4da8883756cdb14c510bdb7d1a985bbb328e5df4e1
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:13
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 9c52c6f00dfecf078f08c1e8292cd2698610ce05e7cb66777094458294580681
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:13
+          attempt: 1
+          claimToken: portable-ab768c269780d29d95071a4da8883756cdb14c510bdb7d1a985bbb328e5df4e1
+          inputHash: 9c52c6f00dfecf078f08c1e8292cd2698610ce05e7cb66777094458294580681
+          outcomeId: 9f921221-2608-4f1e-877b-1bd47bb040c0
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1c77f59675eba7216981fe324891a11a8ccd1577cf1a00bd22a32d09854bb1fe
+            outcomeId: 9f921221-2608-4f1e-877b-1bd47bb040c0
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-2505f08bb2aff8e03b023c0f236a4af0e8a4083c788b21c201c4276dd125ad4e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:14
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 5570880c9bc0cfd52604427fae4795e45c6fde6b1b56ec6fbdf2fd8e807341a8
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:14
+          attempt: 1
+          claimToken: portable-2505f08bb2aff8e03b023c0f236a4af0e8a4083c788b21c201c4276dd125ad4e
+          inputHash: 5570880c9bc0cfd52604427fae4795e45c6fde6b1b56ec6fbdf2fd8e807341a8
+          outcomeId: f950414c-c0ae-4eab-908f-2640c30b2ede
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: 09dae613969728dfd45817b195f6aedb75d953ea2103eb985426c941aa2ebf36
+            cwd: .
+            environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+            exitCode: 0
+            inputAfter: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+            inputBefore: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+            manifestHash: 655322d766a662fa21ad6d03d71d7caecc0bdef5334d1c023b25804e134a5b69
+            manifestRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/7898e90e-4dd2-4aee-95c4-5c8597a1c729.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/cc838694-438d-47cd-b098-58b6278d36d2.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b5f96ec5159fb96a3e4a226b85beff3cea0192c2d8bc32516ec34c2a6171b231
+            outcomeId: f950414c-c0ae-4eab-908f-2640c30b2ede
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b25ab970917ff40fac5e62dc1672599e5529b2701bf836fd64a287bfc7f9a93b
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:16
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 0ccc9b40bdfd8d8d0e69d9f9b2b7c8f6afa2135a61ae761aac1e807fd27de02e
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:16
+          attempt: 1
+          claimToken: portable-b25ab970917ff40fac5e62dc1672599e5529b2701bf836fd64a287bfc7f9a93b
+          inputHash: 0ccc9b40bdfd8d8d0e69d9f9b2b7c8f6afa2135a61ae761aac1e807fd27de02e
+          outcomeId: a443dce1-e7de-4d5d-8fc9-00726b1bb6c0
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 1b37e12a0f019acaee32be19451575af8f20a555d7bb73e3350e5949f2f1c972
+            outcomeId: a443dce1-e7de-4d5d-8fc9-00726b1bb6c0
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-d7e88b33247f52b05a38641409a8cdba2e071f5190335d61ceca53958b98aab6
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:18
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: d14d2d387a6d5879c76a08196560c34165c4b2f3099cdf971d3f246c842c22ae
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:18
+          attempt: 1
+          claimToken: portable-d7e88b33247f52b05a38641409a8cdba2e071f5190335d61ceca53958b98aab6
+          inputHash: d14d2d387a6d5879c76a08196560c34165c4b2f3099cdf971d3f246c842c22ae
+          outcomeId: 2e4a7a9f-b5f6-4a96-a5d8-52bbdd3f4d4f
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 9d1fb34b10a5b3482a7e59f9c00bd196d754fd50a1ccc26f7058e219e419b0e5
+            cwd: .
+            deliveryInputs:
+              .github/workflows/ci.yml: git:deb8bf122a9fa340edd734bb4f9a2e64b65b6497
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewApplicationService.java: git:362b1ea742d80800a550ef310f0a6f7d2c65a97e
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedConsumer.java: git:35e0ddfa1da3e9cb6224a112aad6716be18517c4
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedEventDriver.java: git:cf70592e8acff43e56ac48f5e7e3f469d870b2df
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedEventPublisher.java: git:2fb8f1a1f8f7e1edd0732e28653ea5dd1a282f12
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/gateway/ContractReviewedEventStore.java: git:7543a9539e7045990b4c64c108332ab1eb99db2b
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedConclusion.java: git:716708647b05d3ba86ece6fe7cd4a09280b0a1e0
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedDlqEntry.java: git:6e4dfb1a58ed31fef733673b9d384609e1a53a08
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedOutboxMessage.java: git:7382ff7028effba61f81e4dd3497aece2144c867
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedDlqEntity.java: git:2ecef4a37690f7e30285e4d06007a13987cd3e39
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedDlqSdkRepository.java: git:a09f8c96f5d84a025b39290953bc1b594d453618
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedEventStoreAdapter.java: git:106e1c07cc88cb8c30023cd0f1b0414d9f5b416a
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedInboxEntity.java: git:b62e3c36fbda95184b10a0fcbcb371d8862d7185
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedInboxSdkRepository.java: git:0228c08652f9310cab08534729e8adff9f03dfcd
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedOutboxEntity.java: git:cd52afd9943a50354ee70e35d40baac5ba02c0b6
+              bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedOutboxSdkRepository.java: git:655c8978a57ceda52888ef12eccb71aa914e936d
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/ProcuraAiGovernanceDdlCoverageTest.java: git:f27bea6e9dcae6e691807432beff5c3a4fd120a9
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewApplicationServiceTest.java: git:9e356011a3c01965568a66010ce51ea9b1fc9ad1
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewIdentityBindingTest.java: git:f04e7041f0aab57a0e4a18db422fed8010234d06
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewedEventChainTest.java: git:6ad91ce624c2215b0040283eef569350f138b12d
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewedSemanticPreservationTest.java: git:b2637fd8a1a9d48e442c1f51938f4f700eb799e8
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/InMemoryContractReviewedEventStore.java: git:268fe520be872f2e52900af512a83617ba5b155f
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ProcuraAiDegradationTest.java: git:968dd8b1d7e9cd693fc6484cd3147028990b7df9
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ProcuraContractReviewTriageTest.java: git:e402db90980b56dab014801ddcfc301074042625
+              bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/infrastructure/ContractReviewedEventStoreAdapterTest.java: git:eb4ce9adf39eae09b879d7de2f091a844c079971
+              bone-init.sql: git:e04074e02f1e46dbb2889e2a51a8f51cb6819963
+              doc/ai-product/procuraAI/README.md: git:459b90619eca2784b8b254cc547d1174af298b36
+              doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md: git:c1a913761101b1da2727af8eb6083b1a7b5c7288
+              doc/ai-product/procuraAI/detailed-design/contracts/asyncapi.yaml: git:a2ced0d93308c6feaa93b313692376f6d804cb4f
+              doc/ai-product/procuraAI/scripts/check-procura-ci.sh: git:3d32274a032131f66edd1382a86352ce144f6bce
+              scripts/check.sh: git:f8562ef4f2ce1844dc7ca06b7a9a9ab3bd2e6846
+              scripts/migration/0141_procura_contract_review_event_chain.sql: git:c9527a14e16733eb084df3f321fced94d55ed922
+              scripts/migration/migration-manifest.json: git:c61b16e8cf0cfe017c5fea6fe74a04b72208a856
+              tools/check_procura_alignment.py: git:4e08e909964f952d945353c8ebbd3a83762d9c73
+              tools/check_procura_event_chain.py: git:378cf32e3e442c505c7e3e97d3943310343744e3
+              tools/check_procura_persistence.py: git:3c10ced2616bf83837c3948db35d4e6ed282cf3e
+            environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+            exitCode: 0
+            inputAfter: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+            inputBefore: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+            manifestHash: 655322d766a662fa21ad6d03d71d7caecc0bdef5334d1c023b25804e134a5b69
+            manifestRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/6e3a779e-8680-4e27-9bc6-ecbe0532f820.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/ba4440a7-fc89-4d71-bcdd-e6aa89875d8b.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 9a20034c4e8570466735811f5a24a58ad07e9ef3d27341c7c327dbab3e3adb72
+            outcomeId: 2e4a7a9f-b5f6-4a96-a5d8-52bbdd3f4d4f
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-442b3fbb0497454b95bfd95c069349d557e3fa6f0bf3efa028e10e9939385834
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:20
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 1b295a0a4f44ac6496286453686cf844d3fda1e3fadd7bb30e63fe7e30edcd5f
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:20
+          attempt: 1
+          claimToken: portable-442b3fbb0497454b95bfd95c069349d557e3fa6f0bf3efa028e10e9939385834
+          inputHash: 1b295a0a4f44ac6496286453686cf844d3fda1e3fadd7bb30e63fe7e30edcd5f
+          outcomeId: 4ae12241-98d5-4d53-ad73-a8041f0daaed
+          output:
+            summary: ContractReviewed 持久化事件闭环：从进程内 ConcurrentHashMap 直连升级为 Outbox→Inbox→DLQ
+              幂等消费（tenant+review_id 唯一键、跨租户拒绝留痕、失败入 DLQ 可按 review_id 重放）；DDL 3 表
+              + migration 0141；按 A10.17 D-11 四入口一致流程接入三入口门禁 + 注入反证（157/157）。TDD
+              13 任务全勾、standard 独立审查 0 CRITICAL/IMPORTANT；采购全量 458 例 BUILD
+              SUCCESS、alignment 10/10、event-chain PASS、asyncapi
+              零漂移。边界：本地持久化+显式驱动模拟投递，不接生产 MQ、不执行生产库、不改 7 字段、不伪造评测转正。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4bc371f269069d983cb2872800b56419447c1f96cea43062e107be547975d757
+            outcomeId: 4ae12241-98d5-4d53-ad73-a8041f0daaed
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-8694a947d823336b772d18fc0cad98bb48151474d1e4e26828a1db75605cce40
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:22
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: b86fd8c4eda7da17f9e6e53b6ce421573e6637731362500758ab70b80f4603f9
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:22
+          attempt: 1
+          claimToken: portable-8694a947d823336b772d18fc0cad98bb48151474d1e4e26828a1db75605cce40
+          inputHash: b86fd8c4eda7da17f9e6e53b6ce421573e6637731362500758ab70b80f4603f9
+          outcomeId: c16c12e0-36e0-4529-bae9-d86787a3f497
+          output:
+            baseCommit: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+            deliveryAction: local
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e1df1a30897d1e394624093ea3cb4d90bbb9f233e7905a42883c1c4ce32c08e8
+            outcomeId: c16c12e0-36e0-4529-bae9-d86787a3f497
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-archive
+          token: portable-685fcebc3305bdb23eab41d9476d65f6fe586f38b40c2e7b6cc5a90bad1b8dc0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-contract-reviewed-event-chain:23
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: dc4e0567f5c58e578849dd5eed22db2fd8a3eb8e8027a7c6dfc0f5ce8b3500df
+        outcome:
+          actionId: procuraai-contract-reviewed-event-chain:23
+          artifacts:
+            - sha256: 335463c3c3cb699a7974de1bca4d5a014cb0c9649844bdaf1a190b626aa2eef4
+              uri: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain/.comet/archive-manifest.json
+          attempt: 2
+          claimToken: portable-685fcebc3305bdb23eab41d9476d65f6fe586f38b40c2e7b6cc5a90bad1b8dc0
+          inputHash: dc4e0567f5c58e578849dd5eed22db2fd8a3eb8e8027a7c6dfc0f5ce8b3500df
+          outcomeId: procuraai-contract-reviewed-event-chain:23:2:recovered:43
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain
+          status: succeeded
+        protocolVersion: 1
+        reason: 第二次执行 full.archive.execute 仍被环境 safe-delete hook(turn
+          count=50)在写回结果阶段中断，OpenSpec 归档目录仍未搬迁；comet guard 与原生 OpenSpec
+          归档形成重试循环，改用原生归档兜底完成交付
+        receipts:
+          - hash: ccd89f3da5cd7e70a352ec9b1dd2b6d734e3a8f1f8945ceafb5d85f230a8ba93
+            outcomeId: procuraai-contract-reviewed-event-chain:23:2:recovered:43
+        reconciliations:
+          - attempt: 1
+            evidence:
+              checkedAt: 2026-11-23
+              conclusion: full.archive.execute 的 OpenSpec 归档完全未执行（目录未搬迁、主 spec 未同步），SDK action
+                :23 虽被领取但无副作用；resolution=not-executed 描述 SDK 记账与 OpenSpec 事务均未落地
+              facts:
+                - guard archive --apply 报 BLOCKED running Action 后退出，action :23
+                  领取后因环境 safe-delete hook 中断父进程
+                - 磁盘核对：active change 目录
+                  openspec/changes/procuraai-contract-reviewed-event-chain
+                  完整存在，archive 目录
+                  openspec/changes/archive/*contract-reviewed-event-chain 不存在
+                - recovery
+                  record.status=missing、receiptRef=null、manifestRef=null，无归档产物收据
+                - 原执行器已停止（guard 进程退出），无可取回的完整结果；将重新真实执行 OpenSpec 归档
+                - not-executed 仅指 OpenSpec 归档事务与 SDK 记账未落地，明确不代表任何归档副作用已发生
+              source: comet state check archive --recover + runtime dispatch inspect + 磁盘目录核对
+            resolution: not-executed
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-contract-reviewed-event-chain:24
+        input:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs: {}
+        inputHash: 5244a3633d0a8329bf61f7ee0d332efad1fad9b6f7207493e865c2508c85a534
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-contract-reviewed-event-chain
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      procuraai-contract-reviewed-event-chain:1:
+        results: {}
+        sequence: 1
+      procuraai-contract-reviewed-event-chain:11:
+        results: {}
+        sequence: 11
+      procuraai-contract-reviewed-event-chain:13:
+        results: {}
+        sequence: 13
+      procuraai-contract-reviewed-event-chain:14:
+        results: {}
+        sequence: 14
+      procuraai-contract-reviewed-event-chain:16:
+        results: {}
+        sequence: 16
+      procuraai-contract-reviewed-event-chain:18:
+        results: {}
+        sequence: 18
+      procuraai-contract-reviewed-event-chain:20:
+        results: {}
+        sequence: 20
+      procuraai-contract-reviewed-event-chain:22:
+        results: {}
+        sequence: 22
+      procuraai-contract-reviewed-event-chain:23:
+        results: {}
+        sequence: 23
+      procuraai-contract-reviewed-event-chain:24:
+        results: {}
+        sequence: 24
+      procuraai-contract-reviewed-event-chain:4:
+        results: {}
+        sequence: 4
+      procuraai-contract-reviewed-event-chain:5:
+        results: {}
+        sequence: 5
+      procuraai-contract-reviewed-event-chain:7:
+        results: {}
+        sequence: 7
+      procuraai-contract-reviewed-event-chain:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-contract-reviewed-event-chain:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+              ref: openspec/changes/procuraai-contract-reviewed-event-chain
+        proposalHash: 435f0f02e7b5de3375d48eca0978d50e6f27eb91f7bf33e3dd764c522a661fa5
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+          choice: approved
+          proposalHash: 435f0f02e7b5de3375d48eca0978d50e6f27eb91f7bf33e3dd764c522a661fa5
+      - id: procuraai-contract-reviewed-event-chain:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+              handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+              proposal: 候选方案：把 ContractReviewed 从进程内 ConcurrentHashMap 直连升级为持久化
+                Outbox/Inbox/DLQ 幂等消费闭环。6 项决策——(1) 新增
+                t_proc_contract_outbox/inbox/dlq 三表，以 tenant_id+review_id
+                唯一约束去重（否决：复用 append-only 的 review_trace）；(2) 审查结论与 Outbox
+                同事务，唯一键冲突判定幂等（否决：业务层 SELECT FOR UPDATE，AGENTS.md 禁止）；(3) 以消费方
+                TenantContext 校验事件租户，不一致拒绝并留痕（否决：信任事件 tenant）；(4) 消费失败入 DLQ、按
+                review_id 显式重放（否决：无限自动重试）；(5) 事件 7 字段/PII 禁入/UNKNOWN 隔离/AI
+                披露三态/快照不可变全部保持；(6) 按 A10.17 D-11 四入口一致流程在 GATE_KEYS 追加
+                eventChainGate/eventChainProbe，同步
+                ci.yml/check.sh/check-procura-ci.sh + 门禁常量 +
+                注入必红反证。风险：三入口并行冲突→fetch+rebase 收敛；persistence 门禁 6 表断言需扩展；Outbox
+                只存 7 字段避免 PII。Spec Patch：无（design.md 4 Requirement 与 delta spec
+                一致）。
+              requirementsEvidence:
+                contentHash: 54ca35ce7df568a42631284f6d920f76b72cf0f0a07bcdf445b6e528f22bec14
+                ref: openspec/changes/procuraai-contract-reviewed-event-chain
+              sourceEvidence:
+                contentHash: d2844175cbf51b535c1dc22259a15d539c73eb627283647f35405e4ad79715a0
+                ref: openspec/changes/procuraai-contract-reviewed-event-chain
+        proposalHash: 8deac906d5864f015692f29a1168070825b1a7032646e4d6a8472c4c885ed374
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-8deac906d5864f015692f29a1168070825b1a7032646e4d6a8472c4c885ed374-approved
+          choice: approved
+          proposalHash: 8deac906d5864f015692f29a1168070825b1a7032646e4d6a8472c4c885ed374
+      - id: procuraai-contract-reviewed-event-chain:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 2191a5a6f9236c85cc97c6dedffaa0a21d177da15b585d03b86fd41cedd08da2
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-build-2191a5a6f9236c85cc97c6dedffaa0a21d177da15b585d03b86fd41cedd08da2-approved
+          choice: approved
+          proposalHash: 2191a5a6f9236c85cc97c6dedffaa0a21d177da15b585d03b86fd41cedd08da2
+      - id: procuraai-contract-reviewed-event-chain:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.archive.prepare:
+              summary: ContractReviewed 持久化事件闭环：从进程内 ConcurrentHashMap 直连升级为 Outbox→Inbox→DLQ
+                幂等消费（tenant+review_id 唯一键、跨租户拒绝留痕、失败入 DLQ 可按 review_id 重放）；DDL 3
+                表 + migration 0141；按 A10.17 D-11 四入口一致流程接入三入口门禁 +
+                注入反证（157/157）。TDD 13 任务全勾、standard 独立审查 0
+                CRITICAL/IMPORTANT；采购全量 458 例 BUILD SUCCESS、alignment
+                10/10、event-chain PASS、asyncapi 零漂移。边界：本地持久化+显式驱动模拟投递，不接生产
+                MQ、不执行生产库、不改 7 字段、不伪造评测转正。
+              targetBranch: dev
+        proposalHash: 6a600ffd796b5ba7d357fc255242ae0a35e1b648aeb89640164a3ce632eacf0c
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-6a600ffd796b5ba7d357fc255242ae0a35e1b648aeb89640164a3ce632eacf0c-local
+          choice: local
+          proposalHash: 6a600ffd796b5ba7d357fc255242ae0a35e1b648aeb89640164a3ce632eacf0c
+    evidenceWaits:
+      - id: procuraai-contract-reviewed-event-chain:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain
+          contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+          submissionId: 566368ac-6b1c-4d78-bc17-d4f1a526b7b3
+      - id: procuraai-contract-reviewed-event-chain:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+          contentHash: 806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2
+          submissionId: 8d3e0c37-ba71-4b42-b021-d1703ced70b5
+      - id: procuraai-contract-reviewed-event-chain:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+          contentHash: 68a104df819cd975be8be61255e2d604907ec53557e16899da9143fd63098cc5
+          submissionId: 7cb189fc-68b7-477d-89ce-7bd9bfa08f7b
+      - id: procuraai-contract-reviewed-event-chain:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/cc838694-438d-47cd-b098-58b6278d36d2.log
+          contentHash: 09dae613969728dfd45817b195f6aedb75d953ea2103eb985426c941aa2ebf36
+          submissionId: 9cb154fa-2c9e-47b4-9f31-a84c94fef77a
+      - id: procuraai-contract-reviewed-event-chain:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+          contentHash: 3bb92c59030c4df7c15e2b33815de8c7e7178cc167ebcb00926f844a9c8678ac
+          submissionId: 203c41bb-c52b-4127-be21-1edeeb641bc1
+      - id: procuraai-contract-reviewed-event-chain:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/ba4440a7-fc89-4d71-bcdd-e6aa89875d8b.log
+          contentHash: 9d1fb34b10a5b3482a7e59f9c00bd196d754fd50a1ccc26f7058e219e419b0e5
+          submissionId: 2cc69941-7dee-44d9-b7a4-1f1bbc34ba48
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 44
+  sourceHash: d5fb31f40064fa312165060cb27d0d9718ddaa75cb1ba7602586c480c38b00ca
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+              ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+        ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+              handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+              proposal: 候选方案：把 ContractReviewed 从进程内 ConcurrentHashMap 直连升级为持久化
+                Outbox/Inbox/DLQ 幂等消费闭环。6 项决策——(1) 新增
+                t_proc_contract_outbox/inbox/dlq 三表，以 tenant_id+review_id
+                唯一约束去重（否决：复用 append-only 的 review_trace）；(2) 审查结论与 Outbox
+                同事务，唯一键冲突判定幂等（否决：业务层 SELECT FOR UPDATE，AGENTS.md 禁止）；(3) 以消费方
+                TenantContext 校验事件租户，不一致拒绝并留痕（否决：信任事件 tenant）；(4) 消费失败入 DLQ、按
+                review_id 显式重放（否决：无限自动重试）；(5) 事件 7 字段/PII 禁入/UNKNOWN 隔离/AI
+                披露三态/快照不可变全部保持；(6) 按 A10.17 D-11 四入口一致流程在 GATE_KEYS 追加
+                eventChainGate/eventChainProbe，同步
+                ci.yml/check.sh/check-procura-ci.sh + 门禁常量 +
+                注入必红反证。风险：三入口并行冲突→fetch+rebase 收敛；persistence 门禁 6 表断言需扩展；Outbox
+                只存 7 字段避免 PII。Spec Patch：无（design.md 4 Requirement 与 delta spec
+                一致）。
+              requirementsEvidence:
+                contentHash: 54ca35ce7df568a42631284f6d920f76b72cf0f0a07bcdf445b6e528f22bec14
+                ref: openspec/changes/procuraai-contract-reviewed-event-chain
+              sourceEvidence:
+                contentHash: d2844175cbf51b535c1dc22259a15d539c73eb627283647f35405e4ad79715a0
+                ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - handoffContext: openspec/changes/procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+        handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+        proposal: 候选方案：把 ContractReviewed 从进程内 ConcurrentHashMap 直连升级为持久化
+          Outbox/Inbox/DLQ 幂等消费闭环。6 项决策——(1) 新增 t_proc_contract_outbox/inbox/dlq
+          三表，以 tenant_id+review_id 唯一约束去重（否决：复用 append-only 的 review_trace）；(2)
+          审查结论与 Outbox 同事务，唯一键冲突判定幂等（否决：业务层 SELECT FOR UPDATE，AGENTS.md 禁止）；(3)
+          以消费方 TenantContext 校验事件租户，不一致拒绝并留痕（否决：信任事件 tenant）；(4) 消费失败入 DLQ、按
+          review_id 显式重放（否决：无限自动重试）；(5) 事件 7 字段/PII 禁入/UNKNOWN 隔离/AI
+          披露三态/快照不可变全部保持；(6) 按 A10.17 D-11 四入口一致流程在 GATE_KEYS 追加
+          eventChainGate/eventChainProbe，同步 ci.yml/check.sh/check-procura-ci.sh
+          + 门禁常量 + 注入必红反证。风险：三入口并行冲突→fetch+rebase 收敛；persistence 门禁 6
+          表断言需扩展；Outbox 只存 7 字段避免 PII。Spec Patch：无（design.md 4 Requirement 与
+          delta spec 一致）。
+        requirementsEvidence:
+          contentHash: 54ca35ce7df568a42631284f6d920f76b72cf0f0a07bcdf445b6e528f22bec14
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain
+        sourceEvidence:
+          contentHash: d2844175cbf51b535c1dc22259a15d539c73eb627283647f35405e4ad79715a0
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - designDoc: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+      - contentHash: 806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2
+        ref: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+        plan: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+        planEvidence:
+          contentHash: 68a104df819cd975be8be61255e2d604907ec53557e16899da9143fd63098cc5
+          ref: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+        taskRevision: 7693df60422c45eca767d76967424fe56257bf68749427a3de8ccd879d6c2667
+      - contentHash: 68a104df819cd975be8be61255e2d604907ec53557e16899da9143fd63098cc5
+        ref: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: 09dae613969728dfd45817b195f6aedb75d953ea2103eb985426c941aa2ebf36
+        cwd: .
+        environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+        exitCode: 0
+        inputAfter: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+        inputBefore: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+        manifestHash: 655322d766a662fa21ad6d03d71d7caecc0bdef5334d1c023b25804e134a5b69
+        manifestRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/7898e90e-4dd2-4aee-95c4-5c8597a1c729.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/cc838694-438d-47cd-b098-58b6278d36d2.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 09dae613969728dfd45817b195f6aedb75d953ea2103eb985426c941aa2ebf36
+        ref: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/cc838694-438d-47cd-b098-58b6278d36d2.log
+      - contentHash: 3bb92c59030c4df7c15e2b33815de8c7e7178cc167ebcb00926f844a9c8678ac
+        ref: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 9d1fb34b10a5b3482a7e59f9c00bd196d754fd50a1ccc26f7058e219e419b0e5
+        cwd: .
+        deliveryInputs:
+          .github/workflows/ci.yml: git:deb8bf122a9fa340edd734bb4f9a2e64b65b6497
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewApplicationService.java: git:362b1ea742d80800a550ef310f0a6f7d2c65a97e
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedConsumer.java: git:35e0ddfa1da3e9cb6224a112aad6716be18517c4
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedEventDriver.java: git:cf70592e8acff43e56ac48f5e7e3f469d870b2df
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedEventPublisher.java: git:2fb8f1a1f8f7e1edd0732e28653ea5dd1a282f12
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/gateway/ContractReviewedEventStore.java: git:7543a9539e7045990b4c64c108332ab1eb99db2b
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedConclusion.java: git:716708647b05d3ba86ece6fe7cd4a09280b0a1e0
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedDlqEntry.java: git:6e4dfb1a58ed31fef733673b9d384609e1a53a08
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedOutboxMessage.java: git:7382ff7028effba61f81e4dd3497aece2144c867
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedDlqEntity.java: git:2ecef4a37690f7e30285e4d06007a13987cd3e39
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedDlqSdkRepository.java: git:a09f8c96f5d84a025b39290953bc1b594d453618
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedEventStoreAdapter.java: git:106e1c07cc88cb8c30023cd0f1b0414d9f5b416a
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedInboxEntity.java: git:b62e3c36fbda95184b10a0fcbcb371d8862d7185
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedInboxSdkRepository.java: git:0228c08652f9310cab08534729e8adff9f03dfcd
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedOutboxEntity.java: git:cd52afd9943a50354ee70e35d40baac5ba02c0b6
+          bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedOutboxSdkRepository.java: git:655c8978a57ceda52888ef12eccb71aa914e936d
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/ProcuraAiGovernanceDdlCoverageTest.java: git:f27bea6e9dcae6e691807432beff5c3a4fd120a9
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewApplicationServiceTest.java: git:9e356011a3c01965568a66010ce51ea9b1fc9ad1
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewIdentityBindingTest.java: git:f04e7041f0aab57a0e4a18db422fed8010234d06
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewedEventChainTest.java: git:6ad91ce624c2215b0040283eef569350f138b12d
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewedSemanticPreservationTest.java: git:b2637fd8a1a9d48e442c1f51938f4f700eb799e8
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/InMemoryContractReviewedEventStore.java: git:268fe520be872f2e52900af512a83617ba5b155f
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ProcuraAiDegradationTest.java: git:968dd8b1d7e9cd693fc6484cd3147028990b7df9
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ProcuraContractReviewTriageTest.java: git:e402db90980b56dab014801ddcfc301074042625
+          bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/infrastructure/ContractReviewedEventStoreAdapterTest.java: git:eb4ce9adf39eae09b879d7de2f091a844c079971
+          bone-init.sql: git:e04074e02f1e46dbb2889e2a51a8f51cb6819963
+          doc/ai-product/procuraAI/README.md: git:459b90619eca2784b8b254cc547d1174af298b36
+          doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md: git:c1a913761101b1da2727af8eb6083b1a7b5c7288
+          doc/ai-product/procuraAI/detailed-design/contracts/asyncapi.yaml: git:a2ced0d93308c6feaa93b313692376f6d804cb4f
+          doc/ai-product/procuraAI/scripts/check-procura-ci.sh: git:3d32274a032131f66edd1382a86352ce144f6bce
+          scripts/check.sh: git:f8562ef4f2ce1844dc7ca06b7a9a9ab3bd2e6846
+          scripts/migration/0141_procura_contract_review_event_chain.sql: git:c9527a14e16733eb084df3f321fced94d55ed922
+          scripts/migration/migration-manifest.json: git:c61b16e8cf0cfe017c5fea6fe74a04b72208a856
+          tools/check_procura_alignment.py: git:4e08e909964f952d945353c8ebbd3a83762d9c73
+          tools/check_procura_event_chain.py: git:378cf32e3e442c505c7e3e97d3943310343744e3
+          tools/check_procura_persistence.py: git:3c10ced2616bf83837c3948db35d4e6ed282cf3e
+        environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+        exitCode: 0
+        inputAfter: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+        inputBefore: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+        manifestHash: 655322d766a662fa21ad6d03d71d7caecc0bdef5334d1c023b25804e134a5b69
+        manifestRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/6e3a779e-8680-4e27-9bc6-ecbe0532f820.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/ba4440a7-fc89-4d71-bcdd-e6aa89875d8b.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 9d1fb34b10a5b3482a7e59f9c00bd196d754fd50a1ccc26f7058e219e419b0e5
+        ref: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/ba4440a7-fc89-4d71-bcdd-e6aa89875d8b.log
+      - choice: local
+        proposal:
+          input:
+            change: procuraai-contract-reviewed-event-chain
+            changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+            workspaceBaseline:
+              ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+          outputs:
+            full.archive.prepare:
+              summary: ContractReviewed 持久化事件闭环：从进程内 ConcurrentHashMap 直连升级为 Outbox→Inbox→DLQ
+                幂等消费（tenant+review_id 唯一键、跨租户拒绝留痕、失败入 DLQ 可按 review_id 重放）；DDL 3
+                表 + migration 0141；按 A10.17 D-11 四入口一致流程接入三入口门禁 +
+                注入反证（157/157）。TDD 13 任务全勾、standard 独立审查 0
+                CRITICAL/IMPORTANT；采购全量 458 例 BUILD SUCCESS、alignment
+                10/10、event-chain PASS、asyncapi 零漂移。边界：本地持久化+显式驱动模拟投递，不接生产
+                MQ、不执行生产库、不改 7 字段、不伪造评测转正。
+              targetBranch: dev
+      - summary: ContractReviewed 持久化事件闭环：从进程内 ConcurrentHashMap 直连升级为 Outbox→Inbox→DLQ
+          幂等消费（tenant+review_id 唯一键、跨租户拒绝留痕、失败入 DLQ 可按 review_id 重放）；DDL 3 表 +
+          migration 0141；按 A10.17 D-11 四入口一致流程接入三入口门禁 + 注入反证（157/157）。TDD 13
+          任务全勾、standard 独立审查 0 CRITICAL/IMPORTANT；采购全量 458 例 BUILD
+          SUCCESS、alignment 10/10、event-chain PASS、asyncapi
+          零漂移。边界：本地持久化+显式驱动模拟投递，不接生产 MQ、不执行生产库、不改 7 字段、不伪造评测转正。
+        targetBranch: dev
+      - baseCommit: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+        deliveryAction: local
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-contract-reviewed-event-chain
+              changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+              workspaceBaseline:
+                ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-contract-reviewed-event-chain
+              changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+              workspaceBaseline:
+                ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+                handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+                proposal: 候选方案：把 ContractReviewed 从进程内 ConcurrentHashMap 直连升级为持久化
+                  Outbox/Inbox/DLQ 幂等消费闭环。6 项决策——(1) 新增
+                  t_proc_contract_outbox/inbox/dlq 三表，以 tenant_id+review_id
+                  唯一约束去重（否决：复用 append-only 的 review_trace）；(2) 审查结论与 Outbox
+                  同事务，唯一键冲突判定幂等（否决：业务层 SELECT FOR UPDATE，AGENTS.md 禁止）；(3) 以消费方
+                  TenantContext 校验事件租户，不一致拒绝并留痕（否决：信任事件 tenant）；(4) 消费失败入 DLQ、按
+                  review_id 显式重放（否决：无限自动重试）；(5) 事件 7 字段/PII 禁入/UNKNOWN 隔离/AI
+                  披露三态/快照不可变全部保持；(6) 按 A10.17 D-11 四入口一致流程在 GATE_KEYS 追加
+                  eventChainGate/eventChainProbe，同步
+                  ci.yml/check.sh/check-procura-ci.sh + 门禁常量 +
+                  注入必红反证。风险：三入口并行冲突→fetch+rebase 收敛；persistence 门禁 6
+                  表断言需扩展；Outbox 只存 7 字段避免 PII。Spec Patch：无（design.md 4
+                  Requirement 与 delta spec 一致）。
+                requirementsEvidence:
+                  contentHash: 54ca35ce7df568a42631284f6d920f76b72cf0f0a07bcdf445b6e528f22bec14
+                  ref: openspec/changes/procuraai-contract-reviewed-event-chain
+                sourceEvidence:
+                  contentHash: d2844175cbf51b535c1dc22259a15d539c73eb627283647f35405e4ad79715a0
+                  ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+      - sequence: 8
+        value:
+          contentHash: 806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-contract-reviewed-event-chain/.comet/handoff/design-context.json
+          handoffHash: b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa
+          proposal: 候选方案：把 ContractReviewed 从进程内 ConcurrentHashMap 直连升级为持久化
+            Outbox/Inbox/DLQ 幂等消费闭环。6 项决策——(1) 新增
+            t_proc_contract_outbox/inbox/dlq 三表，以 tenant_id+review_id
+            唯一约束去重（否决：复用 append-only 的 review_trace）；(2) 审查结论与 Outbox
+            同事务，唯一键冲突判定幂等（否决：业务层 SELECT FOR UPDATE，AGENTS.md 禁止）；(3) 以消费方
+            TenantContext 校验事件租户，不一致拒绝并留痕（否决：信任事件 tenant）；(4) 消费失败入 DLQ、按
+            review_id 显式重放（否决：无限自动重试）；(5) 事件 7 字段/PII 禁入/UNKNOWN 隔离/AI
+            披露三态/快照不可变全部保持；(6) 按 A10.17 D-11 四入口一致流程在 GATE_KEYS 追加
+            eventChainGate/eventChainProbe，同步
+            ci.yml/check.sh/check-procura-ci.sh + 门禁常量 +
+            注入必红反证。风险：三入口并行冲突→fetch+rebase 收敛；persistence 门禁 6 表断言需扩展；Outbox 只存
+            7 字段避免 PII。Spec Patch：无（design.md 4 Requirement 与 delta spec 一致）。
+          requirementsEvidence:
+            contentHash: 54ca35ce7df568a42631284f6d920f76b72cf0f0a07bcdf445b6e528f22bec14
+            ref: openspec/changes/procuraai-contract-reviewed-event-chain
+          sourceEvidence:
+            contentHash: d2844175cbf51b535c1dc22259a15d539c73eb627283647f35405e4ad79715a0
+            ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-contract-reviewed-event-chain
+              changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+              workspaceBaseline:
+                ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+                ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - sequence: 2
+        value:
+          contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+          ref: openspec/changes/procuraai-contract-reviewed-event-chain
+      - sequence: 4
+        value:
+          contentHash: afae00d55946017aace32575d39bf8fe7cf2e52c3bb4dcbecbb5668d4bc91741
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2
+            ref: openspec/changes/procuraai-contract-reviewed-event-chain/design.md
+          plan: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+          planEvidence:
+            contentHash: 68a104df819cd975be8be61255e2d604907ec53557e16899da9143fd63098cc5
+            ref: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+          taskRevision: 7693df60422c45eca767d76967424fe56257bf68749427a3de8ccd879d6c2667
+      - sequence: 12
+        value:
+          contentHash: 68a104df819cd975be8be61255e2d604907ec53557e16899da9143fd63098cc5
+          ref: docs/superpowers/plans/2026-11-23-procuraai-contract-reviewed-event-chain.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: 09dae613969728dfd45817b195f6aedb75d953ea2103eb985426c941aa2ebf36
+          cwd: .
+          environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+          exitCode: 0
+          inputAfter: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+          inputBefore: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+          manifestHash: 655322d766a662fa21ad6d03d71d7caecc0bdef5334d1c023b25804e134a5b69
+          manifestRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/7898e90e-4dd2-4aee-95c4-5c8597a1c729.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/cc838694-438d-47cd-b098-58b6278d36d2.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: 09dae613969728dfd45817b195f6aedb75d953ea2103eb985426c941aa2ebf36
+          ref: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/cc838694-438d-47cd-b098-58b6278d36d2.log
+      - sequence: 17
+        value:
+          contentHash: 3bb92c59030c4df7c15e2b33815de8c7e7178cc167ebcb00926f844a9c8678ac
+          ref: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-23-procuraai-contract-reviewed-event-chain-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 9d1fb34b10a5b3482a7e59f9c00bd196d754fd50a1ccc26f7058e219e419b0e5
+          cwd: .
+          deliveryInputs:
+            .github/workflows/ci.yml: git:deb8bf122a9fa340edd734bb4f9a2e64b65b6497
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewApplicationService.java: git:362b1ea742d80800a550ef310f0a6f7d2c65a97e
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedConsumer.java: git:35e0ddfa1da3e9cb6224a112aad6716be18517c4
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedEventDriver.java: git:cf70592e8acff43e56ac48f5e7e3f469d870b2df
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/application/ContractReviewedEventPublisher.java: git:2fb8f1a1f8f7e1edd0732e28653ea5dd1a282f12
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/gateway/ContractReviewedEventStore.java: git:7543a9539e7045990b4c64c108332ab1eb99db2b
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedConclusion.java: git:716708647b05d3ba86ece6fe7cd4a09280b0a1e0
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedDlqEntry.java: git:6e4dfb1a58ed31fef733673b9d384609e1a53a08
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/domain/model/review/ContractReviewedOutboxMessage.java: git:7382ff7028effba61f81e4dd3497aece2144c867
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedDlqEntity.java: git:2ecef4a37690f7e30285e4d06007a13987cd3e39
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedDlqSdkRepository.java: git:a09f8c96f5d84a025b39290953bc1b594d453618
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedEventStoreAdapter.java: git:106e1c07cc88cb8c30023cd0f1b0414d9f5b416a
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedInboxEntity.java: git:b62e3c36fbda95184b10a0fcbcb371d8862d7185
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedInboxSdkRepository.java: git:0228c08652f9310cab08534729e8adff9f03dfcd
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedOutboxEntity.java: git:cd52afd9943a50354ee70e35d40baac5ba02c0b6
+            bone-apps/bone-procurement/bone-procurement-contract/src/main/java/com/bone/procurement/contract/infrastructure/ContractReviewedOutboxSdkRepository.java: git:655c8978a57ceda52888ef12eccb71aa914e936d
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/ProcuraAiGovernanceDdlCoverageTest.java: git:f27bea6e9dcae6e691807432beff5c3a4fd120a9
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewApplicationServiceTest.java: git:9e356011a3c01965568a66010ce51ea9b1fc9ad1
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewIdentityBindingTest.java: git:f04e7041f0aab57a0e4a18db422fed8010234d06
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewedEventChainTest.java: git:6ad91ce624c2215b0040283eef569350f138b12d
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ContractReviewedSemanticPreservationTest.java: git:b2637fd8a1a9d48e442c1f51938f4f700eb799e8
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/InMemoryContractReviewedEventStore.java: git:268fe520be872f2e52900af512a83617ba5b155f
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ProcuraAiDegradationTest.java: git:968dd8b1d7e9cd693fc6484cd3147028990b7df9
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/application/ProcuraContractReviewTriageTest.java: git:e402db90980b56dab014801ddcfc301074042625
+            bone-apps/bone-procurement/bone-procurement-contract/src/test/java/com/bone/procurement/contract/infrastructure/ContractReviewedEventStoreAdapterTest.java: git:eb4ce9adf39eae09b879d7de2f091a844c079971
+            bone-init.sql: git:e04074e02f1e46dbb2889e2a51a8f51cb6819963
+            doc/ai-product/procuraAI/README.md: git:459b90619eca2784b8b254cc547d1174af298b36
+            doc/ai-product/procuraAI/detailed-design/00-总纲与统一约定.md: git:c1a913761101b1da2727af8eb6083b1a7b5c7288
+            doc/ai-product/procuraAI/detailed-design/contracts/asyncapi.yaml: git:a2ced0d93308c6feaa93b313692376f6d804cb4f
+            doc/ai-product/procuraAI/scripts/check-procura-ci.sh: git:3d32274a032131f66edd1382a86352ce144f6bce
+            scripts/check.sh: git:f8562ef4f2ce1844dc7ca06b7a9a9ab3bd2e6846
+            scripts/migration/0141_procura_contract_review_event_chain.sql: git:c9527a14e16733eb084df3f321fced94d55ed922
+            scripts/migration/migration-manifest.json: git:c61b16e8cf0cfe017c5fea6fe74a04b72208a856
+            tools/check_procura_alignment.py: git:4e08e909964f952d945353c8ebbd3a83762d9c73
+            tools/check_procura_event_chain.py: git:378cf32e3e442c505c7e3e97d3943310343744e3
+            tools/check_procura_persistence.py: git:3c10ced2616bf83837c3948db35d4e6ed282cf3e
+          environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+          exitCode: 0
+          inputAfter: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+          inputBefore: ea7c62244df6efaa139d40145a327d881d64652a8c5b6fd1987c814c0fe83fe0
+          manifestHash: 655322d766a662fa21ad6d03d71d7caecc0bdef5334d1c023b25804e134a5b69
+          manifestRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/6e3a779e-8680-4e27-9bc6-ecbe0532f820.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/ba4440a7-fc89-4d71-bcdd-e6aa89875d8b.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: 9d1fb34b10a5b3482a7e59f9c00bd196d754fd50a1ccc26f7058e219e419b0e5
+          ref: .comet/runtime/classic-sdk-checks/5ea991386e1498256cc6e4332d856716342794e8b86b3b27ba67bae152a8a8ff/ba4440a7-fc89-4d71-bcdd-e6aa89875d8b.log
+      - sequence: 21
+        value:
+          choice: local
+          proposal:
+            input:
+              change: procuraai-contract-reviewed-event-chain
+              changeDir: openspec/changes/procuraai-contract-reviewed-event-chain
+              workspaceBaseline:
+                ref: b7f20c03-c776-4bb2-87f1-9179d9325bb1
+            outputs:
+              full.archive.prepare:
+                summary: ContractReviewed 持久化事件闭环：从进程内 ConcurrentHashMap 直连升级为 Outbox→Inbox→DLQ
+                  幂等消费（tenant+review_id 唯一键、跨租户拒绝留痕、失败入 DLQ 可按 review_id 重放）；DDL
+                  3 表 + migration 0141；按 A10.17 D-11 四入口一致流程接入三入口门禁 +
+                  注入反证（157/157）。TDD 13 任务全勾、standard 独立审查 0
+                  CRITICAL/IMPORTANT；采购全量 458 例 BUILD SUCCESS、alignment
+                  10/10、event-chain PASS、asyncapi 零漂移。边界：本地持久化+显式驱动模拟投递，不接生产
+                  MQ、不执行生产库、不改 7 字段、不伪造评测转正。
+                targetBranch: dev
+      - sequence: 20
+        value:
+          summary: ContractReviewed 持久化事件闭环：从进程内 ConcurrentHashMap 直连升级为 Outbox→Inbox→DLQ
+            幂等消费（tenant+review_id 唯一键、跨租户拒绝留痕、失败入 DLQ 可按 review_id 重放）；DDL 3 表 +
+            migration 0141；按 A10.17 D-11 四入口一致流程接入三入口门禁 + 注入反证（157/157）。TDD 13
+            任务全勾、standard 独立审查 0 CRITICAL/IMPORTANT；采购全量 458 例 BUILD
+            SUCCESS、alignment 10/10、event-chain PASS、asyncapi
+            零漂移。边界：本地持久化+显式驱动模拟投递，不接生产 MQ、不执行生产库、不改 7 字段、不伪造评测转正。
+          targetBranch: dev
+      - sequence: 22
+        value:
+          baseCommit: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+          deliveryAction: local
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 23
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-23-procuraai-contract-reviewed-event-chain
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 51
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 54
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 55
+        right: 48
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 58
+        right: 51
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 53
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 59
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 61
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 22
+        left: 63
+        right: 64
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 65
+        right: 51
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 66
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 67
+        right: 48
+        height: 5
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 70
+        height: 2
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 72
+        right: 73
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 75
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 71
+        right: 77
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 79
+        right: 80
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 81
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 82
+        right: 77
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 84
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 80
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 85
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 87
+        right: 77
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 89
+        right: 90
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 91
+        right: 84
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 92
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 77
+        height: 5
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: 96
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 99
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 102
+        right: 96
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 101
+        right: 103
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 104
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 43
+        left: 107
+        right: 108
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 90
+        right: 84
+        height: 2
+      - key: full.build.check.evidence
+        value: 37
+        left: 109
+        right: 110
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 111
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 112
+        right: 105
+        height: 5
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: 114
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 115
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 110
+        right: 86
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 116
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 118
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 45
+        left: 120
+        right: 121
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 122
+        right: 108
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 123
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 124
+        right: 105
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 127
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 129
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 132
+        right: 133
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 134
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 136
+        right: 137
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: 138
+        right: 133
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 139
+        right: 130
+        height: 4
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: 141
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 145
+        height: 2
+      - key: full.open
+        value: 29
+        left: 143
+        right: 146
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 149
+        right: 150
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 148
+        right: 151
+        height: 3
+      - key: full.open
+        value: 29
+        left: 152
+        right: 146
+        height: 4
+      - key: full.archive.prepare
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: 154
+        right: 155
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 158
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: 157
+        right: 159
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: 156
+        right: 160
+        height: 4
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 162
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 164
+        right: 165
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 163
+        right: 166
+        height: 3
+      - key: full.open
+        value: 29
+        left: 151
+        right: 167
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 161
+        right: 168
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 171
+        right: 172
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 29
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 178
+        right: 179
+        height: 2
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 181
+        right: 182
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 180
+        right: 183
+        height: 3
+      - key: full.open
+        value: 29
+        left: 184
+        right: 176
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 186
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 187
+        right: 190
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 176
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: 191
+        right: 192
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 194
+        right: 195
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 196
+        right: 190
+        height: 3
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: 198
+        height: 2
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 199
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 200
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 201
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 203
+        height: 2
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: 205
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 204
+        right: 206
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 207
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 208
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 56
+      - 62
+      - 68
+      - 78
+      - 83
+      - 88
+      - 94
+      - 100
+      - 106
+      - 113
+      - 119
+      - 125
+      - 128
+      - 131
+      - 135
+      - 140
+      - 142
+      - 147
+      - 153
+      - 169
+      - 170
+      - 177
+      - 185
+      - 193
+      - 202
+      - 209
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:14
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:16
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:18
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:23
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:7
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-contract-reviewed-event-chain:9
+          - results
+        map: 26
+      - path:
+          - outputs
+        map: 22
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+  storageHash: a753d82d58dfa706233b3ea4cdeacba728f452efe0949bac6a9d255ed1d58701
+check_epoch: 6

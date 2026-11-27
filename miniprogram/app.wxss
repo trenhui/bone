@@ -1,0 +1,109 @@
+page {
+    min-height: 100%;
+    background: #f5f7fa;
+    color: #1f2329;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
+button {
+    border-radius: 12rpx;
+}
+
+/* ---- 业务通用：表单 / 结果 / 入口（登录、报案、回执共用） ---- */
+.hero { padding: 48rpx 40rpx 24rpx; }
+.eyebrow { display: block; font-size: 22rpx; letter-spacing: 2rpx; color: #8a9099; margin-bottom: 12rpx; }
+.title { display: block; font-size: 48rpx; font-weight: 700; color: #1f2329; }
+.subtitle { display: block; font-size: 26rpx; color: #646a73; margin-top: 12rpx; line-height: 1.6; }
+
+.form-card {
+  margin: 0 28rpx 32rpx;
+  padding: 32rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 24rpx rgba(31,35,41,.06);
+}
+
+.error-banner {
+  background: #fff1f0; border: 1rpx solid #ffccc7; border-radius: 12rpx;
+  padding: 20rpx 24rpx; margin-bottom: 24rpx;
+}
+.error-title { display: block; font-size: 28rpx; font-weight: 600; color: #cf1322; margin-bottom: 8rpx; }
+.error-message { display: block; font-size: 26rpx; color: #a8071a; line-height: 1.6; }
+
+.field-card { margin-bottom: 28rpx; }
+.field-label { display: block; font-size: 26rpx; color: #373c43; margin-bottom: 12rpx; font-weight: 500; }
+.required { color: #cf1322; }
+.field-input {
+  width: 100%; box-sizing: border-box; min-height: 80rpx; padding: 16rpx 24rpx;
+  border: 1rpx solid #d9dce1; border-radius: 12rpx; background: #fafbfc; font-size: 28rpx; color: #1f2329;
+}
+.field-card-error .field-input { border-color: #cf1322; background: #fffaf9; }
+.field-error { display: block; font-size: 24rpx; color: #cf1322; margin-top: 8rpx; }
+.field-textarea {
+  width: 100%; box-sizing: border-box; min-height: 160rpx; padding: 16rpx 24rpx;
+  border: 1rpx solid #d9dce1; border-radius: 12rpx; background: #fafbfc; font-size: 28rpx;
+}
+.picker-view { min-height: 80rpx; padding: 16rpx 24rpx; border: 1rpx solid #d9dce1; border-radius: 12rpx; background: #fafbfc; font-size: 28rpx; line-height: 48rpx; }
+.picker-placeholder { color: #a5abb3; }
+
+.submit-button {
+  width: 100%; height: 92rpx; line-height: 92rpx; margin-top: 16rpx;
+  background: #1f6feb; color: #fff; font-size: 30rpx; font-weight: 600;
+  border-radius: 12rpx; border: none;
+}
+.submit-button[disabled] { background: #a9c5f5; }
+.hint-card { margin: 8rpx 0 24rpx; padding: 20rpx 24rpx; background: #f0f7ff; border-radius: 12rpx; }
+.hint-text { font-size: 24rpx; color: #375f8a; line-height: 1.6; }
+
+.session-card {
+  margin: 0 28rpx 20rpx; padding: 20rpx 28rpx; background: #eef7f0; border-radius: 12rpx;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.session-text { font-size: 25rpx; color: #2b6b3f; }
+.session-action { font-size: 25rpx; color: #1f6feb; }
+
+.section-title { display: block; font-size: 30rpx; font-weight: 600; color: #1f2329; margin: 24rpx 0 20rpx; padding-left: 16rpx; border-left: 6rpx solid #1f6feb; }
+.item-card { background: #fafbfc; border: 1rpx solid #e5e8ec; border-radius: 16rpx; padding: 24rpx; margin-bottom: 24rpx; }
+.item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
+.item-index { font-size: 27rpx; font-weight: 600; color: #373c43; }
+.item-remove { font-size: 25rpx; color: #cf1322; }
+.item-field { margin-bottom: 20rpx; }
+.item-row { display: flex; gap: 20rpx; }
+.item-col { flex: 1; min-width: 0; }
+.add-item-button { width: 100%; height: 80rpx; line-height: 80rpx; background: #fff; color: #1f6feb; border: 1rpx dashed #1f6feb; border-radius: 12rpx; font-size: 27rpx; }
+.sum-card { display: flex; justify-content: space-between; align-items: center; margin-top: 28rpx; padding: 24rpx; background: #f0f7ff; border-radius: 12rpx; }
+.sum-label { font-size: 26rpx; color: #373c43; }
+.sum-value { font-size: 36rpx; font-weight: 700; color: #1f6feb; }
+
+/* 结果页 */
+.result-card { margin: 48rpx 28rpx; padding: 48rpx 32rpx; background: #fff; border-radius: 20rpx; text-align: center; box-shadow: 0 4rpx 24rpx rgba(31,35,41,.06); }
+.result-icon { width: 120rpx; height: 120rpx; border-radius: 50%; margin: 0 auto 32rpx; display: flex; align-items: center; justify-content: center; }
+.result-icon-success { background: #e8f7ec; }
+.result-icon-fail { background: #fff1f0; }
+.icon-check { width: 56rpx; height: 32rpx; border-left: 8rpx solid #2b8a45; border-bottom: 8rpx solid #2b8a45; transform: rotate(-45deg); position: relative; }
+.icon-check-long { width: 64rpx; height: 8rpx; background: #2b8a45; transform: rotate(45deg); position: absolute; left: 20rpx; top: 14rpx; }
+.icon-close { width: 56rpx; height: 56rpx; position: relative; }
+.icon-close-line { width: 72rpx; height: 8rpx; background: #cf1322; position: absolute; top: 24rpx; left: -8rpx; transform: rotate(45deg); }
+.icon-close-line-alt { transform: rotate(-45deg); }
+.result-title { display: block; font-size: 40rpx; font-weight: 700; color: #1f2329; }
+.result-description { display: block; font-size: 27rpx; color: #646a73; margin-top: 16rpx; line-height: 1.6; }
+.receipt-card { margin: 36rpx 0; padding: 24rpx; background: #fafbfc; border-radius: 12rpx; text-align: left; }
+.receipt-row { display: flex; justify-content: space-between; padding: 12rpx 0; border-bottom: 1rpx solid #eef0f2; }
+.receipt-row:last-child { border-bottom: none; }
+.receipt-label { font-size: 26rpx; color: #8a9099; }
+.receipt-value { font-size: 27rpx; color: #1f2329; font-weight: 500; }
+.action-group { margin-top: 36rpx; }
+.action-button { width: 100%; height: 88rpx; line-height: 88rpx; margin-top: 20rpx; font-size: 29rpx; border-radius: 12rpx; }
+.action-primary { background: #1f6feb; color: #fff; border: none; }
+
+/* 首页入口 */
+.entry-list { margin-top: 24rpx; }
+.entry-item { display: flex; align-items: center; padding: 28rpx 24rpx; background: #fafbfc; border-radius: 12rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
+.entry-title { font-size: 29rpx; font-weight: 600; color: #1f2329; }
+.entry-desc { font-size: 24rpx; color: #8a9099; width: 100%; margin-top: 8rpx; }
+.entry-arrow { margin-left: auto; font-size: 40rpx; color: #1f6feb; }
+.account-row { display: flex; justify-content: space-between; align-items: center; margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #eef0f2; }
+.account-text { font-size: 25rpx; color: #646a73; }
+.account-action { font-size: 25rpx; color: #1f6feb; }
+.demo-desc { display: block; font-size: 25rpx; color: #1f2329; margin-top: 12rpx; word-break: break-all; }
+.demo-note { display: block; font-size: 23rpx; color: #8a9099; margin-top: 12rpx; line-height: 1.6; }

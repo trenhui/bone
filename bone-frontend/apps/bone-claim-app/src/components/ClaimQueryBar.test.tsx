@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { ClaimQueryBar } from './ClaimQueryBar';
 import type { SavedView } from '../hooks/useSavedViews';
 
@@ -9,6 +10,8 @@ const pinned: SavedView = {
 const normal: SavedView = {
   id: 'v2', name: '高风险', queryString: 'f_risk=HIGH', pinned: false, createdAt: 2,
 };
+
+afterEach(() => cleanup());
 
 describe('ClaimQueryBar · 统一查询条语义', () => {
   it('回车与点搜索都提交 trim 后的关键字', () => {
@@ -42,5 +45,25 @@ describe('ClaimQueryBar · 统一查询条语义', () => {
         onRemoveView={vi.fn()} />,
     );
     expect(screen.getByText('管理视图')).toBeTruthy();
+  });
+
+  it('searchable=false：不渲染检索框，仍保留保存视图与页面自定义动作', () => {
+    render(
+      <ClaimQueryBar keyword="" onKeyword={vi.fn()} searchable={false}
+        placeholder="不该出现的搜索框" views={[pinned]} onRemoveView={vi.fn()}
+        actions={<span>ACTION</span>} />,
+    );
+    expect(screen.queryByPlaceholderText('不该出现的搜索框')).toBeNull();
+    expect(screen.getByRole('button', { name: /我的待办/ })).toBeTruthy();
+    expect(screen.getByText('ACTION')).toBeTruthy();
+  });
+
+  it('外部清空 keyword 后输入框同步清空（换保单/应用视图不残留旧文本）', () => {
+    const { rerender } = render(
+      <ClaimQueryBar keyword="OLD" onKeyword={vi.fn()} placeholder="搜索" />,
+    );
+    expect((screen.getByPlaceholderText('搜索') as HTMLInputElement).value).toBe('OLD');
+    rerender(<ClaimQueryBar keyword="" onKeyword={vi.fn()} placeholder="搜索" />);
+    expect((screen.getByPlaceholderText('搜索') as HTMLInputElement).value).toBe('');
   });
 });

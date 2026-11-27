@@ -290,10 +290,13 @@ ENTRY_FILES = {
     "check.sh": ROOT / "scripts" / "check.sh",
     "check-procura-ci.sh": BASE / "scripts" / "check-procura-ci.sh",
 }
+# 本轮（ContractReviewed 事件闭环）按 D-11 四入口一致流程在末尾追加 eventChainGate / eventChainProbe，
+# 不改动既有 9 个 key 的语义；check.sh 快反馈子集只纳入主判据 eventChainGate。
 GATE_KEYS = ("docGate", "docProbe", "evalGate", "evalProbe", "asyncapiCheck",
-             "frontmatterGate", "frontmatterProbe", "persistenceGate", "persistenceProbe")
+             "frontmatterGate", "frontmatterProbe", "persistenceGate", "persistenceProbe",
+             "eventChainGate", "eventChainProbe", "businessAggregateGate", "businessAggregateProbe")
 FULL_GATE_KEYS = frozenset(GATE_KEYS)
-FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck", "frontmatterGate", "persistenceGate"))
+FAST_GATE_KEYS = frozenset(("docGate", "evalGate", "asyncapiCheck", "frontmatterGate", "persistenceGate", "eventChainGate", "businessAggregateGate"))
 CI_PROCURA_STEP_MIN = 8
 CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
 # A10.17 第十三轮加固（2026-11-12）：判据「可执行」不能只看命令集合，还要看 run 正文的
@@ -301,7 +304,7 @@ CI_STEP_HEAD_RE = re.compile(r"^\s*-\s+name:\s*ProcuraAI[^\n]*\(blocking\)\s*$")
 # `bash -e -o pipefail` 下把真实转红的主门禁压成 rc=0，而判据集合仍完整 ⇒ 假绿；
 # 原有四类拦截（continue-on-error / if: / 注释 run / 子串冒充）全在 YAML 键层，够不到。
 GATE_CMD_RE = re.compile(
-    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py|check_procura_frontmatter\.py|check_procura_persistence\.py")
+    r"check_procura_alignment\.py|check_procura_evalset\.py|generate_asyncapi\.py|check_procura_frontmatter\.py|check_procura_persistence\.py|check_procura_event_chain\.py|check_procura_business_aggregates\.py")
 SHELL_SWALLOW_RULES = (
     (re.compile(r"\bset\s+\+(?:e|eo|eu|euo)\b"), "set +e 关闭 errexit"),
     (re.compile(r"\bset\s+\+o\s+(?:errexit|pipefail)\b"), "set +o 关闭 errexit/pipefail"),
@@ -426,6 +429,10 @@ def _cmd_key(path: str, flags: frozenset[str]) -> str | None:
         return "frontmatterProbe" if "--self-test" in flags else ("frontmatterGate" if not flags else None)
     if path.endswith("check_procura_persistence.py"):
         return "persistenceProbe" if "--self-test" in flags else ("persistenceGate" if not flags else None)
+    if path.endswith("check_procura_event_chain.py"):
+        return "eventChainProbe" if "--self-test" in flags else ("eventChainGate" if not flags else None)
+    if path.endswith("check_procura_business_aggregates.py"):
+        return ("businessAggregateProbe" if "--self-test" in flags else "businessAggregateGate") if not (flags - {"--self-test"}) else None
     return None
 
 
@@ -3239,6 +3246,42 @@ def self_test() -> int:
                                                 "scripts/ZZZ_removed.py")
         return _mutate(c, entries=en)
 
+    def m_ci_drop_event_chain(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "check_procura_event_chain.py", "check_procura_event_chain_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_local_drop_event_chain(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check-procura-ci.sh"] = en["check-procura-ci.sh"].replace(
+            "check_procura_event_chain.py", "check_procura_event_chain_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_drop_event_chain(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace(
+            "check_procura_event_chain.py", "check_procura_event_chain_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_ci_drop_business_aggregates(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["ci.yml"] = en["ci.yml"].replace(
+            "check_procura_business_aggregates.py", "check_procura_business_aggregates_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_local_drop_business_aggregates(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check-procura-ci.sh"] = en["check-procura-ci.sh"].replace(
+            "check_procura_business_aggregates.py", "check_procura_business_aggregates_X.py", 1)
+        return _mutate(c, entries=en)
+
+    def m_checksh_drop_business_aggregates(c: Ctx) -> Ctx:
+        en = dict(c.entries)
+        en["check.sh"] = en["check.sh"].replace(
+            "check_procura_business_aggregates.py", "check_procura_business_aggregates_X.py", 1)
+        return _mutate(c, entries=en)
+
     def m_compliance_empty_action(c: Ctx) -> Ctx:
         e = dict(c.extra)
         e["D3v2"] = e["D3v2"].replace(
@@ -3682,6 +3725,12 @@ def self_test() -> int:
         ("A10", "ci.yml 删掉 persistenceGate 判据（加固门禁被回退）", m_ci_drop_persistence, "A10.17"),
         ("A10", "本地一键入口删掉 persistence 判据（加固门禁被回退）", m_local_drop_persistence, "A10.17"),
         ("A10", "check.sh G0 删掉 persistenceGate 判据（加固快反馈被回退）", m_checksh_drop_persistence, "A10.17"),
+        ("A10", "ci.yml 删掉 eventChainGate 判据（事件闭环接入被回退）", m_ci_drop_event_chain, "A10.17"),
+        ("A10", "本地一键入口删掉事件闭环判据（事件闭环接入被回退）", m_local_drop_event_chain, "A10.17"),
+        ("A10", "check.sh G0 删掉 eventChainGate 判据（快反馈事件闭环被回退）", m_checksh_drop_event_chain, "A10.17"),
+        ("A10", "ci.yml 删掉 businessAggregateGate 判据（业务聚合接入被回退）", m_ci_drop_business_aggregates, "A10.17"),
+        ("A10", "本地一键入口删掉业务聚合判据（业务聚合接入被回退）", m_local_drop_business_aggregates, "A10.17"),
+        ("A10", "check.sh G0 删掉 businessAggregateGate 判据（快反馈业务聚合被回退）", m_checksh_drop_business_aggregates, "A10.17"),
         ("A10", "C-4 可验收动作清空（合规清单退化成条款）", m_compliance_empty_action, "A10.18"),
         ("A10", "F1 Owner 列清空（地基层缺责任人）", m_foundation_empty_owner, "A10.18"),
         ("A10", "F1 验收判据列删掉（表格结构退化）", m_foundation_drop_column, "A10.18"),

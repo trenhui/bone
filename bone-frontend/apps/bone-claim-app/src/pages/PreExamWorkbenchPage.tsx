@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Card,
+  Drawer,
   Form,
   InputNumber,
   Modal,
@@ -13,10 +14,11 @@ import {
   Statistic,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
-import { CheckCircleOutlined, ReloadOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
 import {
   claimApi,
   normalizeTotal,
@@ -25,8 +27,19 @@ import {
 } from '../services/claimApi';
 import { PRE_EXAM_TODO_STATUSES, claimStatusMeta, statusOptions } from '../services/claimStatus';
 import { PageHeader } from '../components/PageHeader';
+import { ClaimQueryBar } from '../components/ClaimQueryBar';
+import {
+  ClaimQueryFields,
+  formValuesToQueryString,
+  queryParamsFromState,
+  statusesFromFilter,
+  type ClaimQueryFormValues,
+} from '../components/ClaimQueryFields';
+import { useClaimQuery } from '../hooks/useClaimQuery';
+import { useSavedViews } from '../hooks/useSavedViews';
 import { ClaimIdLink } from '../components/ClaimIdLink';
 import { PolicyNoLink } from '../components/PolicyNoLink';
+import { EvidenceGallery } from '../components/EvidenceGallery';
 import { resolveErrorCode, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import { PERMISSIONS } from '../constants/permissions';
@@ -65,27 +78,55 @@ export function PreExamWorkbenchPage(): ReactElement {
   const { threshold: dualReviewAmount, error: thresholdError } = useDualReviewThreshold();
   const [rows, setRows] = useState<ClaimHeadProjection[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(20);
-  const [statusFilter, setStatusFilter] = useState<ClaimStatusName | undefined>(undefined);
+  /**
+   * 查询状态进 URL（统一查询基座）：关键字 / 状态 / 案件ID / 时间 / 金额等可分享、可前进后退恢复。
+   *
+   * <p>默认视图仍走原待办口径（初审四态）；一旦输入任一查询条件，切到服务端
+   * `claimApi.query` 做真过滤，并按条件决定是否放宽默认状态——否则用案件ID查
+   * 非初审态案件会得到空结果，用户以为「查询坏了」。
+   */
+  const {
+    query,
+    setKeyword,
+    setFilter,
+    setPage,
+    setSize,
+    reset,
+    applyQueryString,
+    currentQueryString,
+  } = useClaimQuery();
+  const savedViews = useSavedViews();
+  const statusFilter = statusesFromFilter(query.filters.status);
+  const { page, size } = query;
   const [loading, setLoading] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   /** 行级在途动作：只锁当前行，避免整表按钮全灰（用户会以为页面卡死）。 */
   const [actingId, setActingId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
 
+  /** 影像件抽屉目标案件：只读查看，不影响任何待办动作。 */
+  const [evidenceClaimId, setEvidenceClaimId] = useState<string | null>(null);
   const [completeTarget, setCompleteTarget] = useState<ClaimHeadProjection | null>(null);
   const [completing, setCompleting] = useState(false);
   const [form] = Form.useForm<{ approvedAmount: number }>();
 
   const effectiveStatuses = useMemo<ClaimStatusName[]>(
-    () => (statusFilter ? [statusFilter] : PRE_EXAM_TODO_STATUSES),
+    () => (statusFilter?.length ? statusFilter : PRE_EXAM_TODO_STATUSES),
     [statusFilter],
   );
+  const hasQuery =
+    Boolean(query.keyword) ||
+    Object.keys(query.filters).some((key) => key !== 'status' || Boolean(statusFilter?.length));
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await claimApi.page({ statuses: effectiveStatuses, page, size });
+      const resp = hasQuery
+        ? await claimApi.query({
+            ...queryParamsFromState(query),
+            statuses: statusFilter?.length ? statusFilter : undefined,
+          })
+        : await claimApi.page({ statuses: effectiveStatuses, page, size });
       setRows(resp?.data?.records ?? []);
       setTotal(normalizeTotal(resp?.data?.total));
     } catch (err) {
@@ -93,7 +134,7 @@ export function PreExamWorkbenchPage(): ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [effectiveStatuses, page, size]);
+  }, [hasQuery, query, statusFilter, effectiveStatuses, page, size]);
 
   /**
    * 三档计数：各查一次 `size=1` 只取 total，避免把全量记录拉回前端。
@@ -220,32 +261,43 @@ export function PreExamWorkbenchPage(): ReactElement {
       <Card
         size="small"
         extra={
-          <Space>
-            <Select<ClaimStatusName | undefined>
-              allowClear
-              placeholder="状态筛选"
-              style={{ width: 200 }}
-              value={statusFilter}
-              onChange={(v) => {
-                setStatusFilter(v);
-                setPage(1);
-              }}
-              options={statusOptions(PRE_EXAM_TODO_STATUSES)}
-            />
-            <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-              刷新
-            </Button>
-          </Space>
+          <ClaimQueryBar
+            keyword={query.keyword}
+            onKeyword={setKeyword}
+            placeholder="案件ID / 赔案号 / 保单号 / 发票号"
+            onRefresh={() => void load()}
+            views={savedViews.views}
+            onApplyView={(view) => applyQueryString(view.queryString)}
+            onSaveView={(name) => savedViews.save(name, currentQueryString())}
+            onRemoveView={savedViews.remove}
+            onTogglePin={savedViews.togglePin}
+            actions={
+              <Space size={8} wrap>
+                <Select<ClaimStatusName[]>
+                  mode="multiple"
+                  allowClear
+                  maxTagCount="responsive"
+                  placeholder="状态筛选"
+                  style={{ width: 220 }}
+                  value={statusFilter ?? []}
+                  onChange={(v) => setFilter('status', v.join(','))}
+                  options={statusOptions(PRE_EXAM_TODO_STATUSES)}
+                />
+                <Button onClick={() => setAdvancedOpen(true)}>高级查询</Button>
+                {hasQuery && <Button onClick={reset}>清空条件</Button>}
+              </Space>
+            }
+          />
         }
       >
         <Table<ClaimHeadProjection>
           rowKey="claimId"
           loading={loading}
           dataSource={rows}
-          // 列宽合计 1440：报案号/保单号是长标识符，scroll.x 必须 >= 列宽之和，
-          // 否则 antd 切 fixed table layout 会压缩列宽，28 字符报案号撑破 nowrap 链接、
-          // 溢出覆盖相邻保单号列（截图「报案号+保单号粘连」）。见 ClaimIdLink 的 maxWidth 兜底。
-          scroll={{ x: 1440 }}
+          // 列宽合计 1690：报案号/赔案号/保单号是长标识符，scroll.x 必须 >= 列宽之和，
+          // 否则 antd 切 fixed table layout 会压缩列宽，长号撑破 nowrap 链接、
+          // 溢出覆盖相邻列（截图「报案号+保单号粘连」）。见 ClaimIdLink 的 maxWidth 兜底。
+          scroll={{ x: 1760 }}
           pagination={{
             current: page,
             pageSize: size,
@@ -254,20 +306,32 @@ export function PreExamWorkbenchPage(): ReactElement {
             pageSizeOptions: [20, 50, 100],
             showTotal: (t) => `共 ${t} 条`,
             onChange: (p, s) => {
-              setPage(p);
-              setSize(s);
+              // setSize 内部已回第 1 页；只发一次 URL 更新，避免连发两次产生中间态。
+              if (s !== size) setSize(s);
+              else setPage(p);
             },
           }}
           columns={[
             {
+              // 1:N：报案号（RP）是一次事故告知，一个报案下可有多笔赔案。
               title: '报案号',
-              dataIndex: 'claimNo',
-              // 存量报案号 28 字符（CL+yyyyMMdd+18 位雪花 ID），需 ~240px；
-              // 新规范号 18 字符更短，列宽按存量最大值取，避免历史数据溢出。
+              dataIndex: 'reportNo',
               width: 250,
               fixed: 'left',
               ellipsis: { showTitle: false },
-              // 点报案号下钻案件 360 详情（显示报案号、下钻用 claimId，见 ClaimIdLink）。
+              render: (v: string | null) =>
+                v ? (
+                  <Tooltip title={v}>{v}</Tooltip>
+                ) : (
+                  <span style={{ color: '#999' }}>—</span>
+                ),
+            },
+            {
+              // 赔案号（CL）是每笔赔付的处理单元，点它下钻案件详情（下钻用 claimId）。
+              title: '赔案号',
+              dataIndex: 'claimNo',
+              width: 250,
+              ellipsis: { showTitle: false },
               render: (v: string, row: ClaimHeadProjection) => (
                 <ClaimIdLink claimId={row.claimId} text={v} testId={`pre-exam-case-link-${row.claimId}`} />
               ),
@@ -313,7 +377,7 @@ export function PreExamWorkbenchPage(): ReactElement {
             { title: '受理时间', dataIndex: 'createdAt', width: 180 },
             {
               title: '操作',
-              width: 330,
+              width: 400,
               fixed: 'right',
               render: (_, row) => (
                 <Space size={4} wrap>
@@ -395,12 +459,41 @@ export function PreExamWorkbenchPage(): ReactElement {
                       </Auth>
                     </>
                   )}
+                  <Button
+                    type="link"
+                    size="small"
+                    data-testid={`pre-exam-evidence-${row.claimId}`}
+                    onClick={() => setEvidenceClaimId(row.claimId)}
+                  >
+                    影像件
+                  </Button>
                 </Space>
               ),
             },
           ]}
         />
       </Card>
+
+      <Drawer
+        title="初审工作台 · 高级查询"
+        width={720}
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        destroyOnHidden
+      >
+        <ClaimQueryFields
+          query={query}
+          statusChoices={PRE_EXAM_TODO_STATUSES}
+          onSubmit={(values: ClaimQueryFormValues) => {
+            applyQueryString(formValuesToQueryString(values));
+            setAdvancedOpen(false);
+          }}
+          onReset={() => {
+            reset();
+            setAdvancedOpen(false);
+          }}
+        />
+      </Drawer>
 
       <Modal
         title={`完成初审 · ${completeTarget?.claimNo ?? ''}`}
@@ -448,6 +541,12 @@ export function PreExamWorkbenchPage(): ReactElement {
           </Form.Item>
         </Form>
       </Modal>
+
+      <EvidenceGallery
+        claimId={evidenceClaimId}
+        open={Boolean(evidenceClaimId)}
+        onClose={() => setEvidenceClaimId(null)}
+      />
     </div>
   );
 }

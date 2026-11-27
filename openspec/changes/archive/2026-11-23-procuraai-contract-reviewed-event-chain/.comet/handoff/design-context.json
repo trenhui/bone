@@ -1,0 +1,16 @@
+{
+  "change": "procuraai-contract-reviewed-event-chain",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "b9e00445f410b3573f7e4be7ed3874633f5630bc3b9e698c01e2f83aa2920dfa",
+  "files": [
+    { "path": "openspec/changes/procuraai-contract-reviewed-event-chain/proposal.md", "sha256": "84e21bc414b692c4be49f35e46cb95d0fe6409f3d3a45bfe064e7357c7c3238a" },
+    { "path": "openspec/changes/procuraai-contract-reviewed-event-chain/design.md", "sha256": "806d7b97c1b6496b6a351d0a3cbb16998f851938ad1b4cb2f7283f1da17aa4a2" },
+    { "path": "openspec/changes/procuraai-contract-reviewed-event-chain/tasks.md", "sha256": "7693df60422c45eca767d76967424fe56257bf68749427a3de8ccd879d6c2667" },
+    { "path": "openspec/changes/procuraai-contract-reviewed-event-chain/.openspec.yaml", "sha256": "01c3365f21ad2129d7e1db5577bc59c382883cdcbfece60900a8ac86293e3398" },
+    { "path": "openspec/changes/procuraai-contract-reviewed-event-chain/specs/procurement/contract-ai-review/spec.md", "sha256": "4f6699112ab78eceec6defdc8b44a9d99e699638117082cfd3496e4721a48327" }
+  ]
+}

@@ -84,6 +84,114 @@ class ReviewDecisionAssemblerTest {
     assertThat(ReviewDecisionAssembler.requireRejectType(request)).isEqualTo("03");
   }
 
+  @Test
+  @DisplayName("16 个受控原因码全部放行（含历史 E2E 用的 01/02 与引擎派生的 05/06/09）")
+  void acceptsAllControlledRejectTypes() {
+    for (String code :
+        List.of(
+            "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "20",
+            "30", "40")) {
+      assertThat(ReviewDecisionAssembler.requireRejectType(reqWithType(code)))
+          .as("受控码 " + code + " 应放行")
+          .isEqualTo(code);
+    }
+  }
+
+  @Test
+  @DisplayName("非受控原因码 → 400（自由文本/数字不在字典/大小写都不放行，杜绝前端脱节）")
+  void rejectsUncontrolledRejectType() {
+    for (String bad :
+        List.of(
+            "00", "14", "019", "99", "EVIDENCE_INSUFFICIENT", "目录外费用", "abc", "03; DROP TABLE")) {
+      BizException ex =
+          catchThrowableOfType(
+              () -> ReviewDecisionAssembler.requireRejectType(reqWithType(bad)),
+              BizException.class);
+      assertThat(ex).as("非法码「" + bad + "」应拒绝").isNotNull();
+      assertThat(ex.getErrorCode()).isEqualTo(ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID);
+      assertThat(ex.getCode()).isEqualTo(400);
+    }
+  }
+
+  private static ReviewDecisionReq reqWithType(String rejectType) {
+    return new ReviewDecisionReq(
+        Decision.REJECTED,
+        "u-1001",
+        "u-1002",
+        "意见",
+        List.of("doc-001"),
+        new Rejection("事实", "条款", List.of("EV-001"), "渠道", "时限"),
+        rejectType,
+        null);
+  }
+
+  @Test
+  @DisplayName("拒赔证据位置：EV 编号与 #p 页码锚点均放行（含前后空格裁剪）")
+  void acceptsValidEvidenceRefs() {
+    ReviewDecisionReq request =
+        req(
+            Decision.REJECTED,
+            null,
+            new Rejection("事实", "条款", List.of(" EV-001 ", "EV-0002#p3"), "渠道", "时限"));
+    ReviewDecisionAssembler.requireEvidenceRefs(request);
+  }
+
+  @Test
+  @DisplayName("非拒赔跳过证据位置校验（没有 rejection 也不报错）")
+  void skipsEvidenceRefCheckForApproved() {
+    ReviewDecisionAssembler.requireEvidenceRefs(req(Decision.APPROVED, "意见", null));
+  }
+
+  @Test
+  @DisplayName("拒赔证据位置缺失 → 400（必填，不留空混进合规文书）")
+  void rejectsMissingEvidenceRefs() {
+    assertInvalid(req(Decision.REJECTED, "意见", new Rejection("事实", "条款", List.of(), "渠道", "时限")));
+    assertInvalid(req(Decision.REJECTED, "意见", new Rejection("事实", "条款", null, "渠道", "时限")));
+    assertInvalid(req(Decision.REJECTED, "意见", null));
+  }
+
+  @Test
+  @DisplayName("拒赔证据位置为自由文本/doc 编号/非法页码 → 400（可定位性硬约束）")
+  void rejectsNonLocatableRefs() {
+    for (String bad :
+        List.of(
+            "doc-001",
+            "发票第一页",
+            "EV-1",
+            "EV-001A",
+            "EV-001#p0",
+            "EV-001#px",
+            "../../secret",
+            "EV-001; DROP TABLE")) {
+      assertInvalid(
+          req(Decision.REJECTED, "意见", new Rejection("事实", "条款", List.of(bad), "渠道", "时限")));
+    }
+  }
+
+  @Test
+  @DisplayName("拒赔证据位置超量 / 单项超长 → 400")
+  void rejectsOversizedRefs() {
+    List<String> tooMany =
+        java.util.stream.IntStream.rangeClosed(1, 21)
+            .mapToObj(i -> String.format("EV-%04d", i))
+            .toList();
+    assertInvalid(req(Decision.REJECTED, "意见", new Rejection("事实", "条款", tooMany, "渠道", "时限")));
+    assertInvalid(
+        req(
+            Decision.REJECTED,
+            "意见",
+            new Rejection("事实", "条款", List.of("EV-001" + "x".repeat(40)), "渠道", "时限")));
+  }
+
+  private static void assertInvalid(ReviewDecisionReq request) {
+    BizException ex =
+        catchThrowableOfType(
+            () -> ReviewDecisionAssembler.requireEvidenceRefs(request), BizException.class);
+    assertThat(ex).as("应拒绝非法证据位置").isNotNull();
+    assertThat(ex.getErrorCode()).isEqualTo(ClaimErrorCodes.SC_CLAIM_REJECT_EVIDENCE_REF_INVALID);
+    assertThat(ex.getCode()).isEqualTo(400);
+  }
+
   private static ReviewDecisionReq req(Decision decision, String comment, Rejection rejection) {
     return new ReviewDecisionReq(
         decision, "u-1001", "u-1002", comment, List.of("doc-001"), rejection, null, null);

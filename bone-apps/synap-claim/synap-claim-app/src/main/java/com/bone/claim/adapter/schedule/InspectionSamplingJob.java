@@ -23,8 +23,9 @@ import org.springframework.stereotype.Component;
  * 逐笔 {@link TenantContextRunner#runAs} 显式携带租户调 {@link
  * InspectionApplicationService#sampleIfEligible}。
  *
- * <p><b>抽样口径</b>：自动抽样只覆盖 {@code FINISHED}（已支付，监管「结案案件抽检」口径）；拒赔案件的复核走人工 发起（#13 MANUAL）——拒赔有 48h
- * 申诉通道兜底，把自动样本额度耗在拒赔上会稀释已出金案件的监督密度。
+ * <p><b>抽样口径</b>：自动抽样候选覆盖终态 {@code FINISHED}（已支付，监管「结案案件抽检」口径）与 {@code CLOSED_REJECTED}（拒赔生效，V1.0
+ * 100% 全量覆盖要求「自动通过 + 拒赔」两类结论均可后督）；候选 SQL 内 {@code NOT EXISTS} 排除已抽检案件。默认比例 5%
+ * 下拒赔入候选后仍按确定性比例抽样，不改变现网抽检数量口径；配置 100% 时两类终态全量命中。
  *
  * <p><b>比例</b>（批 4 任务 4.1）：从 {@code t_feature_toggle} 的 {@code INSPECTION_SAMPLING} 按租户读取 （{@link
  * FeatureTenantToggleService#inspectionConfig}），页面展示同一真源；无配置回落代码基线 5%（零行为变更迁移）， 置 100 即 V1.0「自动结论

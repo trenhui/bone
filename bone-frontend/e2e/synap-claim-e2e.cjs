@@ -272,7 +272,10 @@ function check(name, condition, detail) {
     await page.screenshot({ path: path.join(OUT, 'claims-e2e-shell.png'), fullPage: false });
     check('浏览器登录成功并落地 token', result.ui.loggedIn, 'localStorage.token 已写入');
 
-    await page.goto(`${SHELL}/claim/review`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // SynapClaim 规范（2026-11 迁移）：微应用 pathname 前缀为 /sclaim/claim，默认落点是 hidden
+    // 路由 /workbench（我的工作台）。旧脚本用 /claim/review（已废弃历史别名，会被 shell 302 弹回根），
+    // 导致 qiankun 从未挂载、UI 段整片假红。见 shell App.tsx 的 CLAIM_MENU_PREFIX + routes.tsx isDefault。
+    await page.goto(`${SHELL}/sclaim/claim/workbench`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(4000);
     const viewportText = await page.locator('#subapp-viewport').innerText();
     result.ui.url = page.url();
@@ -302,12 +305,13 @@ function check(name, condition, detail) {
       entryType: 'workbench-card',
       urlAfterClick: page.url(),
     };
+    // SynapClaim 规范：治理页是 pathname /sclaim/claim/ai-governance，无 hash（BrowserRouter basename）。
     check('业务页面深链卡片可点击进入 hidden 路由 /ai-governance',
-      govNavExists && page.url().includes('#/ai-governance'),
+      govNavExists && page.url().includes('/sclaim/claim/ai-governance'),
       `entryFound=${govNavExists} url=${page.url()}`);
-    // 负向自检：仅靠改 hash 也能到达（回退路径），但不得把「未点击」误判为深链可用。
+    // 负向自检：卡片不存在时直接改 pathname 也能到达（回退路径），但不得把「未点击」误判为深链可用。
     if (!govNavExists) {
-      await page.evaluate(() => { window.location.hash = '#/ai-governance'; });
+      await page.goto(`${SHELL}/sclaim/claim/ai-governance`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(2000);
     }
     const govText = await page.locator('#subapp-viewport').innerText();

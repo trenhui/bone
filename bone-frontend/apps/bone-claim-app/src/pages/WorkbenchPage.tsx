@@ -190,7 +190,7 @@ export function WorkbenchPage(): ReactElement {
           {panel === 'views' ? (
             <Space direction="vertical">
               <Typography.Text>预置视图规划：我的待办 / 今日新增 / 高风险 / 临近 SLA / 待补件 / 已达封顶 / 支付失败 / 对账差异 / 质检 DIFF。</Typography.Text>
-              <Alert type="info" showIcon message="P1 交付：查询状态与 URL 双向同步 + 保存视图落库" description="本版本不展示假的「已保存视图」数据。" />
+              <Alert type="info" showIcon message="查询状态与 URL 双向同步已交付" description="保存视图在各列表页的查询条上创建，一期存本地（个人偏好，不含 PII）；服务端持久化待有消费方后迁移。" />
             </Space>
           ) : null}
           {panel === 'recent' ? (
