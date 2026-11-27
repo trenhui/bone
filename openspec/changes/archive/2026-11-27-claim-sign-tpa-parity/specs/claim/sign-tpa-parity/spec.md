@@ -20,6 +20,16 @@
 签收批次 SHALL 记录并展示保险公司、保险分公司、投保公司、紧急程度；列表 SHALL 展示创建时间与备注。
 影像状态 SHALL 由 imageReadyCount/claimCount 派生为"是/否"，不冗余存储布尔列。
 
+#### Scenario: 展示参考站对齐字段
+- GIVEN 签收批次已登记保险公司、保险分公司、投保公司与紧急程度
+- WHEN 查询签收批次列表
+- THEN 响应逐项返回 insuranceCompany/insuranceSubsidiary/insuringAgency/emergency/createdAt/signRemark，字段缺失时保持空值而非臆造
+
+#### Scenario: 影像状态派生而非冗余存储
+- GIVEN 批次 claimCount=3 且 imageReadyCount=3
+- WHEN 计算影像就绪标识
+- THEN 由两个计数派生为"是"，批次实体不额外存储布尔列；imageReadyCount<claimCount 时派生为"否"
+
 ### Requirement: 批次明细视图
 系统 SHALL 提供批次内赔案明细查询，返回赔案号、保单号、出险人、证件类型、证件号、影像要素与建案结果。
 
@@ -28,8 +38,13 @@
 - WHEN 打开批次详情
 - THEN 同时展示批次摘要、赔案明细、轨迹与自动建案结果，任一子请求失败不影响其他子请求
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: 签收批次列表响应
 `SignBatchResp` SHALL 新增 insuranceCompany、insuranceSubsidiary、insuringAgency、emergency、createdAt
 字段；既有 ID 仍为字符串，避免雪花 ID 精度丢失。
+
+#### Scenario: 扩展字段与字符串 ID 契约
+- GIVEN 分页查询返回一条签收批次
+- WHEN 序列化为 `SignBatchResp`
+- THEN 响应包含上述新增字段，且 batchId 为字符串、与雪花 ID 的值一一对应不发生精度丢失
