@@ -1,3 +1,11 @@
+---
+comet_change: claim-rag-clause-retrieval
+role: technical-design
+canonical_spec: openspec
+archived-with: 2026-11-27-claim-rag-clause-retrieval
+status: final
+---
+
 ## Context
 
 理赔侧 `RagKnowledgeRetrievalPortAdapter` 已接线，平台 `bone-ai-rag` 模块完整（RagApplicationService/GroundingGuard/RrfFuser）。门控 `BONE_CLAIM_KNOWLEDGE_RAG_ENABLED` 默认 false，底层为 `TransitionalHashEmbedding`+`NoOpReranker`+`DenyDocAcl`。现有 `claim/ai-knowledge-rag` spec 已完整规定门控/fail-closed/引用强制/可观测。详见 proposal.md。
