@@ -1,4 +1,4 @@
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Button, Dropdown, Input, Space, Tooltip, Typography } from 'antd';
 import {
   DeleteOutlined,
@@ -35,6 +35,15 @@ export interface ClaimQueryBarProps {
   onTogglePin?: (id: string) => void;
   /** 检索框占位文案。 */
   placeholder?: string;
+  /**
+   * 是否渲染检索框，默认 true。
+   *
+   * <p>关闭用于「后端列表契约本身不支持 keyword」的页面（如核赔待办 `/review/tasks`
+   * 只接 status/page/size、初审 `claimApi.page` 只接 statuses/page/size）。这类页面仍可复用
+   * 保存视图、刷新与自定义动作；若强行显示搜索框，输入后要么打一个后端不认识的参数（被静默忽略），
+   * 要么只在前端过滤当前页（翻页即失效）——两者都是「配了不生效」的假功能，故显式关掉。
+   */
+  searchable?: boolean;
   /** 页面私有动作（新建 / 跳转等），追加在刷新之后。 */
   actions?: ReactNode;
 }
@@ -49,9 +58,13 @@ export function ClaimQueryBar({
   onRemoveView,
   onTogglePin,
   placeholder = '关键字检索',
+  searchable = true,
   actions,
 }: ClaimQueryBarProps): ReactElement {
   const [input, setInput] = useState(keyword);
+  // 外部清空或回灌查询（换 Tab / 换保单 / 应用保存视图）后输入框必须同步，
+  // 否则框里残留旧关键字，用户以为筛选还在、提交后却查不到——属静默误导。
+  useEffect(() => setInput(keyword), [keyword]);
   const [saveOpen, setSaveOpen] = useState(false);
   const [draftName, setDraftName] = useState('');
 
@@ -78,14 +91,18 @@ export function ClaimQueryBar({
 
   return (
     <Space wrap size={8}>
-      <Input.Search
-        allowClear
-        value={input}
-        placeholder={placeholder}
-        style={{ width: 240 }}
-        onChange={(e) => setInput(e.target.value)}
-        onSearch={submit}
-      />
+      {searchable && (
+        <Input.Search
+          allowClear
+          value={input}
+          // placeholder 不是可访问名称（屏幕阅读器不保证读出）；用同一文案显式赋名。
+          aria-label={placeholder}
+          placeholder={placeholder}
+          style={{ width: 240 }}
+          onChange={(e) => setInput(e.target.value)}
+          onSearch={submit}
+        />
+      )}
       {onRefresh && (
         <Tooltip title="刷新">
           <Button icon={<ReloadOutlined />} onClick={onRefresh} />
@@ -96,7 +113,9 @@ export function ClaimQueryBar({
           open={saveOpen}
           onOpenChange={setSaveOpen}
           trigger={['click']}
-          dropdownRender={() => (
+          // antd 5.27 起 dropdownRender 废弃（POC 浏览器实测每次开视图菜单均 console.error 告警），
+          // popupRender 是同一语义的正式入口，签名一致。
+          popupRender={() => (
             <Space direction="vertical" size={8} style={{ padding: 8, background: '#fff' }}>
               <Input
                 size="small"

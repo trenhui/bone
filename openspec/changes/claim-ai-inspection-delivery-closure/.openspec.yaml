@@ -1,0 +1,7 @@
+schema: spec-driven
+created: 2026-11-24
+# 本 change 只做 Comet 交付闭环与偏差登记，不涉及任何行为规格变更。
+# skip_specs: true 的作用仅是让零 delta 下的 specs 产物合法 skipped（否则 validate 判红）；
+# 归档不写 openspec/specs/ 的真正原因是零 delta 使 findSpecUpdates 为空，
+# 直接开关是归档 CLI 的 --skip-specs 选项；二者不可混为因果。
+skip_specs: true

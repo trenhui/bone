@@ -244,6 +244,10 @@
       <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
       <a href="form-config.html"><span class="ic">▤</span>表单配置中心<span class="cur-tag">NEW</span></a>
       <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+      <a href="settlement.html"><span class="ic">￥</span>资金结算与四向对账<span class="cur-tag">NEW</span></a>
+      <a href="ai-governance.html"><span class="ic">◈</span>AI 治理与评测回放<span class="cur-tag">NEW</span></a>
+      <a href="mapping.html"><span class="ic">⇄</span>主数据映射<span class="cur-tag">NEW</span></a>
+      <a href="role-views.html"><span class="ic">◉</span>角色视角切换<span class="cur-tag">NEW</span></a>
     </div>
   </div>
   <div class="right">
@@ -262,7 +266,7 @@
   <div class="stats">
     <div class="stat"><div class="l"><span class="di" style="background:var(--brand)"></span>全部赔案</div><div class="v">1,284</div><div class="s">本月新增 148 件</div><span class="trend up">↑ 12.4%</span></div>
     <div class="stat"><div class="l"><span class="di" style="background:var(--amber)"></span>待我审核</div><div class="v" style="color:var(--amber)">23</div><div class="s">其中 VIP 案件 4 件</div><span class="trend down">需优先处理</span></div>
-    <div class="stat"><div class="l"><span class="di" style="background:var(--purple)"></span>处理中</div><div class="v" style="color:var(--purple)">156</div><div class="s">初审 62 · 理算 94</div></div>
+    <div class="stat"><div class="l"><span class="di" style="background:var(--purple)"></span>处理中</div><div class="v" style="color:var(--purple)">179</div><div class="s">初审 62 · 录入 48 · 质检 31 · 审核 38</div></div>
     <div class="stat"><div class="l"><span class="di" style="background:var(--green)"></span>已结案</div><div class="v" style="color:var(--green)">1,031</div><div class="s">本月赔付 ¥ 2,846,120</div><span class="trend up">↑ 8.1%</span></div>
     <div class="stat"><div class="l"><span class="di" style="background:var(--red)"></span>推送失败</div><div class="v" style="color:var(--red)">7</div><div class="s">需重新推送保司</div><span class="trend down">待处理</span></div>
   </div>
@@ -291,7 +295,7 @@
     <div class="tabs">
       <div class="tab active">全部赔案 <span class="num">1,284</span></div>
       <div class="tab">待审核 <span class="num">38</span></div>
-      <div class="tab">审核中 <span class="num">156</span></div>
+      <div class="tab">审核中 <span class="num">179</span></div>
       <div class="tab">待推送 <span class="num">29</span></div>
       <div class="tab">已结案 <span class="num">1,031</span></div>
       <div class="tab">挂起 <span class="num">12</span></div>
@@ -423,12 +427,13 @@
   <div class="modal" style="width:620px">
     <div class="mh" style="color:var(--red)">⚠ 推送失败详情 · <span id="pfNo">900000000007</span> <span class="x" onclick="closeModal(document.getElementById('mPushFail'))">×</span></div>
     <div class="mb">
-      <div class="mfield"><div class="lbl">失败原因</div><input value="保司接口超时（HTTP 504）· 重试 2 次均失败" readonly></div>
+      <div class="mfield"><div class="lbl">失败原因</div><input value="保司接口超时（HTTP 504）· 批次 B-20260607-01 · 本批失败 7 件 · 自动重试 2 次均失败" readonly></div>
       <div class="mfield"><div class="lbl">失败时间 / 目标主体</div><input value="2026-06-07 11:05 · 示例财险C" readonly></div>
+      <div class="mfield"><div class="lbl">批次与统计卡口径</div><input value="批次 B-20260607-01 · 推送失败 7 件（与统计卡/推送失败 Tab 的 7 一致）· 当前展示 900000000007" readonly></div>
       <div class="sec" style="margin-top:10px"><div class="sh">重推记录</div><div class="sb" style="font-size:12.5px;line-height:2">
-        <div>① 11:05 首次推送 · 失败（504）</div><div>② 11:10 自动重试 · 失败（504）</div><div>③ 11:20 自动重试 · 失败（504）</div><div style="color:var(--red)">④ 当前：待人工处置（重推 / 退回审核）</div>
+        <div>① 11:05 首次推送 · 失败（504）</div><div>② 11:10 第 1 次重推 · 失败（504）</div><div>③ 11:20 第 2 次重推 · 失败（504）</div><div style="color:var(--red)">④ 当前：待人工处置（重推 / 退回审核）· 本批共 7 件待重推</div>
       </div></div>
-      <div class="mx-note" style="margin-top:10px">失败原因与重推记录成对展示，避免「只知道失败、不知道为什么」；处置结果写入操作记录可回放。</div>
+      <div class="mx-note" style="margin-top:10px">失败原因与重推记录成对展示，避免「只知道失败、不知道为什么」；批次失败件数 7 与顶部统计卡、推送失败 Tab 保持一致，处置结果写入操作记录可回放。</div>
     </div>
     <div class="mf"><button class="btn" onclick="closeModal(document.getElementById('mPushFail'))">关闭</button><button class="btn" onclick="toast('已退回审核 · 留痕（设计稿示意）');closeModal(document.getElementById('mPushFail'))">退回审核</button><button class="btn primary" onclick="toast('已重新推送 · 进入等待队列（设计稿示意）');closeModal(document.getElementById('mPushFail'))">重新推送</button></div>
   </div>
@@ -529,7 +534,7 @@
 <script>
   const rows = [
     {no:'900000000001',status:'待审核',stage:'审核',name:'唐某',idno:'1101****0019',policy:'TEST0000000000000052',insure:'示例玩具',ins:'示例财险',vip:'普通',amt:'¥ 1,062.00',sla:'剩 6h',op:'审核员A',time:'2026-06-09 14:43'},
-    {no:'900000000004',status:'审核中',stage:'理算',name:'李某',idno:'1101****0013',policy:'TEST0000000000000041',insure:'示例电子',ins:'示例财险',vip:'VIP2',amt:'¥ 12,860.50',sla:'剩 6h',op:'审核员A',time:'2026-06-08 09:12'},
+    {no:'900000000004',status:'审核中',stage:'审核',name:'李某',idno:'1101****0013',policy:'TEST0000000000000041',insure:'示例电子',ins:'示例财险',vip:'VIP2',amt:'¥ 8,640.00',sla:'剩 6h',op:'审核员A',time:'2026-06-08 09:12'},
     {no:'900000000005',status:'待推送',stage:'推送',name:'王某',idno:'1101****0027',policy:'TEST0000000000000038',insure:'示例医药',ins:'示例财险B',vip:'普通',amt:'¥ 3,420.00',sla:'正常',op:'推送员A',time:'2026-06-08 08:30'},
     {no:'900000000006',status:'已结案',stage:'结案',name:'陈某',idno:'1101****0034',policy:'TEST0000000000000019',insure:'示例科技',ins:'示例财险',vip:'VIP1',amt:'¥ 28,900.00',sla:'已结案',op:'结案员A',time:'2026-06-07 16:22'},
     {no:'900000000007',status:'推送失败',stage:'推送',name:'赵某',idno:'1101****0047',policy:'TEST0000000000000011',insure:'示例食品',ins:'示例财险C',vip:'普通',amt:'¥ 1,980.00',sla:'超时',op:'—',time:'2026-06-07 11:05'},
@@ -626,7 +631,7 @@
   window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
   window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
   window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
-  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测'],['settlement.html','￥','资金结算与四向对账','结算'],['ai-governance.html','◈','AI 治理与评测回放','治理'],['mapping.html','⇄','主数据映射','映射'],['role-views.html','◉','角色视角切换','角色']];
   var sel=0,shown=[];
   window.uxCmdRender=function(){
     var q=(inp.value||'').trim().toLowerCase();

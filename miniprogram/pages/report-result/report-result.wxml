@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="result-card">
+    <view class="result-icon {{status === 'success' ? 'result-icon-success' : 'result-icon-fail'}}">
+      <view class="icon-check" wx:if="{{status === 'success'}}">
+        <view class="icon-check-short"></view>
+        <view class="icon-check-long"></view>
+      </view>
+      <view class="icon-close" wx:else>
+        <view class="icon-close-line"></view>
+        <view class="icon-close-line icon-close-line-alt"></view>
+      </view>
+    </view>
+
+    <text class="result-title">{{title}}</text>
+    <text class="result-description">{{description}}</text>
+
+    <view class="receipt-card" wx:if="{{status === 'success' && (reportNo !== '' || claimNo !== '')}}">
+      <view class="receipt-row" wx:if="{{reportNo !== ''}}"><text class="receipt-label">报案号</text><text class="receipt-value">{{reportNo}}</text></view>
+      <view class="receipt-row" wx:if="{{claimNo !== ''}}"><text class="receipt-label">赔案号</text><text class="receipt-value">{{claimNo}}</text></view>
+      <view class="receipt-row"><text class="receipt-label">当前状态</text><text class="receipt-value">{{statusText || 'PENDING_EVIDENCE'}}</text></view>
+      <view class="receipt-row"><text class="receipt-label">申请金额</text><text class="receipt-value">¥{{amount}}</text></view>
+    </view>
+
+    <view class="action-group">
+      <button class="action-button action-primary" bindtap="goHome">返回首页</button>
+      <button class="action-button" bindtap="continueSubmit">再报一案</button>
+    </view>
+  </view>
+</view>

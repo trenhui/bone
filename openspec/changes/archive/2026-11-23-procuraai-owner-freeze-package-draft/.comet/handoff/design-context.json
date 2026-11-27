@@ -1,0 +1,15 @@
+{
+  "change": "procuraai-owner-freeze-package-draft",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "75f4ef758806dbc6f8edc374713b75ad985c46b1ab8cda03c96946d933a91e70",
+  "files": [
+    { "path": "openspec/changes/procuraai-owner-freeze-package-draft/proposal.md", "sha256": "8e3788a287df895f69f26792755c15da7b74742615b0ca4f70c3ceba1e7ad2d4" },
+    { "path": "openspec/changes/procuraai-owner-freeze-package-draft/design.md", "sha256": "1b0a4301a25ed8701233b7f103f427433cc73248a51fe5e16d0f828c0e3bfcb9" },
+    { "path": "openspec/changes/procuraai-owner-freeze-package-draft/tasks.md", "sha256": "92f5be540d9c508d582bed0d559028a452461ffea5f225e3f06dc091104c0e50" },
+    { "path": "openspec/changes/procuraai-owner-freeze-package-draft/specs/procurement/owner-freeze-package/spec.md", "sha256": "6f1db1966227c90f13c41e03463467c7403c43f60441bc56cbd4783a9b72ec0e" }
+  ]
+}

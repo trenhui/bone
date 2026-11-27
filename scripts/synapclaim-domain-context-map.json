@@ -1,11 +1,11 @@
 {
   "source": "doc/ai-product/synapClaim/04-design/总体技术方案.md §4（D4=A 归属判据，2026-11-08）",
   "status": "logical-only",
-  "note": "逻辑归属真源；物理包路径仍为 domain/model/<subdomain>/ 平铺，物理收敛须独立窗口（见 design.md 附录 A.3）。task 子域由 0125（批 1 作业任务与自动分配）新增，属 Claim 上下文——它与 review/inspection 同属作业执行面，归属是写入期事实；上游 总体技术方案 §4 的枚举未回写（v2.3 已封存，按 change Non-Goals 不改封存设计文档），本文件为该子域归属的真源。",
+  "note": "逻辑归属真源；物理包路径仍为 domain/model/<subdomain>/ 平铺，物理收敛须独立窗口（见 design.md 附录 A.3）。task 子域由 0125（批 1 作业任务与自动分配）新增，属 Claim 上下文——它与 review/inspection 同属作业执行面，归属是写入期事实；上游 总体技术方案 §4 的枚举未回写（v2.3 已封存，按 change Non-Goals 不改封存设计文档），本文件为该子域归属的真源。sign 子域由 claim-secure-signing（0142/0143）新增，线上自动签收与线下人工签收是收单作业面的一部分，同属 Claim 上下文。",
   "contexts": {
     "Claim": {
-      "subdomains": ["claim", "inspection", "evidence", "sla", "appeal", "review", "task"],
-      "responsibility": "报案、查勘、证据、时效、申诉、复核、作业任务与分配"
+      "subdomains": ["claim", "inspection", "evidence", "sla", "appeal", "review", "task", "sign"],
+      "responsibility": "报案、查勘、证据、时效、申诉、复核、作业任务与分配、案件签收"
     },
     "Config": {
       "subdomains": ["config", "policy", "liability", "mapping", "reference"],

@@ -138,6 +138,12 @@
       "field": "tenantId",
       "line": 55,
       "reason": "采购履约 API 请求入参 tenantId：请求入参（前端上报）——后端以 @RequestParam Long / record Long 接收（FulfillmentController.fulfillmentView/listExceptions/supplement 及 AckCommand/AsnCommand/InvoiceCommand.tenantId），前端由 resolveTenantId()=Number(raw) 产出 number 并原样上报；非后端下发字段，不经 boneLongToStringCustomizer 序列化，无 2^53 截断风险。保留 number 与后端 Long 契约一致；对应响应 DTO（FulfillmentViewDTO/IrExceptionDTO 等）的 id/tenantId 均为 string，未被豁免。"
+    },
+    {
+      "file": "bone-frontend/apps/bone-claim-app/src/services/types.ts",
+      "field": "itemThirdPartyPaid",
+      "line": 245,
+      "reason": "理赔理算明细金额字段（后端 ClaimWithItemsProjection.itemThirdPartyPaid: BigDecimal，对应列 item_third_party_paid『第三方已赔付』），语义为金额而非标识符；number 是正确类型。被 IS_ID 正则 [iI]d$ 误命中是因为驼峰词尾 Paid 含 'id' 子串，非真实 ID。不经雪花 ID 序列化路径，无 2^53 截断风险。"
     }
   ]
 }

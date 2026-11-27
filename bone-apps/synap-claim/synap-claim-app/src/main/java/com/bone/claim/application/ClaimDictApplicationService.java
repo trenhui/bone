@@ -23,9 +23,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ClaimDictApplicationService {
 
-  /** 人工拒赔数字受控码（AdjustmentEngine#rejectionCodeOf 派生的值域）。 */
-  private static final List<String> REJECT_REASON_CODES =
-      List.of("03", "04", "05", "06", "09", "20", "30", "40");
+  /**
+   * 人工拒赔数字受控码（唯一真源，§8.3 00-13 + 20/30/40）。
+   *
+   * <p>16 码沿用 pk-tpa-saas 实证分类：01-13 为零赔付/拒赔底层字典（{@code 工程详细设计-落地版.md §8.2}），20/30/40
+   * 为目录外/除外/风险分类码。其中 {@code AdjustmentEngine#rejectionCodeOf} 只派生 05/06/09
+   * 三码（引擎真实产出），其余为人工复核可选码。前端字典 codegen 与拒赔写入期白名单校验均引用本集合——单一真源，新增/删改码只改此处 + {@link
+   * ClaimDictLabels#REJECT_REASON}。
+   *
+   * <p>{@code public} 是为了让 {@code ReviewDecisionAssembler#requireRejectType}
+   * 复用同一集合做写入期校验，杜绝「前端受控、后端不控」的双口径。
+   */
+  public static final List<String> REJECT_REASON_CODES =
+      List.of(
+          "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "20", "30",
+          "40");
 
   /** 自动放款消费结果受控码（AutoApprovalOutcome.reason 静态度）。 */
   private static final List<String> CONSUMPTION_REASON_CODES =

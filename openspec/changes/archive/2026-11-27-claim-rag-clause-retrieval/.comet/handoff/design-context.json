@@ -1,0 +1,15 @@
+{
+  "change": "claim-rag-clause-retrieval",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "781107bb848fd1d2ca0070770e51babb34c1716db7f4d9c00af485c7effd84a7",
+  "files": [
+    { "path": "openspec/changes/claim-rag-clause-retrieval/proposal.md", "sha256": "bef5996047e706576fa7b46320fabd645f47b31d5ae6741e2ed59e28c6a15f66" },
+    { "path": "openspec/changes/claim-rag-clause-retrieval/design.md", "sha256": "86d90f1c7803668f3b608ef1669b80b47f1d8ed0ebaa496f2d380599d09dfb82" },
+    { "path": "openspec/changes/claim-rag-clause-retrieval/tasks.md", "sha256": "f048117ffe5567230c6487306674bb2599184a7e317c01b307bfea68f6a03bd1" },
+    { "path": "openspec/changes/claim-rag-clause-retrieval/.openspec.yaml", "sha256": "278dc26b0b2af5c466b0d1a5a519d3cd8310cc0d213a8190f0f81d02cc742699" }
+  ]
+}

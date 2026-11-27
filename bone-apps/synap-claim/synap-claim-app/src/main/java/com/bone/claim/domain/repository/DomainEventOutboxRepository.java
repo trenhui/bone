@@ -41,6 +41,18 @@ public interface DomainEventOutboxRepository extends Repository<DomainEventOutbo
   long countByStatusInWindow(
       @Param("from") Timestamp from, @Param("to") Timestamp to, @Param("status") String status);
 
+  /**
+   * 按聚合 + 事件类型取最新一条（租户上下文内）。
+   *
+   * <p>用途：保司推送等「一聚合只发一次」的事件写入前幂等判定——同 claimId 已有 {@code INSURER_PUSH}
+   * 记录就不再追加，避免重复结案/重复支付回调产生二次报送。必须 {@code @TenantScope(AUTO)}：查询在业务租户事务内发生， 不能跨租户串味。
+   */
+  @TenantScope(TenantScopeMode.AUTO)
+  DomainEventOutbox findLatestByAggregateAndEventType(
+      @Param("aggregate") String aggregate,
+      @Param("aggregateId") Long aggregateId,
+      @Param("eventType") String eventType);
+
   /** 按主键加载（应用层在 {@code runAs} 上下文内调用，租户隔离由上下文 + AUTO 作用域落实）。 */
   default DomainEventOutbox load(Long tenantId, Long id) {
     return findById(id);

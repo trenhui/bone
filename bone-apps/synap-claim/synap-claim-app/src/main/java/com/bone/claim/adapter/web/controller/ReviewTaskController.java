@@ -143,6 +143,8 @@ public class ReviewTaskController {
     if (replayed.isPresent()) {
       return replayedBody(replayed.get());
     }
+    // 拒赔证据位置锚点：写入期校验，杜绝不可定位的自由文本进合规文书（批量端点契约不带此字段，不接此类校验）。
+    ReviewDecisionAssembler.requireEvidenceRefs(request);
     claimCaseApplicationService.decide(
         claimId,
         request.decision(),

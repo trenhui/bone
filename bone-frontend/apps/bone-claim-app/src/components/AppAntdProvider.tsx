@@ -1,16 +1,45 @@
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import type { ReactElement, ReactNode } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { readStoredTheme } from '@bone/ui';
+import { claimAntdTheme, resolveBroadcastTheme } from './claimTheme';
 
 /**
- * 本应用的 antd Provider：中文语言包 + 中文表单校验默认文案。
+ * 本应用的 antd Provider：中文语言包 + 中文表单校验默认文案 + 跟随全局主题。
  *
- * 与 bone-commerce-app 同口径：antd locale 不含 rc-field-form 的校验文案表，
+ * <p>与 bone-commerce-app 同口径：antd locale 不含 rc-field-form 的校验文案表，
  * 必须显式给 ConfigProvider form.validateMessages，否则 required 提示为英文。
+ *
+ * <p>主题（2026-11-24 补齐）：此前固定 antd 默认亮色，Shell 切暗色时本应用不跟随。
+ * 现在订阅 `bone:theme:change` 总线（Shell 广播已解析的 light/dark），用平台设计令牌
+ * `toAntdTheme` 生成 ConfigProvider.theme。独立运行（无 Shell 总线）时读本地偏好回退 system。
  */
 export function AppAntdProvider({ children }: { children: ReactNode }): ReactElement {
+  // 初值取本地偏好；嵌入 Shell 后由总线事件覆盖为 Shell 的解析值（单一真源在 Shell）。
+  const [themeRaw, setThemeRaw] = useState<unknown>(() => readStoredTheme());
+
+  useEffect(() => {
+    const bus = (window as unknown as {
+      __BONE_EVENT_BUS__?: {
+        on: (event: string, handler: (data: unknown) => void) => unknown;
+        off: (event: string, handler: (data: unknown) => void) => unknown;
+      };
+    }).__BONE_EVENT_BUS__;
+    if (!bus || typeof bus.on !== 'function') return;
+    const onTheme = (data: unknown): void => {
+      const t = (data as { theme?: unknown } | undefined)?.theme;
+      if (t !== undefined) setThemeRaw(t);
+    };
+    bus.on('bone:theme:change', onTheme);
+    return () => {
+      // SimpleEventBus.off 必须带 handler：不带会清空该事件全部监听者。
+      bus.off('bone:theme:change', onTheme);
+    };
+  }, []);
+
   return (
     <ConfigProvider
+      theme={claimAntdTheme(themeRaw)}
       locale={zhCN}
       form={{
         validateMessages: {
@@ -40,3 +69,5 @@ export function AppAntdProvider({ children }: { children: ReactNode }): ReactEle
     </ConfigProvider>
   );
 }
+
+export { resolveBroadcastTheme };

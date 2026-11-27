@@ -871,7 +871,7 @@ fi
 # 此前两个脚本在 ci.yml / check.sh 均零引用，只有本地手工运行 ⇒ 分期漂移、
 # InvoiceMatched 字段漂移、评测集删偏见用例都不会被自动化拦截。
 # 沿用既有 G0 做法不带 [x/59] 编号，避免改动计数与逐项标签；CI 侧同名
-# blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈（3 判据子集）。
+# blocking 步骤额外跑 --self-test 注入反证，本地只做快反馈（6 判据子集）。
 # 判据集合与可执行语义受门禁 A10.17 守护：CI / 本地一键入口 = 全集，本块 = 快反馈子集；
 # 注释掉本块命令 / 给 CI 步骤加 continue-on-error 或 if: 都会转红，不是口头约定。
 # G0-comet-plan（2026-11-16 用户批准 L3）：四批 Build Plan 的 scoped 门禁执行器从
@@ -919,8 +919,18 @@ if ! python3 doc/ai-product/procuraAI/scripts/check_procura_frontmatter.py > /de
   exit_code=1
 fi
 if ! python3 tools/check_procura_persistence.py > /dev/null; then
-  echo -e "${RED}❌ procuraAI 生产化加固门禁失败（6 表 / 双唯一键 / 9 端口持久化实现）${RESET}"
+  echo -e "${RED}❌ procuraAI 生产化加固门禁失败（9 表 / 双唯一键 / 10 端口持久化实现）${RESET}"
   echo -e "${DIM}  复核：python3 tools/check_procura_persistence.py${RESET}"
+  exit_code=1
+fi
+if ! python3 tools/check_procura_event_chain.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI 事件闭环门禁失败（三表 / 三类负向探针不可达）${RESET}"
+  echo -e "${DIM}  复核：python3 tools/check_procura_event_chain.py${RESET}"
+  exit_code=1
+fi
+if ! python3 tools/check_procura_business_aggregates.py > /dev/null; then
+  echo -e "${RED}❌ procuraAI 业务聚合门禁失败（四表 / 迁移规范 / SDK 持久化 / 身份边界）${RESET}"
+  echo -e "${DIM}  复核：python3 tools/check_procura_business_aggregates.py${RESET}"
   exit_code=1
 fi
 

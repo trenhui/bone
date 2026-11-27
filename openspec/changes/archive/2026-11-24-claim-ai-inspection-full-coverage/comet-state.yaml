@@ -1,0 +1,4305 @@
+# comet-execution: managed-run
+change_id: 7626c3b6-ee86-48cd-9f5a-f59900afb9c8
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: worktree
+verify_mode: null
+auto_transition: true
+base_ref: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+design_doc: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage/design.md
+plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+branch_status: pending
+created_at: 2026-11-23
+verified_at: 2026-11-24
+archive_confirmation: confirmed
+archived: true
+bound_branch: comet/claim-ai-inspection-full-coverage
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+handoff_hash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: b8940db0354d5c5f6f9ff35a82fac89754c36d7155860546c6a172862202fa3c
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: claim-ai-inspection-full-coverage
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    definitionHashes:
+      '["comet-classic-full","1"]': 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+    initialStateHash: 1765c454360cc7cbf583872dbdf9f128d3753447995e12c6cfc0f41977c60ea2
+    input:
+      change: claim-ai-inspection-full-coverage
+      changeDir: openspec/changes/claim-ai-inspection-full-coverage
+      workspaceBaseline:
+        ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+      boundBranch: comet/claim-ai-inspection-full-coverage
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 10
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-23
+      designDoc: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+      handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+      isolation: worktree
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+      verifiedAt: 2026-11-24
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 42
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-295ebd7e315eb31154e28a530188abad2126898e65644fc53243dfe49b3e9f79
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:1
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 58cff4f6ec6db248d98e580b3a7a49654e2fb64d71bc3c83c155be89f8a7eaf2
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:1
+          attempt: 1
+          claimToken: portable-295ebd7e315eb31154e28a530188abad2126898e65644fc53243dfe49b3e9f79
+          inputHash: 58cff4f6ec6db248d98e580b3a7a49654e2fb64d71bc3c83c155be89f8a7eaf2
+          outcomeId: 47fec218-a8b6-4ace-b88d-fe25ccf93478
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: b209735aad2956c7d17f7619bc46e312d6708832e3b68dce6d77ea3bad47bad5
+            outcomeId: 47fec218-a8b6-4ace-b88d-fe25ccf93478
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-77f1b15ae395c881137625144a592d208614bc2d6a0e2398d1a1315c48d36473
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:4
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 38b06a39009547de3698afaf100955b384e05d4d27984c1fc1e809e66904d854
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:4
+          attempt: 2
+          claimToken: portable-77f1b15ae395c881137625144a592d208614bc2d6a0e2398d1a1315c48d36473
+          inputHash: 38b06a39009547de3698afaf100955b384e05d4d27984c1fc1e809e66904d854
+          outcomeId: claim-ai-inspection-full-coverage:4:2:executor-result
+          output:
+            contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 4e92b9ed72c31672db4b1b790baccf2fc052565dfef3744473ee76aede75bf60
+            outcomeId: claim-ai-inspection-full-coverage:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 已核实原尝试完全未执行且无副作用：该 action 是进程内只读 Open
+                重校验(ref=classic-open-revalidate)，仅计算 change
+                目录内容哈希、不派发外部命令；recovery 显示
+                command=null、record.status=missing、receiptRef=null、manifestRef=null，证据目录
+                .comet/runtime/classic-sdk-checks/f9e47e6a... 无收据；原执行器(guard
+                --apply 调用)已结束，无仍在运行的进程。重放该幂等只读计算安全。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-8546a8f5592a7f2d53236dd1251ab9c4bfe1e1a3aa72820d098f8c574f4da0fd
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:5
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 0d4b5ded56ffdf351b321697b5c2fa234d96c6fa62d7ec55ea8a11d29377f144
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:5
+          attempt: 2
+          claimToken: portable-8546a8f5592a7f2d53236dd1251ab9c4bfe1e1a3aa72820d098f8c574f4da0fd
+          inputHash: 0d4b5ded56ffdf351b321697b5c2fa234d96c6fa62d7ec55ea8a11d29377f144
+          outcomeId: 96b63941-acb9-448a-afe0-9f8e498af6b8
+          output:
+            handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+            handoffHash: ca3fadb47bb80f83c613e9eb763e58a6e1afa7646ed806172d3e65e820ae05ef
+            proposal: 正式技术设计候选（claim-ai-inspection-full-coverage）：①复用现有
+              InspectionSamplingPolicy.shouldSample 的 ratePercent>=100 全量分支（已实证
+              InspectionSamplingPolicy.java:29-38 存在），不重写抽样算法；②终态范围扩展只改候选仓储
+              SQL（findFinishedForInspectionAllTenants.sql:7）从仅 FINISHED 扩为含
+              CLOSED_REJECTED，下游
+              claim.finished()（ClaimStatus.terminal():76-79）已兼容两终态、零改动，默认 5%
+              下拒赔入候选仍按 5% 抽样不改变现网口径；③INSPECTION_SAMPLING 唯一配置源按租户读取、无配置回落 5%、失败
+              fail-safe+WARN（FeatureTenantToggleService.java:147-175
+              现网已实现，补测试钉住）；④资金边界硬隔离，抽检只写 t_claim_inspection，不碰
+              Adjustment/AUTO_APPROVE/视觉桩 available/目录准入
+              MANDATORY。测试策略：100%全量+拒赔入候选+默认5%+租户隔离+fail-safe
+              均有正向/回归测试，配3条变异双向钉子（比例分支篡改、终态白名单回退、fail-safe移除）改一处必红还原必绿；验收跑 mvn
+              -pl synap-claim-app -am 全绿。无 Spec Patch（现有 delta spec
+              四需求措辞准确、无需改动）；无新增DDL、无资金闸、无真实provider。详见 design.md 代码实证表与决策段。
+            requirementsEvidence:
+              contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+            sourceEvidence:
+              contentHash: f5dfe8a1fc6a242259c66c127de49c67ceb54edd30199b7a3a3668ba53c15269
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 32ad9c7d05aacc461c23e53e0ca3409b22d7ce99192f05fae296ca69e2392aea
+            outcomeId: 96b63941-acb9-448a-afe0-9f8e498af6b8
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核实首次 propose-design 的 design handoff action 未执行成功且无副作用：状态文件
+                handoff_context=null/handoff_hash=null、无 full.design.confirm
+                pending wait、recovery 显示
+                command=null/record.status=missing/receiptRef=null，design.md 与
+                brainstorm-summary.md 已由本 Agent 完整写入。恢复为 pending
+                后用完整提案重新提交，幂等安全。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-4562b330886a1b087cfeb675ce25dfcaeda0ed64ad831be9576999a7d40435d3
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:7
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 708d822d8e2b677cd9b5b07b092ec92e7096d303442499d2c718db169bdf6b3b
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:7
+          attempt: 1
+          claimToken: portable-4562b330886a1b087cfeb675ce25dfcaeda0ed64ad831be9576999a7d40435d3
+          inputHash: 708d822d8e2b677cd9b5b07b092ec92e7096d303442499d2c718db169bdf6b3b
+          outcomeId: 828193ff-0886-4b1b-876c-83f83b9f0d22
+          output:
+            designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8d75a8a999a844dd177881318932110c8d3da1bf8f20459045f4867f41f34996
+            outcomeId: 828193ff-0886-4b1b-876c-83f83b9f0d22
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-14a6367ea2914b41fd397015d201779129779dd4fbcdb20c21a30d8f8a93f41f
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:9
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 62363a2cc1bd3babd752d5790951ce11a891e830d4644ffb44efd9a58e1017e1
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:9
+          attempt: 1
+          claimToken: portable-14a6367ea2914b41fd397015d201779129779dd4fbcdb20c21a30d8f8a93f41f
+          inputHash: 62363a2cc1bd3babd752d5790951ce11a891e830d4644ffb44efd9a58e1017e1
+          outcomeId: 9a7b5d5f-fc4f-4793-896e-fd3e6d276474
+          output:
+            boundBranch: comet/claim-ai-inspection-full-coverage
+            buildMode: autonomous
+            directOverride: false
+            isolation: worktree
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 25801ca5d72e62e6b1fd9d271159fc0245cc0deba153c9f21980f8d088b0cdad
+            outcomeId: 9a7b5d5f-fc4f-4793-896e-fd3e6d276474
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-904bd457519020a0f03b8e9a25f60866ca831b71d1f1cd66280adcadd6f689d5
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:11
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 7e04f1a4da846dd6dd4f9ad352d62fa738fdb0c45345dc0ece3a7befca660453
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:11
+          attempt: 1
+          claimToken: portable-904bd457519020a0f03b8e9a25f60866ca831b71d1f1cd66280adcadd6f689d5
+          inputHash: 7e04f1a4da846dd6dd4f9ad352d62fa738fdb0c45345dc0ece3a7befca660453
+          outcomeId: c56746ad-b9d6-4e75-9f9c-7eed68759991
+          output:
+            designEvidence:
+              contentHash: 56bf9cd44ccb4aeba7e59cb639580385f3ae2c225c2631bd6e1203d09dc68741
+              ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+            plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+            planEvidence:
+              contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+              ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+            taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: be638d9fb4ffa10f20e6b84f95b5e1a7ea2622b02f4493e300045938463e68bc
+            outcomeId: c56746ad-b9d6-4e75-9f9c-7eed68759991
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        id: claim-ai-inspection-full-coverage:13
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: e02fdda49a2d8d56336091375ad92494f77c2d8bd9b46d3b8afcb3df12eba62b
+        protocolVersion: 1
+        reason: 命令 revise-design 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: cancelled
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-1e2d98ace6235afc3fa049da4dfa338221f05b3a7464a508b4d5a4738e2c8086
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:14
+        input:
+          activation:
+            expectedRevision: 25
+            fromPhase: build
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 9c0e893c5998e54fef7ee75af5869cbe51817ef5654e3bb17172251380392983
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:14
+          attempt: 2
+          claimToken: portable-1e2d98ace6235afc3fa049da4dfa338221f05b3a7464a508b4d5a4738e2c8086
+          inputHash: 9c0e893c5998e54fef7ee75af5869cbe51817ef5654e3bb17172251380392983
+          outcomeId: 45a8fd6b-88a0-44a9-adaa-e8ab890baa72
+          output:
+            handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+            handoffHash: 75cf3233e933240b65056c613400c6055ff89d20db1b912cd86c1e0db6a4c92a
+            proposal: 设计复核重提（claim-ai-inspection-full-coverage）：方案与已批准版本完全一致（复用100%分支+候选SQL纳入CLOSED_REJECTED+默认5%不变+fail-safe+资金边界硬隔离）。本次仅按
+              Build 变异验证结果修订 design.md
+              的测试策略表：①纠正原变异点'>=100改为>100'数学等价无效的笔误，改为'全量分支return
+              true改false'；②补充实际落地的测试类
+              InspectionConfigTest/InspectionSamplingTerminalScopeTest 与 3
+              条变异双向实证（均 RC=1红→还原RC=0绿，42例全绿）；③记录常量内联坑（static
+              final需clean重编）。无需求/范围/验收/方案变化，无Spec Patch。
+            requirementsEvidence:
+              contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+            sourceEvidence:
+              contentHash: 5b0e70d3cf91334ad71ef285b9b2a7bc5efc1e57814cc5a5536f5c61fda7cf4a
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 03754b9a3cedec914b02667b383e538848da7565d9ca08692d4d3d78a1e7f746
+            outcomeId: 45a8fd6b-88a0-44a9-adaa-e8ab890baa72
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核实 propose-design 的 design handoff action
+                未成功回报且无副作用：command=null/record.status=missing/receiptRef=null；状态文件已有
+                proposalHash=74f44496 的 full.design.confirm wait，handoff
+                包已写入。恢复为 pending 后核对 wait，不重复提交提案。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-9d876953b04688aa3e07edeeeb8fd75bc0e19bc797401ab9f3a54eeb7a0eca3e
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:16
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 360ff4d786cdcf9bb68e62691c5175d956fbc9937bf518f230820a65bf99f973
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:16
+          attempt: 1
+          claimToken: portable-9d876953b04688aa3e07edeeeb8fd75bc0e19bc797401ab9f3a54eeb7a0eca3e
+          inputHash: 360ff4d786cdcf9bb68e62691c5175d956fbc9937bf518f230820a65bf99f973
+          outcomeId: 8ab095d4-dd3d-4822-bcbd-10357969bd18
+          output:
+            designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ecb32b02aa5a9ff8e349cedf69663da67a5a418f698b0b9178b625ee428d3094
+            outcomeId: 8ab095d4-dd3d-4822-bcbd-10357969bd18
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-4fd43a61f6e08fdfac3b723c4a855ca6a18f25315cd4b0d8f9f3ecbf6f279e07
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:18
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 6467d9235b113c848c2bfb1908386f15107f031077e6fb5b86e74eb9b0d4dc0d
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:18
+          attempt: 1
+          claimToken: portable-4fd43a61f6e08fdfac3b723c4a855ca6a18f25315cd4b0d8f9f3ecbf6f279e07
+          inputHash: 6467d9235b113c848c2bfb1908386f15107f031077e6fb5b86e74eb9b0d4dc0d
+          outcomeId: c8b16055-63d1-43e2-a58f-7d1171e16c6e
+          output:
+            designEvidence:
+              contentHash: d8b717324269c5a2e319559408b38ee170c052acbae741b7133ae0613eb06c82
+              ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+            plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+            planEvidence:
+              contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+              ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+            taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ebfb47e0c0e9cd59421d8d7ee795d98e61e6f1305e88e2fd432ae21d31855b8e
+            outcomeId: c8b16055-63d1-43e2-a58f-7d1171e16c6e
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-ai-inspection-full-coverage:20/1
+          token: portable-ce00ed770d91c56180d2f49c2cb6d9c95f4c0ad6ea38d493fef287bcffb3158b
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:20
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: e5ce722a423742d2f843f5a54e1dfa4b2d4d3240aa9f384a09f1cfcbea8905a4
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:20
+          attempt: 1
+          claimToken: portable-ce00ed770d91c56180d2f49c2cb6d9c95f4c0ad6ea38d493fef287bcffb3158b
+          inputHash: e5ce722a423742d2f843f5a54e1dfa4b2d4d3240aa9f384a09f1cfcbea8905a4
+          outcomeId: 62eec4a4-e1e9-4d4a-ab11-38f3f76c5d08
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 01a0058f691367b4aa757a1399a8d56783bed1eaa0e0dd69c17cae03c6e2fc2e
+            outcomeId: 62eec4a4-e1e9-4d4a-ab11-38f3f76c5d08
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-6912c3f1e9aa06a31ebb7a7512d04506e93e8e902b93a0cc8ab31b8ae086d99a
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:21
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 44b995cadef99ecd6f95ffb55b6f5cd340dbc9ce1a8ab575cdf0b930bea95596
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:21
+          attempt: 1
+          claimToken: portable-6912c3f1e9aa06a31ebb7a7512d04506e93e8e902b93a0cc8ab31b8ae086d99a
+          inputHash: 44b995cadef99ecd6f95ffb55b6f5cd340dbc9ce1a8ab575cdf0b930bea95596
+          outcomeId: 3143b8e8-a1fc-4bff-9449-d1c3b0aaad2c
+          output:
+            argv:
+              - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+              - -pl
+              - bone-apps/synap-claim/synap-claim-app
+              - -am
+              - test
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: 9d0c4e17ec99befabb04683e198d31489b023212eaef393b45bfda23691b1102
+            cwd: .
+            environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+            exitCode: 0
+            inputAfter: 4f72f421f229ec54a90c9aa4c5a4c23b3e25df2727c06c70c929147583a3e426
+            inputBefore: 4f72f421f229ec54a90c9aa4c5a4c23b3e25df2727c06c70c929147583a3e426
+            manifestHash: dc0f4c90ff20e1dd7a03462760668d69bb14b263b6ab15427f3fef54838d0177
+            manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/0e760f78-d214-407f-9580-88198f866773.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/5c76596a-bcf7-42ce-9421-e0923a733488.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 6e2c28069ebf6e838de0998a6080f82fa41c93c7bf37f3e05a5ec2e50116c664
+            outcomeId: 3143b8e8-a1fc-4bff-9449-d1c3b0aaad2c
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-e24726282ddddb35a08f7bd7be7d9cd18aeb2d4f9ebf446441a33a14e4bf7597
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:23
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: af19371046fda2d4610d835dc3974e6196fa377e5a67c4ef30131173f9550c9e
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:23
+          attempt: 1
+          claimToken: portable-e24726282ddddb35a08f7bd7be7d9cd18aeb2d4f9ebf446441a33a14e4bf7597
+          inputHash: af19371046fda2d4610d835dc3974e6196fa377e5a67c4ef30131173f9550c9e
+          outcomeId: c7bb781b-a6a6-43fb-bbde-ea6610318dd6
+          output:
+            event: verify-fail
+            reason: Verify独立审查发现IMPORTANT-1：FeatureTenantToggleService.inspectionConfig()
+              的仓储读取(findByFeatureKey/isOn)位于try块外，DB读取异常时未fail-safe回落5%，仅由Job跳过该笔，与spec
+              Requirement3「配置读取失败回落5%」冲突。回Build修复：将仓储读取纳入try/catch，异常回落defaults()并登记诊断键，补仓储异常注入测试。
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3041623258648ae04a1f89eef27328449a7dfa69a093f3d5b3b272465e98dded
+            outcomeId: c7bb781b-a6a6-43fb-bbde-ea6610318dd6
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 1
+        id: claim-ai-inspection-full-coverage:24
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: ccbef4e968140a71635cb2aa8e7d99172a9044bfa862df9fa8b7b73427e7c63d
+        protocolVersion: 1
+        reason: 命令 revise-design 已取代待执行 Action
+        receipts: []
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: cancelled
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-23d324f6555b09cac7ca1bac81a7665e91725ded64d4fa5a6f3e53216290db89
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:25
+        input:
+          activation:
+            expectedRevision: 46
+            fromPhase: build
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 590fc653b98f1085621d789b7c46cffd2d620b0f6f26d340a7050863ba56d612
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:25
+          attempt: 2
+          claimToken: portable-23d324f6555b09cac7ca1bac81a7665e91725ded64d4fa5a6f3e53216290db89
+          inputHash: 590fc653b98f1085621d789b7c46cffd2d620b0f6f26d340a7050863ba56d612
+          outcomeId: 08d125be-5fc4-41f2-86de-92a348d5f9e0
+          output:
+            handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+            handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+            proposal: Verify修复后设计复核重提：方案不变。相对上次批准的实质变化仅一处——独立审查IMPORTANT-1：inspectionConfig仓储读取原在try外、DB异常未fail-safe回落5%，已纳入try/catch并补注入测试+第4条变异钉子（生产代码第2处改动）。另补下游ClaimStatus.terminal拒赔终态断言测试、design记录审查结论。验收口径不变，全量测试1674例/0失败/8跳过。无Spec
+              Patch/DDL/资金闸。
+            requirementsEvidence:
+              contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+            sourceEvidence:
+              contentHash: c77ab04aa09055826ac6ccf1029d5fc8bee81c7a59f4e01eb699a0596f5f5921
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c6df6a058a5038ab53c161c3552b088e3617fc972a31f63753e13772ecc233cc
+            outcomeId: 08d125be-5fc4-41f2-86de-92a348d5f9e0
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 核实 propose-design 的 handoff action 因 file lock
+                超时未回报且无副作用：command=null/record.status=missing/receiptRef=null；恢复为
+                pending 后重提，幂等安全。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-dc8121b093a7010ba7524e9f1c22abe1ddc187aba1b643336d296312853c6562
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:27
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 65a2378b1a53d9c6461e6802d1e745f5f761f38197b618d20402fbdbffa8b7a2
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:27
+          attempt: 1
+          claimToken: portable-dc8121b093a7010ba7524e9f1c22abe1ddc187aba1b643336d296312853c6562
+          inputHash: 65a2378b1a53d9c6461e6802d1e745f5f761f38197b618d20402fbdbffa8b7a2
+          outcomeId: 747a81a3-caa9-4521-bcaa-68cc73b51944
+          output:
+            designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 791d98cfad92965ee50278492f3d476ba70d03001ca83166da37271b3d2a482e
+            outcomeId: 747a81a3-caa9-4521-bcaa-68cc73b51944
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-a4573ca15571c786cabe13618ac41df60fbe91e98d4ce0bde105b7369e0ae045
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:29
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 8087296abe53b937cfeff4e42ba082ac549f72e768d16ed2af935309c008f2e1
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:29
+          attempt: 1
+          claimToken: portable-a4573ca15571c786cabe13618ac41df60fbe91e98d4ce0bde105b7369e0ae045
+          inputHash: 8087296abe53b937cfeff4e42ba082ac549f72e768d16ed2af935309c008f2e1
+          outcomeId: 340d8793-c664-426e-a6ad-f7fa331105a6
+          output:
+            designEvidence:
+              contentHash: 31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b
+              ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+            plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+            planEvidence:
+              contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+              ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+            taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 08128541085e66275c544d8dc510565856a96fc53a3b0a640653e741e36b6993
+            outcomeId: 340d8793-c664-426e-a6ad-f7fa331105a6
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/claim-ai-inspection-full-coverage:31/1
+          token: portable-4c0ff239995d43d256fff8545f7c0f50acaba9bd51210c67735756f4add6ce72
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:31
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 8f18e25042c67b952d5e3fa68fd46c99411a660da21f6707d5755f2a7927693c
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:31
+          attempt: 1
+          claimToken: portable-4c0ff239995d43d256fff8545f7c0f50acaba9bd51210c67735756f4add6ce72
+          inputHash: 8f18e25042c67b952d5e3fa68fd46c99411a660da21f6707d5755f2a7927693c
+          outcomeId: baa2f441-fd90-4cef-8b00-dff072406810
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 7096fe671500cdd87c92474641544de7ba7b836b7662e4d62856057a7c2c4dfe
+            outcomeId: baa2f441-fd90-4cef-8b00-dff072406810
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-check
+          token: portable-67b47d6e16ca3ae27832f209715fdf6e9f774fd1401417f557ba85cb53de8bbf
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:32
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 2263b40ae82785e1f0545acc95cb8638f8294a3cb5f623c9b76f285f34658b36
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:32
+          attempt: 1
+          claimToken: portable-67b47d6e16ca3ae27832f209715fdf6e9f774fd1401417f557ba85cb53de8bbf
+          inputHash: 2263b40ae82785e1f0545acc95cb8638f8294a3cb5f623c9b76f285f34658b36
+          outcomeId: 21731eec-1428-4ec2-83b0-e2db65aeb118
+          output:
+            argv:
+              - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+              - -pl
+              - bone-apps/synap-claim/synap-claim-app
+              - -am
+              - test
+            changedDuringExecution: []
+            checkEpoch: 6
+            contentHash: e05a128a5765bf9632ab10cd4945d2b7daa3bf63a0e22fe9b13fbfacaa6fb2da
+            cwd: .
+            environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+            exitCode: 0
+            inputAfter: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+            inputBefore: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+            manifestHash: ecc511ab532616ab52d440864872da6f2453cc13854cdf0dccc4ff74bf5158ae
+            manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/310c8b4c-be6d-4c57-b7b8-6ed8481da7c6.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d19272f9-099d-4aed-9644-efce2b9d1a11.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: dfce18725a35788275b5632ebba5e32d145874c4895568f9236cd417fc6664e1
+            outcomeId: 21731eec-1428-4ec2-83b0-e2db65aeb118
+        reconciliations: []
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-6c25d3aac37e93c9cfba8aa4e51ffec28bfe65147df16fd8eedd0f58a15ed60f
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:34
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 6fe43bb9524eb99d02d1a8e33e6c4bb32a37f6ca9cc9726afb52c5d5a3a71282
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:34
+          attempt: 1
+          claimToken: portable-6c25d3aac37e93c9cfba8aa4e51ffec28bfe65147df16fd8eedd0f58a15ed60f
+          inputHash: 6fe43bb9524eb99d02d1a8e33e6c4bb32a37f6ca9cc9726afb52c5d5a3a71282
+          outcomeId: 4e24251c-e64f-4daf-a953-0be98499cab2
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 8fff892d2e5306efa8b6147edf55e979e77a2a354399be493a7f0e2afbedc33f
+            outcomeId: 4e24251c-e64f-4daf-a953-0be98499cab2
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-b8a7421d33af8b5d8c02656c83cb967facffea0bf7d430f7ea9264a0d3e961ee
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:36
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 96e00a987c3452960a7605c29f1fd6702b6d44149007972a58802289dcc0722c
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:36
+          attempt: 2
+          claimToken: portable-b8a7421d33af8b5d8c02656c83cb967facffea0bf7d430f7ea9264a0d3e961ee
+          inputHash: 96e00a987c3452960a7605c29f1fd6702b6d44149007972a58802289dcc0722c
+          outcomeId: 04ab4f98-962d-4d7c-a8e3-57d9f5e4b751
+          output:
+            argv:
+              - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+              - -pl
+              - bone-apps/synap-claim/synap-claim-app
+              - -am
+              - test
+            changedDuringExecution: []
+            checkEpoch: 7
+            contentHash: 63e79fab1d8e320ec3e1b143e2b26944f98ea5354b1f23f80b84d86a6706b2c8
+            cwd: .
+            deliveryInputs:
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/schedule/InspectionSamplingJob.java: git:0ade28af3d055dad1c08c10e2bfded97d0169cd9
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/FeatureTenantToggleService.java: git:28033a1076d843d3b25a2685ca399a0224f4a829
+              bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimCaseRepository.java: git:f656498bef24448406c91a5ae72a971e03e81f05
+              bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimCaseRepository/findFinishedForInspectionAllTenants.sql: git:f12adc7a55bb22b74904c0392171b037539d70b1
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/InspectionSamplingTerminalScopeTest.java: git:74da05e723bb16f170f6956015a7dd0c3f565fc8
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/FeatureTenantToggleServiceTest.java: git:68b267b333a88370f5d071e97d5ec3487101574e
+              bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/inspection/InspectionConfigTest.java: git:0188e55ee1a6c0b9ba0dc86b66831f850e161183
+            environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+            exitCode: 0
+            inputAfter: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+            inputBefore: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+            manifestHash: ecc511ab532616ab52d440864872da6f2453cc13854cdf0dccc4ff74bf5158ae
+            manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/fe737358-82f0-4930-8428-dbcb6b23cc52.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d2d22d50-948a-46b9-932b-1bad7e440d33.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 86da8bed8962d7aad4e40d72322537037887943d29cbabe805ce12be2a9e208a
+            outcomeId: 04ab4f98-962d-4d7c-a8e3-57d9f5e4b751
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: verify check 的 SDK 回报因 file lock 超时中断；检查本体虽已执行成功，但按 Runtime 规则 manual
+                attestation 不构成有效证据，故声明原 SDK 回报未落定并恢复 pending，随后用 comet check
+                run 真实重跑获取可验证收据。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-b821a0b581487e2f87bd7f3f136413531b7866a2c8da43b9457f3e2f36039f23
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:38
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: f34348e8b4cef85c52c6f5571cc59a589ee8355339a6feecff664c8ee949eddf
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:38
+          attempt: 1
+          claimToken: portable-b821a0b581487e2f87bd7f3f136413531b7866a2c8da43b9457f3e2f36039f23
+          inputHash: f34348e8b4cef85c52c6f5571cc59a589ee8355339a6feecff664c8ee949eddf
+          outcomeId: 13c79e37-29fc-4148-b772-9ae7a6a83945
+          output:
+            remote: origin
+            summary: V1.0
+              AI后督质检100%全量覆盖落地：候选SQL终态白名单纳入拒赔(CLOSED_REJECTED)、配置读取fail-safe回落5%(含DB异常)、新增InspectionConfigTest/InspectionSamplingTerminalScopeTest及4条变异双向钉子；全量测试1674例0失败8跳过，独立审查IMPORTANT已修复，guard
+              build/verify全PASS。分支 comet/'+NAME+' 已与dev同步。
+            targetBranch: comet/claim-ai-inspection-full-coverage
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: da25c8cf0d5444eecfd85280c7aea4880d3cce1fd98a21a8394f7e6b175a19fa
+            outcomeId: 13c79e37-29fc-4148-b772-9ae7a6a83945
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-cf23a85cb7cdadc1297ac264a4c3ae5ab0b7d8ecaeb3a2c82fdf0657fad9b2cd
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:40
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: e9c4c03b06d6b0df02144c49368c1fd2c507ef24dc0a955feda8f523752f1eb6
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:40
+          attempt: 1
+          claimToken: portable-cf23a85cb7cdadc1297ac264a4c3ae5ab0b7d8ecaeb3a2c82fdf0657fad9b2cd
+          inputHash: e9c4c03b06d6b0df02144c49368c1fd2c507ef24dc0a955feda8f523752f1eb6
+          outcomeId: 2147d609-10ca-44eb-b446-cdb749a98dec
+          output:
+            baseCommit: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+            deliveryAction: push
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: comet/claim-ai-inspection-full-coverage
+            verifiedBranch: comet/claim-ai-inspection-full-coverage
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: ffafb03b3e93259f674f97689d64f0e69e58fb18dd9bbebaa855f598ee271ae9
+            outcomeId: 2147d609-10ca-44eb-b446-cdb749a98dec
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive
+          token: portable-f33603482353c817a1cdfb5ea3261f243dfcaefcfc655960210ce163add030b1
+        executionOrigin:
+          workflow:
+            hash: 0df3c0e0776cea6145788d76b3225340d9111579ba019fc45939de67e183f9f9
+            id: comet-classic-full
+            version: "1"
+        id: claim-ai-inspection-full-coverage:41
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: b23ef22ed78a2975d38d34059ead1582ae1c34c52446d36a2b9f0b2621784625
+        outcome:
+          actionId: claim-ai-inspection-full-coverage:41
+          artifacts:
+            - sha256: da7391347506de3621bb008f28e0153ef224770fb7bca6c27a906147ea504939
+              uri: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage/.comet/archive-manifest.json
+          attempt: 1
+          claimToken: portable-f33603482353c817a1cdfb5ea3261f243dfcaefcfc655960210ce163add030b1
+          inputHash: b23ef22ed78a2975d38d34059ead1582ae1c34c52446d36a2b9f0b2621784625
+          outcomeId: claim-ai-inspection-full-coverage:41:1:recovered:81
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage
+          status: succeeded
+        protocolVersion: 1
+        reason: archive回报因file lock中断，原执行器已停止，归档已落地；据实走archive --recover
+        receipts:
+          - hash: dfdd3674215cb3662bc282bd52a686d2665c86a99f30d21b61f9645aaada7ace
+            outcomeId: claim-ai-inspection-full-coverage:41:1:recovered:81
+        reconciliations: []
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: claim-ai-inspection-full-coverage:42
+        input:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs: {}
+        inputHash: 3a244126c322d6cd4464cff50ec50ee0ef6fe0ae5b943e8ff75276361624c806
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: claim-ai-inspection-full-coverage
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    commands:
+      - id: 46666efb5747c02a87156cf4bab4af475be743afb6009a652226af8fd49880d8
+        name: revise-design
+        inputHash: 8f343d7bdaf8ac06fbc80123104be70b9827668f8cd4582653a4cf6bcf577337
+        actionId: claim-ai-inspection-full-coverage:14
+      - id: 9b116239081a3c6e9ced57fc0217b6aa34568786645384aca1ebada3276877ed
+        name: revise-design
+        inputHash: fdf014f541eaefddc2a8da9591b537868749c4d73724cf0461464d713d4847f1
+        actionId: claim-ai-inspection-full-coverage:25
+    actionContexts:
+      claim-ai-inspection-full-coverage:1:
+        results: {}
+        sequence: 1
+      claim-ai-inspection-full-coverage:11:
+        results: {}
+        sequence: 11
+      claim-ai-inspection-full-coverage:13:
+        results: {}
+        sequence: 13
+      claim-ai-inspection-full-coverage:14:
+        results: {}
+        sequence: 14
+      claim-ai-inspection-full-coverage:16:
+        results: {}
+        sequence: 16
+      claim-ai-inspection-full-coverage:18:
+        results: {}
+        sequence: 18
+      claim-ai-inspection-full-coverage:20:
+        results: {}
+        sequence: 20
+      claim-ai-inspection-full-coverage:21:
+        results: {}
+        sequence: 21
+      claim-ai-inspection-full-coverage:23:
+        results: {}
+        sequence: 23
+      claim-ai-inspection-full-coverage:24:
+        results: {}
+        sequence: 24
+      claim-ai-inspection-full-coverage:25:
+        results: {}
+        sequence: 25
+      claim-ai-inspection-full-coverage:27:
+        results: {}
+        sequence: 27
+      claim-ai-inspection-full-coverage:29:
+        results: {}
+        sequence: 29
+      claim-ai-inspection-full-coverage:31:
+        results: {}
+        sequence: 31
+      claim-ai-inspection-full-coverage:32:
+        results: {}
+        sequence: 32
+      claim-ai-inspection-full-coverage:34:
+        results: {}
+        sequence: 34
+      claim-ai-inspection-full-coverage:36:
+        results: {}
+        sequence: 36
+      claim-ai-inspection-full-coverage:38:
+        results: {}
+        sequence: 38
+      claim-ai-inspection-full-coverage:4:
+        results: {}
+        sequence: 4
+      claim-ai-inspection-full-coverage:40:
+        results: {}
+        sequence: 40
+      claim-ai-inspection-full-coverage:41:
+        results: {}
+        sequence: 41
+      claim-ai-inspection-full-coverage:42:
+        results: {}
+        sequence: 42
+      claim-ai-inspection-full-coverage:5:
+        results: {}
+        sequence: 5
+      claim-ai-inspection-full-coverage:7:
+        results: {}
+        sequence: 7
+      claim-ai-inspection-full-coverage:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: claim-ai-inspection-full-coverage:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+        proposalHash: 43409ade7f75ac16f31944e5b2daeb4dc20aa5307f883b30df730aa08a17cdd1
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+          choice: approved
+          proposalHash: 43409ade7f75ac16f31944e5b2daeb4dc20aa5307f883b30df730aa08a17cdd1
+      - id: claim-ai-inspection-full-coverage:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+              handoffHash: ca3fadb47bb80f83c613e9eb763e58a6e1afa7646ed806172d3e65e820ae05ef
+              proposal: 正式技术设计候选（claim-ai-inspection-full-coverage）：①复用现有
+                InspectionSamplingPolicy.shouldSample 的 ratePercent>=100
+                全量分支（已实证 InspectionSamplingPolicy.java:29-38
+                存在），不重写抽样算法；②终态范围扩展只改候选仓储
+                SQL（findFinishedForInspectionAllTenants.sql:7）从仅 FINISHED 扩为含
+                CLOSED_REJECTED，下游
+                claim.finished()（ClaimStatus.terminal():76-79）已兼容两终态、零改动，默认 5%
+                下拒赔入候选仍按 5% 抽样不改变现网口径；③INSPECTION_SAMPLING 唯一配置源按租户读取、无配置回落
+                5%、失败 fail-safe+WARN（FeatureTenantToggleService.java:147-175
+                现网已实现，补测试钉住）；④资金边界硬隔离，抽检只写 t_claim_inspection，不碰
+                Adjustment/AUTO_APPROVE/视觉桩 available/目录准入
+                MANDATORY。测试策略：100%全量+拒赔入候选+默认5%+租户隔离+fail-safe
+                均有正向/回归测试，配3条变异双向钉子（比例分支篡改、终态白名单回退、fail-safe移除）改一处必红还原必绿；验收跑 mvn
+                -pl synap-claim-app -am 全绿。无 Spec Patch（现有 delta spec
+                四需求措辞准确、无需改动）；无新增DDL、无资金闸、无真实provider。详见 design.md 代码实证表与决策段。
+              requirementsEvidence:
+                contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+              sourceEvidence:
+                contentHash: f5dfe8a1fc6a242259c66c127de49c67ceb54edd30199b7a3a3668ba53c15269
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+        proposalHash: b9bf5e738d6b08c2b799cf977430ffd120ecabd36730ee8cc94cf207b5990de8
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-b9bf5e738d6b08c2b799cf977430ffd120ecabd36730ee8cc94cf207b5990de8-approved
+          choice: approved
+          proposalHash: b9bf5e738d6b08c2b799cf977430ffd120ecabd36730ee8cc94cf207b5990de8
+      - id: claim-ai-inspection-full-coverage:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-ai-inspection-full-coverage
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 74f44496d8ff44aaace806841b59a3a7918798248547b7cc5ca366fd6c4deb2e
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 39a5d7a8-a8ac-4a02-bb81-29ea78337ace
+          choice: approved
+          proposalHash: 74f44496d8ff44aaace806841b59a3a7918798248547b7cc5ca366fd6c4deb2e
+      - id: claim-ai-inspection-full-coverage:15
+        stepId: full.design.confirm
+        sequence: 15
+        status: resolved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+              handoffHash: 75cf3233e933240b65056c613400c6055ff89d20db1b912cd86c1e0db6a4c92a
+              proposal: 设计复核重提（claim-ai-inspection-full-coverage）：方案与已批准版本完全一致（复用100%分支+候选SQL纳入CLOSED_REJECTED+默认5%不变+fail-safe+资金边界硬隔离）。本次仅按
+                Build 变异验证结果修订 design.md
+                的测试策略表：①纠正原变异点'>=100改为>100'数学等价无效的笔误，改为'全量分支return
+                true改false'；②补充实际落地的测试类
+                InspectionConfigTest/InspectionSamplingTerminalScopeTest 与 3
+                条变异双向实证（均 RC=1红→还原RC=0绿，42例全绿）；③记录常量内联坑（static
+                final需clean重编）。无需求/范围/验收/方案变化，无Spec Patch。
+              requirementsEvidence:
+                contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+              sourceEvidence:
+                contentHash: 5b0e70d3cf91334ad71ef285b9b2a7bc5efc1e57814cc5a5536f5c61fda7cf4a
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+        proposalHash: 2b8b43b15003d092dbc34950e7882449df105db8475f4cf6d1cd895f3a93fe98
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-2b8b43b15003d092dbc34950e7882449df105db8475f4cf6d1cd895f3a93fe98-approved
+          choice: approved
+          proposalHash: 2b8b43b15003d092dbc34950e7882449df105db8475f4cf6d1cd895f3a93fe98
+      - id: claim-ai-inspection-full-coverage:26
+        stepId: full.design.confirm
+        sequence: 26
+        status: resolved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+              handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+              proposal: Verify修复后设计复核重提：方案不变。相对上次批准的实质变化仅一处——独立审查IMPORTANT-1：inspectionConfig仓储读取原在try外、DB异常未fail-safe回落5%，已纳入try/catch并补注入测试+第4条变异钉子（生产代码第2处改动）。另补下游ClaimStatus.terminal拒赔终态断言测试、design记录审查结论。验收口径不变，全量测试1674例/0失败/8跳过。无Spec
+                Patch/DDL/资金闸。
+              requirementsEvidence:
+                contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+              sourceEvidence:
+                contentHash: c77ab04aa09055826ac6ccf1029d5fc8bee81c7a59f4e01eb699a0596f5f5921
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+        proposalHash: 711aabf20fcb9cd80f7fc1500f7b97d749c5cebc36c4f65d207ea639ebbe447d
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-711aabf20fcb9cd80f7fc1500f7b97d749c5cebc36c4f65d207ea639ebbe447d-approved
+          choice: approved
+          proposalHash: 711aabf20fcb9cd80f7fc1500f7b97d749c5cebc36c4f65d207ea639ebbe447d
+      - id: claim-ai-inspection-full-coverage:39
+        stepId: full.archive.confirm
+        sequence: 39
+        status: resolved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: V1.0
+                AI后督质检100%全量覆盖落地：候选SQL终态白名单纳入拒赔(CLOSED_REJECTED)、配置读取fail-safe回落5%(含DB异常)、新增InspectionConfigTest/InspectionSamplingTerminalScopeTest及4条变异双向钉子；全量测试1674例0失败8跳过，独立审查IMPORTANT已修复，guard
+                build/verify全PASS。分支 comet/'+NAME+' 已与dev同步。
+              targetBranch: comet/claim-ai-inspection-full-coverage
+        proposalHash: 8591eb590816f31ef917b6ca546426afae0d21bd17a24cc37f9671e101dddcc4
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-8591eb590816f31ef917b6ca546426afae0d21bd17a24cc37f9671e101dddcc4-push
+          choice: push
+          proposalHash: 8591eb590816f31ef917b6ca546426afae0d21bd17a24cc37f9671e101dddcc4
+    evidenceWaits:
+      - id: claim-ai-inspection-full-coverage:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+          contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+          submissionId: 5c0745b0-0e94-4d2f-98ee-b4b3a9cb3b62
+      - id: claim-ai-inspection-full-coverage:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          contentHash: 56bf9cd44ccb4aeba7e59cb639580385f3ae2c225c2631bd6e1203d09dc68741
+          submissionId: d53f59e7-06ff-40e2-9192-c640b318f53f
+      - id: claim-ai-inspection-full-coverage:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          submissionId: 348bdb3c-e856-446b-9fc9-805706b0601d
+      - id: claim-ai-inspection-full-coverage:17
+        stepId: full.design.evidence
+        sequence: 17
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          contentHash: d8b717324269c5a2e319559408b38ee170c052acbae741b7133ae0613eb06c82
+          submissionId: 466ca16a-3fc5-4a92-acb4-c4fc4abf4b2d
+      - id: claim-ai-inspection-full-coverage:19
+        stepId: full.build.plan.evidence
+        sequence: 19
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          submissionId: 8993aa64-a42a-40c5-9837-ef0b0d8115ee
+      - id: claim-ai-inspection-full-coverage:22
+        stepId: full.build.check.evidence
+        sequence: 22
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/5c76596a-bcf7-42ce-9421-e0923a733488.log
+          contentHash: 9d0c4e17ec99befabb04683e198d31489b023212eaef393b45bfda23691b1102
+          submissionId: 34ef3064-ab96-40e6-b5a4-7852555e2f18
+      - id: claim-ai-inspection-full-coverage:28
+        stepId: full.design.evidence
+        sequence: 28
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          contentHash: 31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b
+          submissionId: 0277ffd5-c3ac-4d78-ba84-92df15ee8f63
+      - id: claim-ai-inspection-full-coverage:30
+        stepId: full.build.plan.evidence
+        sequence: 30
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          submissionId: 338f9274-4c5b-4963-a889-5ce6919ec081
+      - id: claim-ai-inspection-full-coverage:33
+        stepId: full.build.check.evidence
+        sequence: 33
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d19272f9-099d-4aed-9644-efce2b9d1a11.log
+          contentHash: e05a128a5765bf9632ab10cd4945d2b7daa3bf63a0e22fe9b13fbfacaa6fb2da
+          submissionId: 79801155-b74e-481c-9db8-67bcc8881dd8
+      - id: claim-ai-inspection-full-coverage:35
+        stepId: full.verify.report.evidence
+        sequence: 35
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+          contentHash: b6953b786fed5dc7e501f1464bc18acc7c488582994345ad490db5e7c2fae746
+          submissionId: 398aa42b-532a-46b0-8ffd-701e5f43634c
+      - id: claim-ai-inspection-full-coverage:37
+        stepId: full.verify.check.evidence
+        sequence: 37
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d2d22d50-948a-46b9-932b-1bad7e440d33.log
+          contentHash: 63e79fab1d8e320ec3e1b143e2b26944f98ea5354b1f23f80b84d86a6706b2c8
+          submissionId: 1a627f0e-435f-423d-b2c6-e6f66108d25b
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 82
+  sourceHash: 6f14db0a25579535770b1ed0a403d1dd661984aa23adc062745d568d943e9b67
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+              ref: openspec/changes/claim-ai-inspection-full-coverage
+      - contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+        ref: openspec/changes/claim-ai-inspection-full-coverage
+      - contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+      - choice: approved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+              handoffHash: ca3fadb47bb80f83c613e9eb763e58a6e1afa7646ed806172d3e65e820ae05ef
+              proposal: 正式技术设计候选（claim-ai-inspection-full-coverage）：①复用现有
+                InspectionSamplingPolicy.shouldSample 的 ratePercent>=100
+                全量分支（已实证 InspectionSamplingPolicy.java:29-38
+                存在），不重写抽样算法；②终态范围扩展只改候选仓储
+                SQL（findFinishedForInspectionAllTenants.sql:7）从仅 FINISHED 扩为含
+                CLOSED_REJECTED，下游
+                claim.finished()（ClaimStatus.terminal():76-79）已兼容两终态、零改动，默认 5%
+                下拒赔入候选仍按 5% 抽样不改变现网口径；③INSPECTION_SAMPLING 唯一配置源按租户读取、无配置回落
+                5%、失败 fail-safe+WARN（FeatureTenantToggleService.java:147-175
+                现网已实现，补测试钉住）；④资金边界硬隔离，抽检只写 t_claim_inspection，不碰
+                Adjustment/AUTO_APPROVE/视觉桩 available/目录准入
+                MANDATORY。测试策略：100%全量+拒赔入候选+默认5%+租户隔离+fail-safe
+                均有正向/回归测试，配3条变异双向钉子（比例分支篡改、终态白名单回退、fail-safe移除）改一处必红还原必绿；验收跑 mvn
+                -pl synap-claim-app -am 全绿。无 Spec Patch（现有 delta spec
+                四需求措辞准确、无需改动）；无新增DDL、无资金闸、无真实provider。详见 design.md 代码实证表与决策段。
+              requirementsEvidence:
+                contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+              sourceEvidence:
+                contentHash: f5dfe8a1fc6a242259c66c127de49c67ceb54edd30199b7a3a3668ba53c15269
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+      - handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+        handoffHash: ca3fadb47bb80f83c613e9eb763e58a6e1afa7646ed806172d3e65e820ae05ef
+        proposal: 正式技术设计候选（claim-ai-inspection-full-coverage）：①复用现有
+          InspectionSamplingPolicy.shouldSample 的 ratePercent>=100 全量分支（已实证
+          InspectionSamplingPolicy.java:29-38 存在），不重写抽样算法；②终态范围扩展只改候选仓储
+          SQL（findFinishedForInspectionAllTenants.sql:7）从仅 FINISHED 扩为含
+          CLOSED_REJECTED，下游
+          claim.finished()（ClaimStatus.terminal():76-79）已兼容两终态、零改动，默认 5%
+          下拒赔入候选仍按 5% 抽样不改变现网口径；③INSPECTION_SAMPLING 唯一配置源按租户读取、无配置回落 5%、失败
+          fail-safe+WARN（FeatureTenantToggleService.java:147-175
+          现网已实现，补测试钉住）；④资金边界硬隔离，抽检只写 t_claim_inspection，不碰
+          Adjustment/AUTO_APPROVE/视觉桩 available/目录准入
+          MANDATORY。测试策略：100%全量+拒赔入候选+默认5%+租户隔离+fail-safe
+          均有正向/回归测试，配3条变异双向钉子（比例分支篡改、终态白名单回退、fail-safe移除）改一处必红还原必绿；验收跑 mvn -pl
+          synap-claim-app -am 全绿。无 Spec Patch（现有 delta spec
+          四需求措辞准确、无需改动）；无新增DDL、无资金闸、无真实provider。详见 design.md 代码实证表与决策段。
+        requirementsEvidence:
+          contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+        sourceEvidence:
+          contentHash: f5dfe8a1fc6a242259c66c127de49c67ceb54edd30199b7a3a3668ba53c15269
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+      - designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - contentHash: 56bf9cd44ccb4aeba7e59cb639580385f3ae2c225c2631bd6e1203d09dc68741
+        ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - boundBranch: comet/claim-ai-inspection-full-coverage
+        buildMode: autonomous
+        directOverride: false
+        isolation: worktree
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.build.configure:
+              boundBranch: comet/claim-ai-inspection-full-coverage
+              buildMode: autonomous
+              directOverride: false
+              isolation: worktree
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: 56bf9cd44ccb4aeba7e59cb639580385f3ae2c225c2631bd6e1203d09dc68741
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+        plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+        planEvidence:
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+        taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+      - contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+        ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+      - choice: approved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+              handoffHash: 75cf3233e933240b65056c613400c6055ff89d20db1b912cd86c1e0db6a4c92a
+              proposal: 设计复核重提（claim-ai-inspection-full-coverage）：方案与已批准版本完全一致（复用100%分支+候选SQL纳入CLOSED_REJECTED+默认5%不变+fail-safe+资金边界硬隔离）。本次仅按
+                Build 变异验证结果修订 design.md
+                的测试策略表：①纠正原变异点'>=100改为>100'数学等价无效的笔误，改为'全量分支return
+                true改false'；②补充实际落地的测试类
+                InspectionConfigTest/InspectionSamplingTerminalScopeTest 与 3
+                条变异双向实证（均 RC=1红→还原RC=0绿，42例全绿）；③记录常量内联坑（static
+                final需clean重编）。无需求/范围/验收/方案变化，无Spec Patch。
+              requirementsEvidence:
+                contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+              sourceEvidence:
+                contentHash: 5b0e70d3cf91334ad71ef285b9b2a7bc5efc1e57814cc5a5536f5c61fda7cf4a
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+      - handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+        handoffHash: 75cf3233e933240b65056c613400c6055ff89d20db1b912cd86c1e0db6a4c92a
+        proposal: 设计复核重提（claim-ai-inspection-full-coverage）：方案与已批准版本完全一致（复用100%分支+候选SQL纳入CLOSED_REJECTED+默认5%不变+fail-safe+资金边界硬隔离）。本次仅按
+          Build 变异验证结果修订 design.md
+          的测试策略表：①纠正原变异点'>=100改为>100'数学等价无效的笔误，改为'全量分支return
+          true改false'；②补充实际落地的测试类
+          InspectionConfigTest/InspectionSamplingTerminalScopeTest 与 3 条变异双向实证（均
+          RC=1红→还原RC=0绿，42例全绿）；③记录常量内联坑（static
+          final需clean重编）。无需求/范围/验收/方案变化，无Spec Patch。
+        requirementsEvidence:
+          contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+        sourceEvidence:
+          contentHash: 5b0e70d3cf91334ad71ef285b9b2a7bc5efc1e57814cc5a5536f5c61fda7cf4a
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+      - contentHash: d8b717324269c5a2e319559408b38ee170c052acbae741b7133ae0613eb06c82
+        ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - designEvidence:
+          contentHash: d8b717324269c5a2e319559408b38ee170c052acbae741b7133ae0613eb06c82
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+        plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+        planEvidence:
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+        taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+          - -pl
+          - bone-apps/synap-claim/synap-claim-app
+          - -am
+          - test
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: 9d0c4e17ec99befabb04683e198d31489b023212eaef393b45bfda23691b1102
+        cwd: .
+        environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+        exitCode: 0
+        inputAfter: 4f72f421f229ec54a90c9aa4c5a4c23b3e25df2727c06c70c929147583a3e426
+        inputBefore: 4f72f421f229ec54a90c9aa4c5a4c23b3e25df2727c06c70c929147583a3e426
+        manifestHash: dc0f4c90ff20e1dd7a03462760668d69bb14b263b6ab15427f3fef54838d0177
+        manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/0e760f78-d214-407f-9580-88198f866773.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/5c76596a-bcf7-42ce-9421-e0923a733488.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 9d0c4e17ec99befabb04683e198d31489b023212eaef393b45bfda23691b1102
+        ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/5c76596a-bcf7-42ce-9421-e0923a733488.log
+      - event: verify-fail
+        reason: Verify独立审查发现IMPORTANT-1：FeatureTenantToggleService.inspectionConfig()
+          的仓储读取(findByFeatureKey/isOn)位于try块外，DB读取异常时未fail-safe回落5%，仅由Job跳过该笔，与spec
+          Requirement3「配置读取失败回落5%」冲突。回Build修复：将仓储读取纳入try/catch，异常回落defaults()并登记诊断键，补仓储异常注入测试。
+      - choice: approved
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+              handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+              proposal: Verify修复后设计复核重提：方案不变。相对上次批准的实质变化仅一处——独立审查IMPORTANT-1：inspectionConfig仓储读取原在try外、DB异常未fail-safe回落5%，已纳入try/catch并补注入测试+第4条变异钉子（生产代码第2处改动）。另补下游ClaimStatus.terminal拒赔终态断言测试、design记录审查结论。验收口径不变，全量测试1674例/0失败/8跳过。无Spec
+                Patch/DDL/资金闸。
+              requirementsEvidence:
+                contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+              sourceEvidence:
+                contentHash: c77ab04aa09055826ac6ccf1029d5fc8bee81c7a59f4e01eb699a0596f5f5921
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+      - handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+        handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+        proposal: Verify修复后设计复核重提：方案不变。相对上次批准的实质变化仅一处——独立审查IMPORTANT-1：inspectionConfig仓储读取原在try外、DB异常未fail-safe回落5%，已纳入try/catch并补注入测试+第4条变异钉子（生产代码第2处改动）。另补下游ClaimStatus.terminal拒赔终态断言测试、design记录审查结论。验收口径不变，全量测试1674例/0失败/8跳过。无Spec
+          Patch/DDL/资金闸。
+        requirementsEvidence:
+          contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+        sourceEvidence:
+          contentHash: c77ab04aa09055826ac6ccf1029d5fc8bee81c7a59f4e01eb699a0596f5f5921
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+      - contentHash: 31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b
+        ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - designEvidence:
+          contentHash: 31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+        plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+        planEvidence:
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+        taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+      - argv:
+          - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+          - -pl
+          - bone-apps/synap-claim/synap-claim-app
+          - -am
+          - test
+        changedDuringExecution: []
+        checkEpoch: 6
+        contentHash: e05a128a5765bf9632ab10cd4945d2b7daa3bf63a0e22fe9b13fbfacaa6fb2da
+        cwd: .
+        environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+        exitCode: 0
+        inputAfter: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+        inputBefore: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+        manifestHash: ecc511ab532616ab52d440864872da6f2453cc13854cdf0dccc4ff74bf5158ae
+        manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/310c8b4c-be6d-4c57-b7b8-6ed8481da7c6.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d19272f9-099d-4aed-9644-efce2b9d1a11.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: e05a128a5765bf9632ab10cd4945d2b7daa3bf63a0e22fe9b13fbfacaa6fb2da
+        ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d19272f9-099d-4aed-9644-efce2b9d1a11.log
+      - contentHash: b6953b786fed5dc7e501f1464bc18acc7c488582994345ad490db5e7c2fae746
+        ref: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+      - argv:
+          - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+          - -pl
+          - bone-apps/synap-claim/synap-claim-app
+          - -am
+          - test
+        changedDuringExecution: []
+        checkEpoch: 7
+        contentHash: 63e79fab1d8e320ec3e1b143e2b26944f98ea5354b1f23f80b84d86a6706b2c8
+        cwd: .
+        deliveryInputs:
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/schedule/InspectionSamplingJob.java: git:0ade28af3d055dad1c08c10e2bfded97d0169cd9
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/FeatureTenantToggleService.java: git:28033a1076d843d3b25a2685ca399a0224f4a829
+          bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimCaseRepository.java: git:f656498bef24448406c91a5ae72a971e03e81f05
+          bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimCaseRepository/findFinishedForInspectionAllTenants.sql: git:f12adc7a55bb22b74904c0392171b037539d70b1
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/InspectionSamplingTerminalScopeTest.java: git:74da05e723bb16f170f6956015a7dd0c3f565fc8
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/FeatureTenantToggleServiceTest.java: git:68b267b333a88370f5d071e97d5ec3487101574e
+          bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/inspection/InspectionConfigTest.java: git:0188e55ee1a6c0b9ba0dc86b66831f850e161183
+        environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+        exitCode: 0
+        inputAfter: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+        inputBefore: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+        manifestHash: ecc511ab532616ab52d440864872da6f2453cc13854cdf0dccc4ff74bf5158ae
+        manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/fe737358-82f0-4930-8428-dbcb6b23cc52.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d2d22d50-948a-46b9-932b-1bad7e440d33.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: 63e79fab1d8e320ec3e1b143e2b26944f98ea5354b1f23f80b84d86a6706b2c8
+        ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d2d22d50-948a-46b9-932b-1bad7e440d33.log
+      - choice: push
+        proposal:
+          input:
+            change: claim-ai-inspection-full-coverage
+            changeDir: openspec/changes/claim-ai-inspection-full-coverage
+            workspaceBaseline:
+              ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+          outputs:
+            full.archive.prepare:
+              remote: origin
+              summary: V1.0
+                AI后督质检100%全量覆盖落地：候选SQL终态白名单纳入拒赔(CLOSED_REJECTED)、配置读取fail-safe回落5%(含DB异常)、新增InspectionConfigTest/InspectionSamplingTerminalScopeTest及4条变异双向钉子；全量测试1674例0失败8跳过，独立审查IMPORTANT已修复，guard
+                build/verify全PASS。分支 comet/'+NAME+' 已与dev同步。
+              targetBranch: comet/claim-ai-inspection-full-coverage
+      - remote: origin
+        summary: V1.0
+          AI后督质检100%全量覆盖落地：候选SQL终态白名单纳入拒赔(CLOSED_REJECTED)、配置读取fail-safe回落5%(含DB异常)、新增InspectionConfigTest/InspectionSamplingTerminalScopeTest及4条变异双向钉子；全量测试1674例0失败8跳过，独立审查IMPORTANT已修复，guard
+          build/verify全PASS。分支 comet/'+NAME+' 已与dev同步。
+        targetBranch: comet/claim-ai-inspection-full-coverage
+      - baseCommit: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+        deliveryAction: push
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: comet/claim-ai-inspection-full-coverage
+        verifiedBranch: comet/claim-ai-inspection-full-coverage
+      - archiveDirectory: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage
+      - sequence: 9
+        value:
+          boundBranch: comet/claim-ai-inspection-full-coverage
+          buildMode: autonomous
+          directOverride: false
+          isolation: worktree
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-ai-inspection-full-coverage
+              changeDir: openspec/changes/claim-ai-inspection-full-coverage
+              workspaceBaseline:
+                ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+            outputs:
+              full.build.configure:
+                boundBranch: comet/claim-ai-inspection-full-coverage
+                buildMode: autonomous
+                directOverride: false
+                isolation: worktree
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-ai-inspection-full-coverage
+              changeDir: openspec/changes/claim-ai-inspection-full-coverage
+              workspaceBaseline:
+                ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+                handoffHash: ca3fadb47bb80f83c613e9eb763e58a6e1afa7646ed806172d3e65e820ae05ef
+                proposal: 正式技术设计候选（claim-ai-inspection-full-coverage）：①复用现有
+                  InspectionSamplingPolicy.shouldSample 的 ratePercent>=100
+                  全量分支（已实证 InspectionSamplingPolicy.java:29-38
+                  存在），不重写抽样算法；②终态范围扩展只改候选仓储
+                  SQL（findFinishedForInspectionAllTenants.sql:7）从仅 FINISHED 扩为含
+                  CLOSED_REJECTED，下游
+                  claim.finished()（ClaimStatus.terminal():76-79）已兼容两终态、零改动，默认 5%
+                  下拒赔入候选仍按 5% 抽样不改变现网口径；③INSPECTION_SAMPLING 唯一配置源按租户读取、无配置回落
+                  5%、失败 fail-safe+WARN（FeatureTenantToggleService.java:147-175
+                  现网已实现，补测试钉住）；④资金边界硬隔离，抽检只写 t_claim_inspection，不碰
+                  Adjustment/AUTO_APPROVE/视觉桩 available/目录准入
+                  MANDATORY。测试策略：100%全量+拒赔入候选+默认5%+租户隔离+fail-safe
+                  均有正向/回归测试，配3条变异双向钉子（比例分支篡改、终态白名单回退、fail-safe移除）改一处必红还原必绿；验收跑
+                  mvn -pl synap-claim-app -am 全绿。无 Spec Patch（现有 delta spec
+                  四需求措辞准确、无需改动）；无新增DDL、无资金闸、无真实provider。详见 design.md 代码实证表与决策段。
+                requirementsEvidence:
+                  contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                  ref: openspec/changes/claim-ai-inspection-full-coverage
+                sourceEvidence:
+                  contentHash: f5dfe8a1fc6a242259c66c127de49c67ceb54edd30199b7a3a3668ba53c15269
+                  ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - sequence: 8
+        value:
+          contentHash: 56bf9cd44ccb4aeba7e59cb639580385f3ae2c225c2631bd6e1203d09dc68741
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+          handoffHash: ca3fadb47bb80f83c613e9eb763e58a6e1afa7646ed806172d3e65e820ae05ef
+          proposal: 正式技术设计候选（claim-ai-inspection-full-coverage）：①复用现有
+            InspectionSamplingPolicy.shouldSample 的 ratePercent>=100 全量分支（已实证
+            InspectionSamplingPolicy.java:29-38 存在），不重写抽样算法；②终态范围扩展只改候选仓储
+            SQL（findFinishedForInspectionAllTenants.sql:7）从仅 FINISHED 扩为含
+            CLOSED_REJECTED，下游
+            claim.finished()（ClaimStatus.terminal():76-79）已兼容两终态、零改动，默认 5%
+            下拒赔入候选仍按 5% 抽样不改变现网口径；③INSPECTION_SAMPLING 唯一配置源按租户读取、无配置回落 5%、失败
+            fail-safe+WARN（FeatureTenantToggleService.java:147-175
+            现网已实现，补测试钉住）；④资金边界硬隔离，抽检只写 t_claim_inspection，不碰
+            Adjustment/AUTO_APPROVE/视觉桩 available/目录准入
+            MANDATORY。测试策略：100%全量+拒赔入候选+默认5%+租户隔离+fail-safe
+            均有正向/回归测试，配3条变异双向钉子（比例分支篡改、终态白名单回退、fail-safe移除）改一处必红还原必绿；验收跑 mvn -pl
+            synap-claim-app -am 全绿。无 Spec Patch（现有 delta spec
+            四需求措辞准确、无需改动）；无新增DDL、无资金闸、无真实provider。详见 design.md 代码实证表与决策段。
+          requirementsEvidence:
+            contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+            ref: openspec/changes/claim-ai-inspection-full-coverage
+          sourceEvidence:
+            contentHash: f5dfe8a1fc6a242259c66c127de49c67ceb54edd30199b7a3a3668ba53c15269
+            ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-ai-inspection-full-coverage
+              changeDir: openspec/changes/claim-ai-inspection-full-coverage
+              workspaceBaseline:
+                ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+                ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 2
+        value:
+          contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+          ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 4
+        value:
+          contentHash: 8d10721f1bae0819749cf7698eafacb4dadda73539ef12fe392b60bc49db1629
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: 56bf9cd44ccb4aeba7e59cb639580385f3ae2c225c2631bd6e1203d09dc68741
+            ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          planEvidence:
+            contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+            ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+      - sequence: 12
+        value:
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+      - sequence: 15
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-ai-inspection-full-coverage
+              changeDir: openspec/changes/claim-ai-inspection-full-coverage
+              workspaceBaseline:
+                ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+                handoffHash: 75cf3233e933240b65056c613400c6055ff89d20db1b912cd86c1e0db6a4c92a
+                proposal: 设计复核重提（claim-ai-inspection-full-coverage）：方案与已批准版本完全一致（复用100%分支+候选SQL纳入CLOSED_REJECTED+默认5%不变+fail-safe+资金边界硬隔离）。本次仅按
+                  Build 变异验证结果修订 design.md
+                  的测试策略表：①纠正原变异点'>=100改为>100'数学等价无效的笔误，改为'全量分支return
+                  true改false'；②补充实际落地的测试类
+                  InspectionConfigTest/InspectionSamplingTerminalScopeTest 与 3
+                  条变异双向实证（均 RC=1红→还原RC=0绿，42例全绿）；③记录常量内联坑（static
+                  final需clean重编）。无需求/范围/验收/方案变化，无Spec Patch。
+                requirementsEvidence:
+                  contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                  ref: openspec/changes/claim-ai-inspection-full-coverage
+                sourceEvidence:
+                  contentHash: 5b0e70d3cf91334ad71ef285b9b2a7bc5efc1e57814cc5a5536f5c61fda7cf4a
+                  ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 14
+        value:
+          handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+          handoffHash: 75cf3233e933240b65056c613400c6055ff89d20db1b912cd86c1e0db6a4c92a
+          proposal: 设计复核重提（claim-ai-inspection-full-coverage）：方案与已批准版本完全一致（复用100%分支+候选SQL纳入CLOSED_REJECTED+默认5%不变+fail-safe+资金边界硬隔离）。本次仅按
+            Build 变异验证结果修订 design.md
+            的测试策略表：①纠正原变异点'>=100改为>100'数学等价无效的笔误，改为'全量分支return
+            true改false'；②补充实际落地的测试类
+            InspectionConfigTest/InspectionSamplingTerminalScopeTest 与 3
+            条变异双向实证（均 RC=1红→还原RC=0绿，42例全绿）；③记录常量内联坑（static
+            final需clean重编）。无需求/范围/验收/方案变化，无Spec Patch。
+          requirementsEvidence:
+            contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+            ref: openspec/changes/claim-ai-inspection-full-coverage
+          sourceEvidence:
+            contentHash: 5b0e70d3cf91334ad71ef285b9b2a7bc5efc1e57814cc5a5536f5c61fda7cf4a
+            ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 16
+        value:
+          designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - sequence: 17
+        value:
+          contentHash: d8b717324269c5a2e319559408b38ee170c052acbae741b7133ae0613eb06c82
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - sequence: 18
+        value:
+          designEvidence:
+            contentHash: d8b717324269c5a2e319559408b38ee170c052acbae741b7133ae0613eb06c82
+            ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          planEvidence:
+            contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+            ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+      - sequence: 19
+        value:
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+      - sequence: 20
+        value:
+          event: build-complete
+      - sequence: 21
+        value:
+          argv:
+            - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+            - -pl
+            - bone-apps/synap-claim/synap-claim-app
+            - -am
+            - test
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: 9d0c4e17ec99befabb04683e198d31489b023212eaef393b45bfda23691b1102
+          cwd: .
+          environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+          exitCode: 0
+          inputAfter: 4f72f421f229ec54a90c9aa4c5a4c23b3e25df2727c06c70c929147583a3e426
+          inputBefore: 4f72f421f229ec54a90c9aa4c5a4c23b3e25df2727c06c70c929147583a3e426
+          manifestHash: dc0f4c90ff20e1dd7a03462760668d69bb14b263b6ab15427f3fef54838d0177
+          manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/0e760f78-d214-407f-9580-88198f866773.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/5c76596a-bcf7-42ce-9421-e0923a733488.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 22
+        value:
+          contentHash: 9d0c4e17ec99befabb04683e198d31489b023212eaef393b45bfda23691b1102
+          ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/5c76596a-bcf7-42ce-9421-e0923a733488.log
+      - sequence: 23
+        value:
+          event: verify-fail
+          reason: Verify独立审查发现IMPORTANT-1：FeatureTenantToggleService.inspectionConfig()
+            的仓储读取(findByFeatureKey/isOn)位于try块外，DB读取异常时未fail-safe回落5%，仅由Job跳过该笔，与spec
+            Requirement3「配置读取失败回落5%」冲突。回Build修复：将仓储读取纳入try/catch，异常回落defaults()并登记诊断键，补仓储异常注入测试。
+      - sequence: 26
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: claim-ai-inspection-full-coverage
+              changeDir: openspec/changes/claim-ai-inspection-full-coverage
+              workspaceBaseline:
+                ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+                handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+                proposal: Verify修复后设计复核重提：方案不变。相对上次批准的实质变化仅一处——独立审查IMPORTANT-1：inspectionConfig仓储读取原在try外、DB异常未fail-safe回落5%，已纳入try/catch并补注入测试+第4条变异钉子（生产代码第2处改动）。另补下游ClaimStatus.terminal拒赔终态断言测试、design记录审查结论。验收口径不变，全量测试1674例/0失败/8跳过。无Spec
+                  Patch/DDL/资金闸。
+                requirementsEvidence:
+                  contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+                  ref: openspec/changes/claim-ai-inspection-full-coverage
+                sourceEvidence:
+                  contentHash: c77ab04aa09055826ac6ccf1029d5fc8bee81c7a59f4e01eb699a0596f5f5921
+                  ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 25
+        value:
+          handoffContext: openspec/changes/claim-ai-inspection-full-coverage/.comet/handoff/design-context.json
+          handoffHash: 9d78ffdca512fcc1ab2753c12a5f61481eb32b6a567190d1c068710495167d5f
+          proposal: Verify修复后设计复核重提：方案不变。相对上次批准的实质变化仅一处——独立审查IMPORTANT-1：inspectionConfig仓储读取原在try外、DB异常未fail-safe回落5%，已纳入try/catch并补注入测试+第4条变异钉子（生产代码第2处改动）。另补下游ClaimStatus.terminal拒赔终态断言测试、design记录审查结论。验收口径不变，全量测试1674例/0失败/8跳过。无Spec
+            Patch/DDL/资金闸。
+          requirementsEvidence:
+            contentHash: 39904bc990eece874aa10099bb266a2f5f3effdaf0495a5d37ec0e94869c4943
+            ref: openspec/changes/claim-ai-inspection-full-coverage
+          sourceEvidence:
+            contentHash: c77ab04aa09055826ac6ccf1029d5fc8bee81c7a59f4e01eb699a0596f5f5921
+            ref: openspec/changes/claim-ai-inspection-full-coverage
+      - sequence: 27
+        value:
+          designDoc: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - sequence: 28
+        value:
+          contentHash: 31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b
+          ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+      - sequence: 29
+        value:
+          designEvidence:
+            contentHash: 31e23cfce04e16ed61819543e9138e0d4a0839e3a9ac827baf6f5e83e4ea9a9b
+            ref: openspec/changes/claim-ai-inspection-full-coverage/design.md
+          plan: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          planEvidence:
+            contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+            ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+          taskRevision: c75fcb20da7109442fc3e93a7cf64bd3d14a9788878076fde8fdc91823dca867
+      - sequence: 30
+        value:
+          contentHash: 24e194aff23a87a7ad1dade12cf248d7890d7c80137467ffc89f24d1dade9d12
+          ref: docs/superpowers/plans/2026-11-24-claim-ai-inspection-full-coverage.md
+      - sequence: 31
+        value:
+          event: build-complete
+      - sequence: 32
+        value:
+          argv:
+            - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+            - -pl
+            - bone-apps/synap-claim/synap-claim-app
+            - -am
+            - test
+          changedDuringExecution: []
+          checkEpoch: 6
+          contentHash: e05a128a5765bf9632ab10cd4945d2b7daa3bf63a0e22fe9b13fbfacaa6fb2da
+          cwd: .
+          environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+          exitCode: 0
+          inputAfter: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+          inputBefore: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+          manifestHash: ecc511ab532616ab52d440864872da6f2453cc13854cdf0dccc4ff74bf5158ae
+          manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/310c8b4c-be6d-4c57-b7b8-6ed8481da7c6.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d19272f9-099d-4aed-9644-efce2b9d1a11.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 33
+        value:
+          contentHash: e05a128a5765bf9632ab10cd4945d2b7daa3bf63a0e22fe9b13fbfacaa6fb2da
+          ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d19272f9-099d-4aed-9644-efce2b9d1a11.log
+      - sequence: 35
+        value:
+          contentHash: b6953b786fed5dc7e501f1464bc18acc7c488582994345ad490db5e7c2fae746
+          ref: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+      - sequence: 34
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-24-claim-ai-inspection-full-coverage-verify.md
+      - sequence: 36
+        value:
+          argv:
+            - /Users/renhui.trh/java/apache-maven-3.9.6/bin/mvn
+            - -pl
+            - bone-apps/synap-claim/synap-claim-app
+            - -am
+            - test
+          changedDuringExecution: []
+          checkEpoch: 7
+          contentHash: 63e79fab1d8e320ec3e1b143e2b26944f98ea5354b1f23f80b84d86a6706b2c8
+          cwd: .
+          deliveryInputs:
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/schedule/InspectionSamplingJob.java: git:0ade28af3d055dad1c08c10e2bfded97d0169cd9
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/application/FeatureTenantToggleService.java: git:28033a1076d843d3b25a2685ca399a0224f4a829
+            bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/domain/repository/ClaimCaseRepository.java: git:f656498bef24448406c91a5ae72a971e03e81f05
+            bone-apps/synap-claim/synap-claim-app/src/main/resources/sql/com/bone/claim/domain/repository/ClaimCaseRepository/findFinishedForInspectionAllTenants.sql: git:f12adc7a55bb22b74904c0392171b037539d70b1
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/InspectionSamplingTerminalScopeTest.java: git:74da05e723bb16f170f6956015a7dd0c3f565fc8
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/application/FeatureTenantToggleServiceTest.java: git:68b267b333a88370f5d071e97d5ec3487101574e
+            bone-apps/synap-claim/synap-claim-app/src/test/java/com/bone/claim/domain/model/inspection/InspectionConfigTest.java: git:0188e55ee1a6c0b9ba0dc86b66831f850e161183
+          environment: 0f2418a3633b8cacc884ddd38b449b62097d6d13bcb8347a149d40fe0bb30e86
+          exitCode: 0
+          inputAfter: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+          inputBefore: 81e3966b0ca674996696f6778fe72ea61ad90c7d237502e7c12460cb99f3064a
+          manifestHash: ecc511ab532616ab52d440864872da6f2453cc13854cdf0dccc4ff74bf5158ae
+          manifestRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/fe737358-82f0-4930-8428-dbcb6b23cc52.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d2d22d50-948a-46b9-932b-1bad7e440d33.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 37
+        value:
+          contentHash: 63e79fab1d8e320ec3e1b143e2b26944f98ea5354b1f23f80b84d86a6706b2c8
+          ref: .comet/runtime/classic-sdk-checks/f9e47e6a3228fa6aef5e3ebc356739533702ff8f720fae650af025ac6a043a1f/d2d22d50-948a-46b9-932b-1bad7e440d33.log
+      - sequence: 39
+        value:
+          choice: push
+          proposal:
+            input:
+              change: claim-ai-inspection-full-coverage
+              changeDir: openspec/changes/claim-ai-inspection-full-coverage
+              workspaceBaseline:
+                ref: 186fae5f-0a54-4e31-bbc6-2079a256d68f
+            outputs:
+              full.archive.prepare:
+                remote: origin
+                summary: V1.0
+                  AI后督质检100%全量覆盖落地：候选SQL终态白名单纳入拒赔(CLOSED_REJECTED)、配置读取fail-safe回落5%(含DB异常)、新增InspectionConfigTest/InspectionSamplingTerminalScopeTest及4条变异双向钉子；全量测试1674例0失败8跳过，独立审查IMPORTANT已修复，guard
+                  build/verify全PASS。分支 comet/'+NAME+' 已与dev同步。
+                targetBranch: comet/claim-ai-inspection-full-coverage
+      - sequence: 38
+        value:
+          remote: origin
+          summary: V1.0
+            AI后督质检100%全量覆盖落地：候选SQL终态白名单纳入拒赔(CLOSED_REJECTED)、配置读取fail-safe回落5%(含DB异常)、新增InspectionConfigTest/InspectionSamplingTerminalScopeTest及4条变异双向钉子；全量测试1674例0失败8跳过，独立审查IMPORTANT已修复，guard
+            build/verify全PASS。分支 comet/'+NAME+' 已与dev同步。
+          targetBranch: comet/claim-ai-inspection-full-coverage
+      - sequence: 40
+        value:
+          baseCommit: 879a5352808e7bab457f3eca4f77a01aa99d2a3b
+          deliveryAction: push
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: comet/claim-ai-inspection-full-coverage
+          verifiedBranch: comet/claim-ai-inspection-full-coverage
+      - sequence: 41
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-24-claim-ai-inspection-full-coverage
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.design.handoff
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: 27
+        height: 2
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 14
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 29
+        right: 31
+        height: 3
+      - key: full.build.plan
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 33
+        right: 34
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 35
+        right: 31
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 15
+        left: 37
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 38
+        right: 34
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 39
+        right: 31
+        height: 4
+      - key: full.build.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 17
+        left: null
+        right: 41
+        height: 2
+      - key: full.build.plan
+        value: 15
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 43
+        right: 34
+        height: 2
+      - key: full.build.execute
+        value: 16
+        left: 42
+        right: 44
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 31
+        height: 4
+      - key: full.verify.run
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 13
+        left: 30
+        right: 47
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 45
+        right: 48
+        height: 4
+      - key: full.design.handoff
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: 50
+        height: 2
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 22
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 21
+        left: 53
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 52
+        right: 54
+        height: 3
+      - key: full.build.plan
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 20
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 56
+        right: 57
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 58
+        right: 54
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 23
+        left: 60
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: 61
+        right: 57
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 62
+        right: 54
+        height: 4
+      - key: full.build.check.evidence
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 24
+        left: null
+        right: 64
+        height: 2
+      - key: full.build.plan
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 66
+        right: 57
+        height: 2
+      - key: full.build.execute
+        value: 16
+        left: 65
+        right: 67
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 68
+        right: 54
+        height: 4
+      - key: full.verify.run
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 26
+        left: null
+        right: 70
+        height: 2
+      - key: full.design.handoff
+        value: 21
+        left: 53
+        right: 71
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 68
+        right: 72
+        height: 4
+      - key: full.design.handoff
+        value: 21
+        left: 53
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 26
+        left: 75
+        right: 70
+        height: 2
+      - key: full.verify.check
+        value: 28
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 68
+        right: 77
+        height: 4
+      - key: full.archive.prepare
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 30
+        left: null
+        right: 79
+        height: 2
+      - key: full.build.check
+        value: 24
+        left: 80
+        right: 64
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 81
+        right: 67
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 82
+        right: 77
+        height: 5
+      - key: full.archive.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 32
+        left: 84
+        right: 85
+        height: 2
+      - key: full.build.check
+        value: 24
+        left: 86
+        right: 64
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 87
+        right: 67
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 88
+        right: 77
+        height: 5
+      - key: full.archive.execute
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 30
+        left: null
+        right: 90
+        height: 2
+      - key: full.build.check
+        value: 24
+        left: 85
+        right: 64
+        height: 2
+      - key: full.archive.preflight
+        value: 32
+        left: 91
+        right: 92
+        height: 3
+      - key: full.build.execute
+        value: 16
+        left: 93
+        right: 67
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 94
+        right: 77
+        height: 5
+      - key: full.build.configure
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 35
+        left: 96
+        right: 97
+        height: 2
+      - key: full.design.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 39
+        left: 99
+        right: 100
+        height: 2
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: 102
+        height: 2
+      - key: full.open.confirm
+        value: 41
+        left: 101
+        right: 103
+        height: 3
+      - key: full.design.document
+        value: 37
+        left: 98
+        right: 104
+        height: 4
+      - key: full.build.plan
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 45
+        left: 106
+        right: 107
+        height: 2
+      - key: full.build.confirm
+        value: 35
+        left: 96
+        right: 108
+        height: 3
+      - key: full.design.document
+        value: 37
+        left: 109
+        right: 104
+        height: 4
+      - key: full.design.handoff
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 46
+        left: null
+        right: 111
+        height: 2
+      - key: full.design.confirm
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 47
+        left: 114
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 48
+        left: 113
+        right: 115
+        height: 3
+      - key: full.build.plan
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 51
+        left: 117
+        right: 118
+        height: 2
+      - key: full.design.document
+        value: 48
+        left: 119
+        right: 115
+        height: 3
+      - key: full.build.execute
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 50
+        left: 121
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 51
+        left: 122
+        right: 118
+        height: 3
+      - key: full.design.document
+        value: 48
+        left: 123
+        right: 115
+        height: 4
+      - key: full.build.check.evidence
+        value: 54
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 53
+        left: null
+        right: 125
+        height: 2
+      - key: full.build.plan
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 51
+        left: 127
+        right: 118
+        height: 2
+      - key: full.build.execute
+        value: 52
+        left: 126
+        right: 128
+        height: 3
+      - key: full.design.document
+        value: 48
+        left: 129
+        right: 115
+        height: 4
+      - key: full.verify.run
+        value: 55
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 47
+        left: 114
+        right: 131
+        height: 2
+      - key: full.design.document
+        value: 48
+        left: 129
+        right: 132
+        height: 4
+      - key: full.design.handoff
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 56
+        left: null
+        right: 134
+        height: 2
+      - key: full.design.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: 137
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 58
+        left: 136
+        right: 138
+        height: 3
+      - key: full.build.plan
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 61
+        left: 140
+        right: 141
+        height: 2
+      - key: full.design.document
+        value: 58
+        left: 142
+        right: 138
+        height: 3
+      - key: full.build.execute
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 60
+        left: 144
+        right: null
+        height: 2
+      - key: full.build.plan.evidence
+        value: 61
+        left: 145
+        right: 141
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 146
+        right: 138
+        height: 4
+      - key: full.build.check.evidence
+        value: 64
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 63
+        left: null
+        right: 148
+        height: 2
+      - key: full.build.plan
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 61
+        left: 150
+        right: 141
+        height: 2
+      - key: full.build.execute
+        value: 62
+        left: 149
+        right: 151
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 152
+        right: 138
+        height: 4
+      - key: full.verify.run
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 65
+        left: null
+        right: 154
+        height: 2
+      - key: full.design.handoff
+        value: 57
+        left: 137
+        right: 155
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 152
+        right: 156
+        height: 4
+      - key: full.design.handoff
+        value: 57
+        left: 137
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 68
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 65
+        left: 159
+        right: 154
+        height: 2
+      - key: full.verify.check
+        value: 67
+        left: 158
+        right: 160
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 152
+        right: 161
+        height: 4
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 41
+        left: 163
+        right: 164
+        height: 2
+      - key: full.archive.confirm
+        value: 69
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 70
+        left: 166
+        right: 167
+        height: 2
+      - key: full.build.execute
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 60
+        left: 169
+        right: 170
+        height: 2
+      - key: full.build.check.evidence
+        value: 64
+        left: 168
+        right: 171
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 59
+        left: 173
+        right: 174
+        height: 2
+      - key: full.verify.check.evidence
+        value: 68
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 65
+        left: 176
+        right: 177
+        height: 2
+      - key: full.verify.check
+        value: 67
+        left: 175
+        right: 178
+        height: 3
+      - key: full.design.confirm
+        value: 56
+        left: 172
+        right: 179
+        height: 4
+      - key: full.archive.preflight
+        value: 71
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 69
+        left: null
+        right: 181
+        height: 2
+      - key: full.archive.prepare
+        value: 70
+        left: 182
+        right: 167
+        height: 3
+      - key: full.build.check.evidence
+        value: 64
+        left: 183
+        right: 171
+        height: 4
+      - key: full.design.confirm
+        value: 56
+        left: 184
+        right: 179
+        height: 5
+      - key: full.archive.confirm
+        value: 69
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 71
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 72
+        left: 186
+        right: 187
+        height: 2
+      - key: full.archive.prepare
+        value: 70
+        left: 188
+        right: 167
+        height: 3
+      - key: full.build.check.evidence
+        value: 64
+        left: 189
+        right: 171
+        height: 4
+      - key: full.design.confirm
+        value: 56
+        left: 190
+        right: 179
+        height: 5
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: 193
+        height: 2
+      - key: full.open.confirm
+        value: 41
+        left: 192
+        right: 194
+        height: 3
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 39
+        left: 196
+        right: 197
+        height: 2
+      - key: full.open.confirm
+        value: 41
+        left: 198
+        right: 194
+        height: 3
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 37
+        left: 200
+        right: 201
+        height: 2
+      - key: full.design.handoff
+        value: 39
+        left: 202
+        right: 197
+        height: 3
+      - key: full.open.confirm
+        value: 41
+        left: 203
+        right: 194
+        height: 4
+      - key: full.archive.confirm
+        value: 69
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 71
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 72
+        left: 205
+        right: 206
+        height: 2
+      - key: full.build.check
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 64
+        left: 208
+        right: 209
+        height: 2
+      - key: full.archive.prepare
+        value: 70
+        left: 207
+        right: 210
+        height: 3
+      - key: full.build.execute
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 56
+        left: 213
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 60
+        left: 212
+        right: 214
+        height: 3
+      - key: full.build.confirm
+        value: 35
+        left: 211
+        right: 215
+        height: 4
+      - key: full.design.evidence
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: 217
+        right: 197
+        height: 2
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 67
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 43
+        left: 219
+        right: 220
+        height: 2
+      - key: full.verify.run
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 65
+        left: null
+        right: 222
+        height: 2
+      - key: full.verify.check.evidence
+        value: 68
+        left: 221
+        right: 223
+        height: 3
+      - key: full.open.confirm
+        value: 41
+        left: 218
+        right: 224
+        height: 4
+      - key: full.design.document
+        value: 58
+        left: 216
+        right: 225
+        height: 5
+      - key: full.open.evidence
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 40
+        left: null
+        right: 227
+        height: 2
+      - key: full.design.handoff
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: 230
+        right: 231
+        height: 2
+      - key: full.open
+        value: 40
+        left: 229
+        right: 232
+        height: 3
+      - key: full.build.configure
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 38
+        left: 235
+        right: 236
+        height: 2
+      - key: full.design.confirm
+        value: 36
+        left: 234
+        right: 237
+        height: 3
+      - key: full.open
+        value: 40
+        left: 238
+        right: 232
+        height: 4
+      - key: full.design.handoff
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 70
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 64
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 63
+        left: 242
+        right: 243
+        height: 2
+      - key: full.build.plan
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 61
+        left: 245
+        right: 246
+        height: 2
+      - key: full.build.execute
+        value: 62
+        left: 244
+        right: 247
+        height: 3
+      - key: full.design.evidence
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.check
+        value: 67
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: 249
+        right: 250
+        height: 2
+      - key: full.verify.run
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 65
+        left: null
+        right: 252
+        height: 2
+      - key: full.verify.check.evidence
+        value: 68
+        left: 251
+        right: 253
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 248
+        right: 254
+        height: 4
+      - key: full.open
+        value: 40
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 37
+        left: 257
+        right: 258
+        height: 2
+      - key: full.open.confirm
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 42
+        left: 260
+        right: 261
+        height: 2
+      - key: full.open
+        value: 40
+        left: 259
+        right: 262
+        height: 3
+      - key: full.build.configure
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 35
+        left: 264
+        right: 265
+        height: 2
+      - key: full.design.document
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 38
+        left: 267
+        right: 268
+        height: 2
+      - key: full.design.confirm
+        value: 36
+        left: 266
+        right: 269
+        height: 3
+      - key: full.open
+        value: 40
+        left: 270
+        right: 262
+        height: 4
+      - key: full.design.confirm
+        value: 46
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 47
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 48
+        left: 272
+        right: 273
+        height: 2
+      - key: full.build.plan
+        value: 50
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 46
+        left: 275
+        right: null
+        height: 2
+      - key: full.design.evidence
+        value: 49
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 47
+        left: 277
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 48
+        left: 276
+        right: 278
+        height: 3
+      - key: full.build.execute
+        value: 52
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 53
+        left: null
+        right: 280
+        height: 2
+      - key: full.build.plan.evidence
+        value: 51
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 46
+        left: 282
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 50
+        left: 281
+        right: 283
+        height: 3
+      - key: full.design.document
+        value: 48
+        left: 284
+        right: 278
+        height: 4
+      - key: full.design.confirm
+        value: 56
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 58
+        left: 286
+        right: 287
+        height: 2
+      - key: full.build.plan
+        value: 60
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 56
+        left: 289
+        right: null
+        height: 2
+      - key: full.design.evidence
+        value: 59
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: 291
+        right: null
+        height: 2
+      - key: full.design.document
+        value: 58
+        left: 290
+        right: 292
+        height: 3
+      - key: full.build.execute
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 63
+        left: null
+        right: 294
+        height: 2
+      - key: full.build.plan.evidence
+        value: 61
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 56
+        left: 296
+        right: null
+        height: 2
+      - key: full.build.plan
+        value: 60
+        left: 295
+        right: 297
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 298
+        right: 292
+        height: 4
+      - key: full.build.check
+        value: 63
+        left: null
+        right: null
+        height: 1
+      - key: full.build.execute
+        value: 62
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 64
+        left: 300
+        right: 301
+        height: 2
+      - key: full.build.plan
+        value: 60
+        left: 302
+        right: 297
+        height: 3
+      - key: full.verify.run
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 57
+        left: 291
+        right: 304
+        height: 2
+      - key: full.design.document
+        value: 58
+        left: 303
+        right: 305
+        height: 4
+      - key: full.verify.check
+        value: 67
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 66
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 65
+        left: 307
+        right: 308
+        height: 2
+      - key: full.design.handoff
+        value: 57
+        left: 291
+        right: 309
+        height: 3
+      - key: full.design.document
+        value: 58
+        left: 303
+        right: 310
+        height: 4
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 28
+      - 32
+      - 36
+      - 40
+      - 46
+      - 49
+      - 51
+      - 55
+      - 59
+      - 63
+      - 69
+      - 73
+      - 78
+      - 83
+      - 89
+      - 95
+      - 105
+      - 110
+      - 112
+      - 116
+      - 120
+      - 124
+      - 130
+      - 133
+      - 135
+      - 139
+      - 143
+      - 147
+      - 153
+      - 157
+      - 162
+      - 165
+      - 180
+      - 185
+      - 191
+      - 195
+      - 199
+      - 204
+      - 226
+      - 228
+      - 233
+      - 239
+      - 240
+      - 241
+      - 255
+      - 256
+      - 263
+      - 271
+      - 274
+      - 279
+      - 285
+      - 288
+      - 293
+      - 299
+      - 306
+      - 311
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "14"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "15"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actions
+          - "16"
+          - input
+          - outputs
+        map: 14
+      - path:
+          - actions
+          - "17"
+          - input
+          - outputs
+        map: 15
+      - path:
+          - actions
+          - "18"
+          - input
+          - outputs
+        map: 16
+      - path:
+          - actions
+          - "19"
+          - input
+          - outputs
+        map: 17
+      - path:
+          - actions
+          - "20"
+          - input
+          - outputs
+        map: 18
+      - path:
+          - actions
+          - "21"
+          - input
+          - outputs
+        map: 19
+      - path:
+          - actions
+          - "22"
+          - input
+          - outputs
+        map: 20
+      - path:
+          - actions
+          - "23"
+          - input
+          - outputs
+        map: 21
+      - path:
+          - actions
+          - "24"
+          - input
+          - outputs
+        map: 22
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:11
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:13
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:14
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:16
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:18
+          - results
+        map: 26
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:20
+          - results
+        map: 27
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:21
+          - results
+        map: 28
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:23
+          - results
+        map: 29
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:24
+          - results
+        map: 30
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:25
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:27
+          - results
+        map: 31
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:29
+          - results
+        map: 32
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:31
+          - results
+        map: 33
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:32
+          - results
+        map: 34
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:34
+          - results
+        map: 35
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:36
+          - results
+        map: 36
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:38
+          - results
+        map: 37
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:4
+          - results
+        map: 38
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:40
+          - results
+        map: 39
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:41
+          - results
+        map: 40
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:42
+          - results
+        map: 41
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:5
+          - results
+        map: 42
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:7
+          - results
+        map: 43
+      - path:
+          - actionContexts
+          - claim-ai-inspection-full-coverage:9
+          - results
+        map: 44
+      - path:
+          - outputs
+        map: 45
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 46
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 47
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 48
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 49
+      - path:
+          - waits
+          - "4"
+          - results
+        map: 50
+      - path:
+          - waits
+          - "5"
+          - results
+        map: 51
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 52
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 53
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 54
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 55
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 56
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 57
+      - path:
+          - evidenceWaits
+          - "6"
+          - results
+        map: 58
+      - path:
+          - evidenceWaits
+          - "7"
+          - results
+        map: 59
+      - path:
+          - evidenceWaits
+          - "8"
+          - results
+        map: 60
+      - path:
+          - evidenceWaits
+          - "9"
+          - results
+        map: 61
+      - path:
+          - evidenceWaits
+          - "10"
+          - results
+        map: 62
+  storageHash: 8cb11dbf0b579693adeb1d4f06fe3daff6fc043bf8a206478ad26f2812649bd9
+check_epoch: 10

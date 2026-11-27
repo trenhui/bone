@@ -186,25 +186,13 @@ public class RagAutoConfiguration {
   }
 
   /**
-   * RAG 回答闭环（检索 → 接地提示词 → 生成 → 确定性守卫 → 语义裁判 → 拒答或返回）。
+   * 检索服务：以 {@code chunkRepository} 存在为前提（按名而非按类型——SDK 仓储是 FactoryBean 代理，类型不可静态推断）。
    *
-   * <p>依赖 {@code ragService} 存在（即已接入切片仓储）；未接入持久化的上下文不装配本闭环。 语义裁判经 {@link GroundingJudgePort}
-   * 注入：组合根缺 LLM 裁判实现时为 {@link NoOpGroundingJudge}（语义层关闭， 确定性守卫独自把关），bone-ai-app
-   * 以网关卡面适配覆盖后两层串联生效（R5）。
+   * <p><b>声明顺序约束</b>：必须排在 {@link #ragAnswerService} 之前。Spring {@code @ConditionalOnBean} 只对"当前已 注册的
+   * bean 定义"求值；同一 auto-config 内按声明顺序处理，若回答闭环排在检索服务之前，其
+   * {@code @ConditionalOnBean(name="ragService")} 在求值时 ragService 尚未注册 ⇒ 条件恒假 ⇒ 生产拓扑 {@code
+   * RagController} 构造缺 bean 启动失败（冒烟测试原先只断言检索服务、漏断言回答闭环，故未发现）。
    */
-  @Bean
-  @ConditionalOnBean(name = "ragService")
-  @ConditionalOnMissingBean
-  public RagAnswerService ragAnswerService(
-      RagApplicationService ragService,
-      AnswerGenerationPort answerGenerationPort,
-      GroundedPromptBuilder groundedPromptBuilder,
-      GroundingJudgePort groundingJudge,
-      RagEventSink ragEventSink) {
-    return new RagAnswerService(
-        ragService, answerGenerationPort, groundedPromptBuilder, groundingJudge, ragEventSink);
-  }
-
   @Bean
   @ConditionalOnBean(name = "chunkRepository") // 按名而非按类型：SDK 仓储是 FactoryBean 代理，类型不可静态推断
   @ConditionalOnMissingBean
@@ -233,5 +221,25 @@ public class RagAutoConfiguration {
             ? new SensitiveDataMasker()
             : SensitiveDataMasker.disabled(),
         props.isStageTracingEnabled());
+  }
+
+  /**
+   * RAG 回答闭环（检索 → 接地提示词 → 生成 → 确定性守卫 → 语义裁判 → 拒答或返回）。
+   *
+   * <p>依赖 {@code ragService} 存在（即已接入切片仓储）；未接入持久化的上下文不装配本闭环。 语义裁判经 {@link GroundingJudgePort}
+   * 注入：组合根缺 LLM 裁判实现时为 {@link NoOpGroundingJudge}（语义层关闭， 确定性守卫独自把关），bone-ai-app
+   * 以网关卡面适配覆盖后两层串联生效（R5）。
+   */
+  @Bean
+  @ConditionalOnBean(name = "ragService")
+  @ConditionalOnMissingBean
+  public RagAnswerService ragAnswerService(
+      RagApplicationService ragService,
+      AnswerGenerationPort answerGenerationPort,
+      GroundedPromptBuilder groundedPromptBuilder,
+      GroundingJudgePort groundingJudge,
+      RagEventSink ragEventSink) {
+    return new RagAnswerService(
+        ragService, answerGenerationPort, groundedPromptBuilder, groundingJudge, ragEventSink);
   }
 }

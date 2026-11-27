@@ -17,4 +17,7 @@ public interface HumanDecisionLedger {
 
   /** override 回流：按能力码统计推翻次数，供 drift 告警与评测扩样。 */
   long countOverrides(CapabilityCode code);
+
+  /** 按能力码只读返回人工终决记录，供人类监督有效性观测；只读，不写追溯链。 */
+  List<HumanFinalDecision> findByCapability(CapabilityCode code);
 }

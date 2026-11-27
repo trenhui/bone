@@ -394,4 +394,33 @@ public final class ClaimErrorCodes {
    * <p>422 而非 409：请求合法，是「AI 部署态闸门/写开关」这一前提不成立； fail-closed，绝不因为展示层绿就放行资金。blocker 明细随 detail 返回。
    */
   public static final String SC_CLAIM_AI_GATE_BLOCKED = "SC_CLAIM_AI_GATE_BLOCKED";
+
+  /**
+   * 拒赔「证据位置」锚点格式非法（写入期拒绝）。
+   *
+   * <p>拒赔文书的证据位置必须可定位到证据集条目（EV-编号，可选 #p页码），否则申诉/复核无法回放。400 而非 422：这是请求入参形状非法， 与
+   * CLAIM_REJECT_REASON_REQUIRED 同族；不允许「任意自由文本」混进合规文书，也不静默丢弃。
+   */
+  public static final String SC_CLAIM_REJECT_EVIDENCE_REF_INVALID =
+      "SC_CLAIM_REJECT_EVIDENCE_REF_INVALID";
+
+  /**
+   * 受控拒赔原因码非法（写入期拒绝）。
+   *
+   * <p>rejectType 非字典真源 {@code ClaimDictApplicationService.REJECT_REASON_CODES} 中的码即 400。400 而非
+   * 422：入参形状非法，与 CLAIM_REJECT_REASON_REQUIRED 同族；「缺失」与「非法」分不同码，便于定位是漏填还是前端字典与后端脱节。
+   */
+  public static final String SC_CLAIM_REJECT_REASON_INVALID = "SC_CLAIM_REJECT_REASON_INVALID";
+
+  /** 签收批次不存在（跨租户同号不区分，404 口径）。 */
+  public static final String SC_CLAIM_SIGN_BATCH_NOT_FOUND = "SC_CLAIM_SIGN_BATCH_NOT_FOUND";
+
+  /** 签收状态冲突（并发 CAS 失败或前置态不满足，409）。 */
+  public static final String SC_CLAIM_SIGN_STATUS_CONFLICT = "SC_CLAIM_SIGN_STATUS_CONFLICT";
+
+  /** 外部推送要素缺失（400）。 */
+  public static final String SC_CLAIM_SIGN_PUSH_INVALID = "SC_CLAIM_SIGN_PUSH_INVALID";
+
+  /** 人员名单为空（422）。 */
+  public static final String SC_CLAIM_SIGN_PARTICIPANTS_EMPTY = "SC_CLAIM_SIGN_PARTICIPANTS_EMPTY";
 }

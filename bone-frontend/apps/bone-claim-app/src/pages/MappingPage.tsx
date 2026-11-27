@@ -31,8 +31,9 @@ import { PERMISSIONS } from '../constants/permissions';
 import { PageHeader } from '../components/PageHeader';
 import { InsurerSelect } from '../components/InsurerSelect';
 import { csvFilename, downloadBlob } from '../utils/downloadBlob';
+import { loadStandardCodeOptions } from '../services/standardCodeOptions';
+import { LIBRARY_MAX_PAGES, LIBRARY_PAGE_SIZE } from '../utils/libraryPaging';
 import {
-  claimConfigApi,
   mappingApi,
   toTotal,
   DOMAIN_LABEL,
@@ -77,30 +78,6 @@ const STP_CONDITION_LABEL: Record<string, string> = {
   CONFLICT: '冲突数 = 0',
 };
 
-/** 按域从基础目录库拉取标准码选项（映射必须指向存在的标准码，否则是幽灵码）。 */
-async function loadStandardOptions(domain: MappingDomain): Promise<{ label: string; value: string }[]> {
-  const p = { page: 1, size: 200 };
-  switch (domain) {
-  case 'HOSPITAL': {
-    const r = await claimConfigApi.listHospitals(p);
-    return r.data.records.map((x) => ({ label: `${x.hospitalName}(${x.hospitalCode})`, value: x.hospitalCode }));
-  }
-  case 'DISEASE': {
-    const r = await claimConfigApi.listDiseases(p);
-    return r.data.records.map((x) => ({ label: `${x.diseaseName}(${x.diseaseCode})`, value: x.diseaseCode }));
-  }
-  case 'DRUG': {
-    const r = await claimConfigApi.listDrugs(p);
-    return r.data.records.map((x) => ({ label: `${x.drugName}(${x.drugCode})`, value: x.drugCode }));
-  }
-  case 'FEE_CATEGORY': {
-    const r = await claimConfigApi.listFeeCategories(p);
-    return r.data.records.map((x) => ({ label: `${x.feeName}(${x.feeCode})`, value: x.feeCode }));
-  }
-  default:
-    return [];
-  }
-}
 
 interface PublishFormValues {
   insurerItemCode: string;
@@ -203,8 +180,16 @@ export function MappingPage(): ReactElement {
   } | null>(null);
 
   useEffect(() => {
-    void loadStandardOptions(domain).then(setStandardOptions);
-  }, [domain]);
+    void loadStandardCodeOptions(domain).then(({ options, truncated }) => {
+      setStandardOptions(options);
+      // 触达硬上限 ⇒ 下拉不完整：显式告警，不让配置岗以为「这个码不存在」。
+      if (truncated) {
+        message.warning(
+          `标准码目录超过单次加载上限（${LIBRARY_MAX_PAGES * LIBRARY_PAGE_SIZE} 条），下拉未取全；请到「基础目录库」页检索后手输编码`,
+        );
+      }
+    });
+  }, [domain, message]);
 
   const loadMappings = useCallback(
     async (
@@ -780,6 +765,7 @@ export function MappingPage(): ReactElement {
                     </AuthButton>
                     <Input.Search
                       allowClear
+                      aria-label="保司码值 / 标准码"
                       placeholder="保司码值 / 标准码"
                       style={{ width: 220 }}
                       onSearch={(v) => {
@@ -791,6 +777,7 @@ export function MappingPage(): ReactElement {
                       <Typography.Text type="secondary">含历史行</Typography.Text>
                       <Switch
                         size="small"
+                        aria-label="是否包含历史码值"
                         checked={includeHistory}
                         onChange={(v) => {
                           setIncludeHistory(v);
@@ -800,6 +787,7 @@ export function MappingPage(): ReactElement {
                     </Space>
                   </Space>
                   <Table<MappingView>
+                  aria-label="码值映射列表"
                     rowKey="id"
                     size="small"
                     loading={mappingLoading}
@@ -842,6 +830,7 @@ export function MappingPage(): ReactElement {
                     />
                   </Space>
                   <Table<MissView>
+                  aria-label="未匹配码值列表"
                     rowKey="id"
                     size="small"
                     loading={missLoading}
@@ -883,6 +872,7 @@ export function MappingPage(): ReactElement {
                     新增别名
                   </AuthButton>
                   <Table<AliasRow>
+                  aria-label="别名列表"
                     rowKey="id"
                     size="small"
                     loading={aliasesLoading}
@@ -915,6 +905,7 @@ export function MappingPage(): ReactElement {
                     新增拆分
                   </AuthButton>
                   <Table<SplitRow>
+                  aria-label="拆分规则列表"
                     rowKey="id"
                     size="small"
                     loading={splitsLoading}
@@ -949,6 +940,7 @@ export function MappingPage(): ReactElement {
                     绑定/更新字段
                   </AuthButton>
                   <Table<FieldBindingRow>
+                  aria-label="字段绑定列表"
                     rowKey="id"
                     size="small"
                     loading={bindingsLoading}

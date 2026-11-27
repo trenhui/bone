@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">BONE · 智能理赔</text>
+    <text class="title">员工登录</text>
+    <text class="subtitle">登录后即可提交理赔报案</text>
+  </view>
+
+  <view class="form-card">
+    <view class="error-banner" wx:if="{{formError !== ''}}">
+      <text class="error-title">登录失败</text>
+      <text class="error-message">{{formError}}</text>
+    </view>
+
+    <view class="field-card {{fieldErrors.username !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">用户名 <text class="required">*</text></text>
+      <input class="field-input" placeholder="请输入用户名" value="{{username}}" data-field="username" bindinput="handleInput" maxlength="64" />
+      <text class="field-error" wx:if="{{fieldErrors.username !== ''}}">{{fieldErrors.username}}</text>
+    </view>
+
+    <view class="field-card {{fieldErrors.password !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">密码 <text class="required">*</text></text>
+      <input class="field-input" password placeholder="请输入密码" value="{{password}}" data-field="password" bindinput="handleInput" maxlength="128" />
+      <text class="field-error" wx:if="{{fieldErrors.password !== ''}}">{{fieldErrors.password}}</text>
+    </view>
+
+    <view class="hint-card">
+      <text class="hint-text">网关地址由 config.js 配置；真机需配置为微信 request 合法域名。</text>
+    </view>
+
+    <button class="submit-button" bindtap="handleLogin" loading="{{submitting}}" disabled="{{submitting}}">登录</button>
+  </view>
+</view>

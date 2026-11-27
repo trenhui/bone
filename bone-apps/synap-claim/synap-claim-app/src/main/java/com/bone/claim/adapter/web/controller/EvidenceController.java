@@ -4,6 +4,7 @@ import com.bone.claim.adapter.web.assembler.EvidenceAssembler;
 import com.bone.claim.adapter.web.dto.response.EvidenceResp;
 import com.bone.claim.application.EvidenceApplicationService;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
+import com.bone.claim.domain.model.evidence.valueobject.DocTypeClassifier;
 import com.bone.claim.domain.model.evidence.valueobject.ImageClarity;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.core.model.ApiResponse;
@@ -41,12 +42,42 @@ public class EvidenceController {
 
   private final EvidenceApplicationService evidenceApplicationService;
 
-  /** 材料登记请求。 */
+  /**
+   * 影像版式信号（前端 canvas 在 160×120 灰度缩略图上提取，字段缺省时退化为纯文件名分类）。
+   *
+   * @param inkRatio 偏离背景中位色的前景像素占比
+   * @param inkConcentration 前景在最密集 4 格（8×6 网格）的占比，签名高、票据低
+   * @param tableLineRatio 含长表格线的行占比，票据/清单高、签名低
+   * @param aspectPercent 宽高比百分比（可选）
+   */
+  public record ImageSignalsReq(
+      Double inkRatio, Double inkConcentration, Double tableLineRatio, Integer aspectPercent) {}
+
+  /**
+   * 材料登记请求。
+   *
+   * <p>{@code originalName} 只参与自动分类，不落库；{@code autoClassify=true} 时按「文件名 + 版式信号」融合识别，
+   * 用户显式选择的类型优先于自动分类。{@code imageType} 是 TPA 业务元数据，仅作弱证据。
+   */
   public record RegisterEvidenceReq(
       @NotBlank(message = "附件引用不能为空") String fileRef,
       @NotBlank(message = "内容哈希不能为空") String contentHash,
       DocType docType,
-      String verifyValid) {}
+      String verifyValid,
+      String originalName,
+      Boolean autoClassify,
+      String imageType,
+      ImageSignalsReq imageSignals) {}
+
+  /** 存量材料重新分类请求（docType 为空时按文件名 + 版式信号自动识别）。 */
+  public record ReclassifyReq(List<@Valid Item> items) {
+    public record Item(
+        @NotNull(message = "材料ID不能为空") Long evidenceId,
+        String originalName,
+        String imageType,
+        ImageSignalsReq imageSignals,
+        DocType docType) {}
+  }
 
   /** 主动解析请求：单证原文（数电票 PDF 文本层）。 */
   public record ParseEvidenceReq(@NotBlank(message = "单证原文不能为空") String rawText) {}
@@ -88,11 +119,57 @@ public class EvidenceController {
         evidenceApplicationService.register(
             new EvidenceApplicationService.RegisterEvidence(
                 claimId,
-                request.docType() == null ? DocType.INVOICE : request.docType(),
+                effectiveDocType(request).docType(),
                 request.fileRef(),
                 request.contentHash(),
                 request.verifyValid()));
     return ApiResponse.success(HttpStatus.CREATED.value(), id);
+  }
+
+  /**
+   * 决定登记类型：用户显式选择 > 融合自动分类 > OTHER（不再默认发票）。
+   *
+   * <p>自动分类输入 = 原始文件名 + 上传时提取的影像版式信号 + TPA imageType 元数据。证据不足时分类器落 OTHER
+   * 而非冒充发票——由人工在材料页改类型，避免"签名/费用清单被默认成发票"的稳定误判。
+   */
+  private static DocTypeClassifier.ClassificationResult effectiveDocType(
+      RegisterEvidenceReq request) {
+    if (request.docType() != null) {
+      return new DocTypeClassifier.ClassificationResult(request.docType(), 0, 0, "人工指定");
+    }
+    DocTypeClassifier.ImageSignals signals = toSignals(request.imageSignals());
+    DocTypeClassifier.ClassificationInput input =
+        new DocTypeClassifier.ClassificationInput(
+            request.originalName(), request.imageType(), signals, null);
+    return DocTypeClassifier.classifyDetailed(input);
+  }
+
+  private static DocTypeClassifier.ImageSignals toSignals(ImageSignalsReq req) {
+    if (req == null) {
+      return DocTypeClassifier.ImageSignals.EMPTY;
+    }
+    return new DocTypeClassifier.ImageSignals(
+        req.inkRatio(), req.inkConcentration(), req.tableLineRatio(), req.aspectPercent());
+  }
+
+  @Operation(summary = "存量材料重新分类", description = "按原始文件名或显式类型重新归类；已锁定材料拒绝修改，返回实际更新条数")
+  @PreAuthorize("hasAuthority('claim:claims:write')")
+  @PostMapping("/reclassify")
+  public ApiResponse<Integer> reclassify(
+      @Parameter(description = "案件ID") @PathVariable long claimId,
+      @Valid @RequestBody ReclassifyReq request) {
+    List<EvidenceApplicationService.ReclassifyItem> items =
+        request.items().stream()
+            .map(
+                item ->
+                    new EvidenceApplicationService.ReclassifyItem(
+                        item.evidenceId(),
+                        item.originalName(),
+                        item.imageType(),
+                        toSignals(item.imageSignals()),
+                        item.docType()))
+            .toList();
+    return ApiResponse.success(evidenceApplicationService.reclassify(claimId, items));
   }
 
   @Operation(

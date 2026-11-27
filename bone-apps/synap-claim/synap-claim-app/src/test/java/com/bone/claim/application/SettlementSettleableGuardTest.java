@@ -47,6 +47,8 @@ class SettlementSettleableGuardTest {
   private TenantPort tenantPort;
   private DomainEventPublisher domainEventPublisher;
   private AdjustmentRepository adjustmentRepository;
+  private com.bone.claim.domain.repository.ClaimPolicyRepository claimPolicyRepository;
+  private InsurerPushWriter insurerPushWriter;
 
   private SettlementApplicationService service;
 
@@ -59,6 +61,8 @@ class SettlementSettleableGuardTest {
     tenantPort = mock(TenantPort.class);
     domainEventPublisher = mock(DomainEventPublisher.class);
     adjustmentRepository = mock(AdjustmentRepository.class);
+    claimPolicyRepository = mock(com.bone.claim.domain.repository.ClaimPolicyRepository.class);
+    insurerPushWriter = mock(InsurerPushWriter.class);
 
     service =
         new SettlementApplicationService(
@@ -69,7 +73,9 @@ class SettlementSettleableGuardTest {
             tenantPort,
             domainEventPublisher,
             adjustmentRepository,
-            tenantId -> TriageLimits.defaultResolution());
+            tenantId -> TriageLimits.defaultResolution(),
+            claimPolicyRepository,
+            insurerPushWriter);
   }
 
   @Test

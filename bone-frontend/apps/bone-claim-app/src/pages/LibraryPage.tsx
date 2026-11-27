@@ -344,6 +344,7 @@ export function LibraryPage(): ReactElement {
                   }
                 />
                 <Table<LibraryRow>
+                aria-label="基础目录列表"
                   rowKey="id"
                   size="small"
                   loading={loading}

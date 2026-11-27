@@ -1510,6 +1510,7 @@
    "controller": "AuthController",
    "file": "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
    "cases": [
+    "claim-secure-signing-chain.py",
     "e2e_synap_claim.py",
     "synap-claim-task-workbench-e2e.py",
     "write_coverage.py"
@@ -3226,6 +3227,7 @@
    "controller": "PlanConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs"
    ]
   },
@@ -3235,6 +3237,7 @@
    "controller": "PlanConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs"
    ]
   },
@@ -3244,6 +3247,7 @@
    "controller": "PlanConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs"
    ]
   },
@@ -3252,7 +3256,9 @@
    "path": "/api/v1/claim-config/plans/{planId}/publish",
    "controller": "PlanConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PlanConfigController.java",
-   "cases": []
+   "cases": [
+    "claim-journey-e2e.mjs"
+   ]
   },
   {
    "http": "POST",
@@ -3419,6 +3425,7 @@
     "chains.py",
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py",
     "real-id-sweep.py",
     "synap-claim-report-case-e2e.py",
@@ -3438,6 +3445,7 @@
     "chains.py",
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py",
     "real-id-sweep.py",
     "synap-claim-report-case-e2e.py",
@@ -3449,6 +3457,13 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claims/query",
+   "controller": "ClaimCaseController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claims/{id}",
    "controller": "ClaimCaseController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
@@ -3457,6 +3472,7 @@
     "chains.py",
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py",
     "real-id-sweep.py",
     "synap-claim-report-case-e2e.py",
@@ -3474,6 +3490,7 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -3485,6 +3502,7 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -3496,6 +3514,7 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -3507,6 +3526,7 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -3518,6 +3538,7 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -3528,6 +3549,7 @@
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimCaseController.java",
    "cases": [
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -3596,7 +3618,8 @@
    "controller": "AdjustmentController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/AdjustmentController.java",
    "cases": [
-    "claim-full-chain-e2e.mjs"
+    "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs"
    ]
   },
   {
@@ -3769,10 +3792,20 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claims/{claimId}/insurer-push",
+   "controller": "InsurerPushController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/InsurerPushController.java",
+   "cases": [
+    "claim-journey-e2e.mjs"
+   ]
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/claim-config/policies",
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs",
     "ui/policy-no-link-probe.mjs"
    ]
@@ -3783,6 +3816,7 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs",
     "ui/policy-no-link-probe.mjs"
    ]
@@ -3802,6 +3836,7 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs",
     "ui/policy-no-link-probe.mjs"
    ]
@@ -3812,6 +3847,7 @@
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
    "cases": [
+    "claim-journey-e2e.mjs",
     "ui/claim-config-ui-probe.mjs",
     "ui/policy-no-link-probe.mjs"
    ]
@@ -3821,7 +3857,9 @@
    "path": "/api/v1/claim-config/policies/{policyNo}/activate",
    "controller": "PolicyConfigController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/PolicyConfigController.java",
-   "cases": []
+   "cases": [
+    "claim-journey-e2e.mjs"
+   ]
   },
   {
    "http": "POST",
@@ -3917,6 +3955,7 @@
    "controller": "ReviewTaskController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ReviewTaskController.java",
    "cases": [
+    "claim-full-chain-e2e.mjs",
     "synap-claim-workbench-feedback-e2e.mjs"
    ]
   },
@@ -3942,6 +3981,87 @@
    "controller": "DecisionController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/DecisionController.java",
    "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches/{batchId}/participants",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches/{batchId}/image",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/claims/sign/batches/{batchId}/confirm",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches/{batchId}/items",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches/{batchId}/tracks",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claims/sign/batches/{batchId}",
+   "controller": "ClaimSignController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/ClaimSignController.java",
+   "cases": [
+    "claim-secure-signing-chain.py"
+   ]
   },
   {
    "http": "GET",
@@ -4224,6 +4344,13 @@
   },
   {
    "http": "POST",
+   "path": "/api/v1/claims/{claimId}/evidences/reclassify",
+   "controller": "EvidenceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
    "path": "/api/v1/claims/{claimId}/evidences/{evidenceId}/parse",
    "controller": "EvidenceController",
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/EvidenceController.java",
@@ -4260,6 +4387,7 @@
    "cases": [
     "claim-fee-category-e2e.mjs",
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -4379,6 +4507,7 @@
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
    "cases": [
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -4399,6 +4528,7 @@
    "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/SettlementController.java",
    "cases": [
     "claim-full-chain-e2e.mjs",
+    "claim-journey-e2e.mjs",
     "e2e_synap_claim.py"
    ]
   },
@@ -4579,6 +4709,55 @@
    "cases": []
   },
   {
+   "http": "GET",
+   "path": "/api/v1/procurement/business/{rfxNo}/award",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/{rfxNo}/award",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/bids",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/quotations",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/capa",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "POST",
+   "path": "/api/v1/procurement/business/capa/{capaNo}/close",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/business/{rfxNo}/quotations",
+   "controller": "BusinessController",
+   "file": "bone-apps/bone-procurement/bone-procurement-business/src/main/java/com/bone/procurement/business/adapter/web/controller/BusinessController.java",
+   "cases": []
+  },
+  {
    "http": "POST",
    "path": "/api/v1/procurement/qualifications",
    "controller": "QualificationController",
@@ -4714,6 +4893,27 @@
   {
    "http": "GET",
    "path": "/api/v1/procurement/ai-governance/capabilities/{code}/overrides",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/drift",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/capabilities/{code}/oversight",
+   "controller": "AiGovernanceController",
+   "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
+   "cases": []
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/procurement/ai-governance/posture",
    "controller": "AiGovernanceController",
    "file": "bone-apps/bone-procurement/bone-procurement-ai-governance/src/main/java/com/bone/procurement/governance/adapter/web/controller/AiGovernanceController.java",
    "cases": []

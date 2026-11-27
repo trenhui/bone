@@ -58,7 +58,15 @@ public class QualificationController {
   @GetMapping("/qualifications/{id}")
   @PreAuthorize("hasAuthority('procurement:qualification:read')")
   public ApiResponse<Qualification> findOne(@PathVariable("id") Long id, @Valid FindQuery query) {
-    return ApiResponse.success(qualificationService.findOne(query.tenantId(), id));
+    ReviewIdentity identity = reviewIdentity.current();
+    if (identity == null || identity.tenantId() == null) {
+      throw new IllegalArgumentException("查询证照需要登录态身份与租户上下文，禁止缺省租户或匿名读取");
+    }
+    // 请求参数自报的租户不可信：与登录态不一致即拒绝，一致才用登录态权威租户查询。
+    if (query.tenantId() != null && !query.tenantId().equals(identity.tenantId())) {
+      throw new IllegalArgumentException("请求租户与登录态不一致，禁止跨租户读取");
+    }
+    return ApiResponse.success(qualificationService.findOne(identity.tenantId(), id));
   }
 
   @PostMapping("/qualifications/{id}/ocr-review")
@@ -66,7 +74,10 @@ public class QualificationController {
   public ApiResponse<Void> reviewOcr(
       @PathVariable("id") Long id, @Valid @RequestBody OcrReviewRequest request) {
     ReviewIdentity identity = reviewIdentity.current();
-    if (identity == null) {
+    if (identity == null
+        || identity.tenantId() == null
+        || identity.reviewer() == null
+        || identity.reviewer().isBlank()) {
       throw new IllegalArgumentException("人工终决需要登录态身份与租户上下文，禁止缺省租户或匿名复核");
     }
     // 请求体自报的租户/复核人不可信：与登录态不一致即拒绝，一致才落登录态权威值。

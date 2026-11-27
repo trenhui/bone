@@ -210,6 +210,10 @@
       <a href="customer-journey.html"><span class="ic">▣</span>客户旅程（小程序）<span class="cur-tag">NEW</span></a>
       <a href="form-config.html" class="cur"><span class="ic">▤</span>表单配置中心<span class="cur-tag">当前</span></a>
       <a href="evaluation-report.html"><span class="ic">◫</span>评测报告</a>
+      <a href="settlement.html"><span class="ic">￥</span>资金结算与四向对账<span class="cur-tag">NEW</span></a>
+      <a href="ai-governance.html"><span class="ic">◈</span>AI 治理与评测回放<span class="cur-tag">NEW</span></a>
+      <a href="mapping.html"><span class="ic">⇄</span>主数据映射<span class="cur-tag">NEW</span></a>
+      <a href="role-views.html"><span class="ic">◉</span>角色视角切换<span class="cur-tag">NEW</span></a>
     </div>
   </div>
   <div class="right"><span class="env">测试环境</span><div class="avatar"><span class="dot">admin</span><span>系统管理员</span></div></div>
@@ -218,7 +222,7 @@
 <div class="wrap">
   <div class="card" style="margin-bottom:18px">
     <div class="card-h"><h2>表单配置中心 · 模板 / 设计 / 发布</h2><span class="desc">字段级可见性与校验规则按主体继承，改标准不影响已有专属配置</span></div>
-    <div class="card-b"><div class="mx-note" style="padding-top:0">业界依据：关注点分离（模板 / 画布 / 属性三栏）、隐式继承要显式标注（与 job-config 的"通用 / 专属 / 专属·改"同口径）、危险操作二次确认且默认不启用。</div></div>
+    <div class="card-b"><div class="mx-note" style="padding-top:0">业界依据：关注点分离（模板 / 画布 / 属性三栏）、隐式继承要显式标注（与 job-config 的"通用 / 专属 / 专属·改"同口径）、危险操作二次确认；新增 / 同步字段默认不启用（与 job-config 发布口径一致）。</div></div>
   </div>
 
   <div style="display:grid;grid-template-columns:210px 1fr 260px;gap:16px;align-items:start">
@@ -277,11 +281,11 @@
         <div class="mfield"><div class="lbl">变更摘要</div><input value="新增字段 1 / 修改校验规则 2" readonly></div>
       </div></div>
       <div class="sec"><div class="sh">确认口径</div><div class="sb">
-        <div class="preserve-tip">默认<b>不启用</b>：发布只生成新版本，已有在途案件继续用旧版表单；不回滚、不覆盖专属配置。</div>
+        <div class="preserve-tip">发布后本表单新版本应用于<b>示例财险（1:DEMO）</b>的新报案，仅影响该主体；已有在途案件继续用旧版表单。新增 / 同步字段<b>默认不启用</b>，需手动启用后才生效；不回滚、不覆盖专属配置。</div>
         <label style="font-size:13px;display:block;margin:10px 0"><input type="checkbox" id="pubAck"> 我已确认以上影响范围</label>
       </div></div>
     </div>
-    <div class="mf"><button class="btn" onclick="document.getElementById('pubMask').classList.remove('show')">取消</button><button class="btn primary" id="pubBtn" disabled onclick="toast('已生成表单新版本 v4 · 未自动启用');document.getElementById('pubMask').classList.remove('show')">确认发布</button></div>
+    <div class="mf"><button class="btn" onclick="document.getElementById('pubMask').classList.remove('show')">取消</button><button class="btn primary" id="pubBtn" disabled onclick="toast('✓ 表单新版本 v4 已发布至 1:DEMO · 新增字段默认不启用，在途案件沿用旧版');document.getElementById('pubMask').classList.remove('show')">确认发布</button></div>
   </div>
 </div>
 <div class="foot">演示数据已脱敏 · 非真实客户信息 · TPA 理赔运营平台 · 表单配置中心设计稿</div>
@@ -292,8 +296,8 @@
   <div class="ux-dh"><span class="ic">?</span><b>表单配置中心 · 快速上手</b><button class="x" onclick="uxCloseAll()">×</button></div>
   <div class="ux-db">
     <div class="ux-lead">这是一份可交互设计稿。按下面 5 步走一遍，理解表单如何从模板变成可发布的版本。</div>
-    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>选模板</b><span>标准模板可继承，专属与专属·改不随标准升级</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>排字段</b><span>一屏看全字段，不用多步 Wizard</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>配属性</b><span>点中间字段，右侧改标签/类型/校验/来源</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>看来源</b><span>标准 / 专属 / 专属·改决定后续升级是否覆盖</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>发版本</b><span>发布生成新版本但默认不启用，已有案件不受影响</span></div></div>
-    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 发布不是启用：新版本与启用是两步，避免改标准直接冲击在途案件</div><div>· 字段来源标"专属·改"意味着标准升级不再覆盖</div></div>
+    <div class="ux-sec">操作五步走</div><div class="ux-step"><span class="n">1</span><div class="c"><b>选模板</b><span>标准模板可继承，专属与专属·改不随标准升级</span></div></div><div class="ux-step"><span class="n">2</span><div class="c"><b>排字段</b><span>一屏看全字段，不用多步 Wizard</span></div></div><div class="ux-step"><span class="n">3</span><div class="c"><b>配属性</b><span>点中间字段，右侧改标签/类型/校验/来源</span></div></div><div class="ux-step"><span class="n">4</span><div class="c"><b>看来源</b><span>标准 / 专属 / 专属·改决定后续升级是否覆盖</span></div></div><div class="ux-step"><span class="n">5</span><div class="c"><b>发版本</b><span>发布只影响主体新报案；新增字段默认不启用，已有案件不受影响（同 job-config 口径）</span></div></div>
+    <div class="ux-tipbox"><div class="ux-sec">易错提醒</div><div>· 发布不是启用：新版本只对主体新报案生效；新增/同步字段默认不启用，需手动启用，避免冲击在途案件</div><div>· 字段来源标"专属·改"意味着标准升级不再覆盖</div></div>
   </div>
   <div class="ux-df"><span class="ux-kbd">Esc</span> 关闭 · <span class="ux-kbd">Ctrl/⌘ + K</span> 快捷命令</div>
 </div>
@@ -309,7 +313,7 @@
   window.uxOpenHelp=function(){mask.classList.add('show');drawer.classList.add('show');};
   window.uxCloseAll=function(){mask.classList.remove('show','cmd-open');drawer.classList.remove('show');cmd.classList.remove('show');};
   window.uxOpenCmd=function(){mask.classList.add('show','cmd-open');cmd.classList.add('show');inp.value='';uxCmdRender();setTimeout(function(){inp.focus();},30);};
-  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测']];
+  var items=[['claim-manage.html','▤','赔案管理列表','列表'],['claim-detail.html','▣','理赔审核详情','详情'],['claim-image-detail.html','▧','赔案影像详情','影像'],['claim-rule-config.html','∑','理算规则配置','规则'],['job-config.html','⚙','主体专属作业配置','配置'],['import-record.html','⇩','导入记录','导入'],['customer-journey.html','▣','客户旅程（小程序）','客户'],['form-config.html','▤','表单配置中心','表单'],['evaluation-report.html','◫','评测报告','评测'],['settlement.html','￥','资金结算与四向对账','结算'],['ai-governance.html','◈','AI 治理与评测回放','治理'],['mapping.html','⇄','主数据映射','映射'],['role-views.html','◉','角色视角切换','角色']];
   var sel=0,shown=[];
   window.uxCmdRender=function(){
     var q=(inp.value||'').trim().toLowerCase();

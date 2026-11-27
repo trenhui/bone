@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.procurement.qualification.adapter.web.controller.QualificationController;
 import com.bone.procurement.qualification.adapter.web.controller.QualificationController.ApproveOnboardingRequest;
+import com.bone.procurement.qualification.adapter.web.controller.QualificationController.FindQuery;
 import com.bone.procurement.qualification.adapter.web.controller.QualificationController.OcrReviewRequest;
 import com.bone.procurement.qualification.application.OnboardingApplicationService;
 import com.bone.procurement.qualification.application.QualificationApplicationService;
@@ -72,6 +73,24 @@ class ReviewIdentityBindingTest {
   }
 
   @Test
+  void 人工复核登录态字段不全时拒绝且不落库() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(null, "alice"));
+
+    assertThatThrownBy(() -> controller.reviewOcr(7L, new OcrReviewRequest(null, null, true)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(service);
+  }
+
+  @Test
+  void 人工复核登录态复核人空白时拒绝且不落库() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "  "));
+
+    assertThatThrownBy(() -> controller.reviewOcr(7L, new OcrReviewRequest(null, null, true)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(service);
+  }
+
+  @Test
   void 准入终决无登录态时拒绝且不落库() {
     when(identityPort.current()).thenReturn(null);
 
@@ -127,5 +146,41 @@ class ReviewIdentityBindingTest {
     verify(onboarding).approveByHuman(tenant.capture(), eq("ON-1"), operator.capture());
     assertThat(tenant.getValue()).isEqualTo(1L);
     assertThat(operator.getValue()).isEqualTo("alice");
+  }
+
+  @Test
+  void 证照读回无登录态时拒绝且不查库() {
+    when(identityPort.current()).thenReturn(null);
+
+    assertThatThrownBy(() -> controller.findOne(7L, new FindQuery(1L)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(service);
+  }
+
+  @Test
+  void 证照读回请求租户与登录态不一致时拒绝() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "alice"));
+
+    assertThatThrownBy(() -> controller.findOne(7L, new FindQuery(2L)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(service);
+  }
+
+  @Test
+  void 证照读回一致时按登录态权威租户查询() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "alice"));
+
+    controller.findOne(7L, new FindQuery(1L));
+
+    verify(service).findOne(1L, 7L);
+  }
+
+  @Test
+  void 证照读回请求未带租户时也走登录态权威租户() {
+    when(identityPort.current()).thenReturn(new ReviewIdentity(1L, "alice"));
+
+    controller.findOne(7L, new FindQuery(null));
+
+    verify(service).findOne(1L, 7L);
   }
 }

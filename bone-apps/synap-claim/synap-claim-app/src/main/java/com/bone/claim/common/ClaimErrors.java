@@ -112,7 +112,16 @@ public final class ClaimErrors {
           // 422：影像不清晰是「缺可入理算的事实前提」，不是状态冲突；写入期硬拒，避免看图不清就锁定出金
           Map.entry(ClaimErrorCodes.SC_CLAIM_EVIDENCE_UNCLEAR_BLOCKS_LOCK, 422),
           // 422：AI 闸门未过是「部署态前提不成立」，fail-closed 转人工，绝不因展示绿放行资金
-          Map.entry(ClaimErrorCodes.SC_CLAIM_AI_GATE_BLOCKED, 422));
+          Map.entry(ClaimErrorCodes.SC_CLAIM_AI_GATE_BLOCKED, 422),
+          // 400：拒赔证据位置锚点格式非法（请求入参形状非法，与 CLAIM_REJECT_REASON_REQUIRED 同族）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_EVIDENCE_REF_INVALID, 400),
+          // 400：受控拒赔原因码非法（入参形状非法，与缺失码同族但分开定位）
+          Map.entry(ClaimErrorCodes.SC_CLAIM_REJECT_REASON_INVALID, 400),
+          // 签收：404 批次不存在 / 409 状态冲突 / 400 推送要素 / 422 名单为空
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_BATCH_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_STATUS_CONFLICT, 409),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_PUSH_INVALID, 400),
+          Map.entry(ClaimErrorCodes.SC_CLAIM_SIGN_PARTICIPANTS_EMPTY, 422));
 
   static {
     checkEveryCodeRegistered();

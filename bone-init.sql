@@ -2860,7 +2860,7 @@ CREATE TABLE t_claim_item (
 CREATE TABLE t_claim_evidence (
   id     BIGINT      NOT NULL COMMENT '主键(分布式ID)',
   claim_id        BIGINT      NOT NULL COMMENT '案件ID',
-  doc_type        VARCHAR(32)   NOT NULL COMMENT 'INVOICE/LIST/MEDICAL_RECORD/MEDICAL_SETTLEMENT',
+  doc_type        VARCHAR(32)   NOT NULL COMMENT 'INVOICE/LIST/MEDICAL_RECORD/MEDICAL_SETTLEMENT/ID_CARD/BANK_CARD/PRESCRIPTION/POLICY/DISCHARGE_SUMMARY/SIGNATURE/OTHER',
   file_ref        VARCHAR(256)  NOT NULL COMMENT '附件引用(平台附件服务, STS 直传)',
   content_hash    CHAR(64)      NOT NULL COMMENT '文件内容SHA256(重复上传判定, §9.5)',
   ocr_status      VARCHAR(16)   NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/PARSING/DONE/FAILED/MANUAL',
@@ -5054,3 +5054,261 @@ CREATE TABLE `t_proc_governance_trace` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_proc_governance_trace` (`tenant_id`,`capability_code`,`event_type`,`occurred_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='治理追溯链（停机演练/状态变更/人工终决均留痕，只追加）';
+
+-- ============================================================
+-- ContractReviewed 持久化事件闭环（本地 walking skeleton；不接生产 MQ）
+-- 三表均以 (tenant_id, review_id) 为业务唯一键：Outbox 存 7 字段 payload 快照（禁 PII/正文），
+-- Inbox 存结论去重态（条件插入裁决"只消费一次"），DLQ 存失败原因与重放状态。
+-- 与既有 t_proc_* 同口径：审计八列 + tenant_id + deleted + version；唯一键以 tenant_id 打头。
+-- 仅为 init-only 基线，本地显式驱动模拟投递，生产 MQ listener 仍属 L3。
+-- ============================================================
+
+DROP TABLE IF EXISTS `t_proc_contract_outbox`;
+CREATE TABLE `t_proc_contract_outbox` (
+  `id`                  BIGINT          NOT NULL COMMENT 'Outbox 主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '租户ID（登录态注入，禁事件自报）',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（幂等键）',
+  `payload_json`        TEXT            NOT NULL COMMENT 'ContractReviewed 7 字段快照 JSON（禁 output 原文/PII/正文）',
+  `delivery_status`     VARCHAR(16)     NOT NULL DEFAULT 'PENDING' COMMENT '投递状态 PENDING/DELIVERED/FAILED',
+  `delivered_at`        DATETIME(3)     DEFAULT NULL COMMENT '成功投递时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_outbox` (`tenant_id`,`review_id`),
+  KEY `idx_proc_contract_outbox_status` (`tenant_id`,`delivery_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed Outbox（事务性发布；待投递由显式驱动扫描，不接生产 MQ）';
+
+DROP TABLE IF EXISTS `t_proc_contract_inbox`;
+CREATE TABLE `t_proc_contract_inbox` (
+  `id`                  BIGINT          NOT NULL COMMENT 'Inbox 主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '消费方租户ID（TenantContext 权威，禁事件覆盖）',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（幂等键）',
+  `risk_level`          VARCHAR(32)     NOT NULL COMMENT '消费结论风险等级（UNKNOWN 隔离转人工）',
+  `ai_participation`    VARCHAR(32)     NOT NULL COMMENT 'AI 参与披露三态（UNKNOWN/AVAILABLE/CANNOT_CONFIRM）',
+  `review_snapshot_ref` VARCHAR(256)    DEFAULT NULL COMMENT '审查快照引用（只存引用，快照不可变）',
+  `quarantined`         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否因 UNKNOWN 隔离转人工',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_inbox` (`tenant_id`,`review_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed Inbox（结论去重态；唯一键裁决只消费一次，重启可恢复）';
+
+DROP TABLE IF EXISTS `t_proc_contract_dlq`;
+CREATE TABLE `t_proc_contract_dlq` (
+  `id`                  BIGINT          NOT NULL COMMENT 'DLQ 主键（Snowflake）',
+  `tenant_id`           VARCHAR(64)     NOT NULL COMMENT '消费方租户ID',
+  `review_id`           VARCHAR(64)     NOT NULL COMMENT '审查业务ID（按此重放）',
+  `failure_reason`      VARCHAR(512)    NOT NULL COMMENT '失败原因摘要（禁 output 原文/PII）',
+  `outbox_ref`          VARCHAR(256)    NOT NULL COMMENT '原始 payload 引用（Outbox tenant_id+review_id）',
+  `resolved`            TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否已重放成功',
+  `occurred_at`         DATETIME(3)     NOT NULL COMMENT '失败时点 UTC',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人（登录态）',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人（登录态）',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_contract_dlq` (`tenant_id`,`review_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ContractReviewed 死信队列（失败隔离与按 review_id 重放；不成半条结论）';
+
+-- =====================================================-- procuraAI 持久业务聚合（B 方案，L3 授权 2026-11-26）：
+-- 新增 Bid / Quotation / Award / CAPA 四类事实表，均以 tenant_id 锚定业务唯一键。
+-- 审计八列齐全；AI 评分/推荐只存建议字段，不存模型 output 原文；
+-- 人工终决必须具名，授标与 CAPA 关闭为终态，DDL + Adapter 双层拒绝回写。
+-- 对应增量迁移 0142_procura_business_aggregates.sql，不执行生产库。
+-- ============================================================
+
+DROP TABLE IF EXISTS `t_proc_bid`;
+CREATE TABLE `t_proc_bid` (
+  `id`                  BIGINT          NOT NULL COMMENT '投标主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `bid_id`              VARCHAR(64)     NOT NULL COMMENT '投标业务ID',
+  `rfx_no`              VARCHAR(64)     NOT NULL COMMENT 'RFx编号',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `source_ref`          VARCHAR(128)    DEFAULT NULL COMMENT '来源幂等引用',
+  `due_at`              DATETIME(3)     NOT NULL COMMENT 'RFx截止时间 UTC',
+  `status`              VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/SUBMITTED/WITHDRAWN/REJECTED',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_bid` (`tenant_id`,`bid_id`),
+  UNIQUE KEY `uk_proc_bid_supplier` (`tenant_id`,`rfx_no`,`supplier_id`),
+  UNIQUE KEY `uk_proc_bid_source` (`tenant_id`,`source_ref`),
+  KEY `idx_proc_bid_rfx` (`tenant_id`,`rfx_no`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='投标事实（到期拒收，来源幂等，撤回终态）';
+
+DROP TABLE IF EXISTS `t_proc_quotation`;
+CREATE TABLE `t_proc_quotation` (
+  `id`                  BIGINT          NOT NULL COMMENT '报价主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `quote_id`            VARCHAR(64)     NOT NULL COMMENT '报价业务ID',
+  `rfx_no`              VARCHAR(64)     NOT NULL COMMENT 'RFx编号',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `amount`              DECIMAL(19,4)   NOT NULL COMMENT '报价金额',
+  `currency`            CHAR(3)         NOT NULL COMMENT '币种 ISO-4217',
+  `valid_until`         DATETIME(3)     NOT NULL COMMENT '报价有效期止 UTC',
+  `ai_score`            DECIMAL(9,6)    DEFAULT NULL COMMENT 'AI建议评分，不产生授标结论',
+  `ai_recommendation`   VARCHAR(64)     DEFAULT NULL COMMENT 'AI建议排序引用，不存模型 output 原文',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_quotation` (`tenant_id`,`quote_id`),
+  KEY `idx_proc_quotation_rfx` (`tenant_id`,`rfx_no`,`currency`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='报价事实（比价只读，过期与币种不一致不可比）';
+
+DROP TABLE IF EXISTS `t_proc_award`;
+CREATE TABLE `t_proc_award` (
+  `id`                  BIGINT          NOT NULL COMMENT '授标主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `award_id`            VARCHAR(128)    NOT NULL COMMENT '授标业务ID',
+  `rfx_no`              VARCHAR(64)     NOT NULL COMMENT 'RFx编号',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '中标供应商 partyId',
+  `confirmed_by`        VARCHAR(64)     NOT NULL COMMENT '登录态具名确认人，AI不得置位',
+  `confirmed_at`        DATETIME(3)     NOT NULL COMMENT '人工确认时间 UTC',
+  `reason`              VARCHAR(512)    NOT NULL COMMENT '非空授标理由',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_award` (`tenant_id`,`award_id`),
+  UNIQUE KEY `uk_proc_award_rfx` (`tenant_id`,`rfx_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='授标事实（具名人工终决，终态不可回写）';
+
+DROP TABLE IF EXISTS `t_proc_capa`;
+CREATE TABLE `t_proc_capa` (
+  `id`                  BIGINT          NOT NULL COMMENT 'CAPA主键（Snowflake）',
+  `tenant_id`           BIGINT          NOT NULL COMMENT '租户ID',
+  `capa_no`             VARCHAR(64)     NOT NULL COMMENT 'CAPA业务编号',
+  `supplier_id`         VARCHAR(64)     NOT NULL COMMENT '供应商 partyId',
+  `issue_description`   VARCHAR(512)    NOT NULL COMMENT '问题描述，禁 PII 原文',
+  `owner_id`            VARCHAR(64)     NOT NULL COMMENT '责任人，立项必填',
+  `due_at`              DATETIME(3)     NOT NULL COMMENT '整改期限 UTC，超期不得自动放宽',
+  `status`              VARCHAR(32)     NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/OVERDUE/CLOSED',
+  `follow_up_required`  TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '超期转人工跟进标记',
+  `closed_by`           VARCHAR(64)     DEFAULT NULL COMMENT '具名关闭人',
+  `closed_at`           DATETIME(3)     DEFAULT NULL COMMENT '关闭时间 UTC',
+  `evidence_ref`        VARCHAR(256)    DEFAULT NULL COMMENT '关闭证据引用，不存 PII 原文',
+  `created_by`          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+  `updated_by`          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+  `created_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `updated_at`          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+  `deleted`             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  `version`             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proc_capa` (`tenant_id`,`capa_no`),
+  KEY `idx_proc_capa_status_due` (`tenant_id`,`status`,`due_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='CAPA事实（超期转人工，关闭需具名与证据，不自动改变供应商状态）';
+-- 案件签收三表（0142_claim_secure_signing）：批次/明细/轨迹
+--   · 幂等：CREATE TABLE IF NOT EXISTS；终态断言失败用存储过程 SIGNAL（PREPARE 不支持 SIGNAL）；
+--   · 本脚本为本地/部署迁移，不在本机会话对共享生产库执行 DDL。
+-- ============================================================
+
+CREATE TABLE `t_claim_sign_batch` (
+  `id`              BIGINT       NOT NULL,
+  `tenant_id`       BIGINT       NOT NULL,
+  `batch_no`        VARCHAR(64)  NOT NULL,
+  `source`          VARCHAR(16)  NOT NULL,
+  `sign_type`       VARCHAR(16)  NOT NULL,
+  `sign_channel`    VARCHAR(32)  NOT NULL,
+  `insurance_company` VARCHAR(128) DEFAULT NULL,
+  `insurance_subsidiary` VARCHAR(128) DEFAULT NULL,
+  `insuring_agency` VARCHAR(128) DEFAULT NULL,
+  `sign_status`     VARCHAR(32)  NOT NULL DEFAULT 'WAIT_FOR_PARTICIPANT',
+  `business_key`    VARCHAR(64)  DEFAULT NULL,
+  `claim_count`     INT          NOT NULL DEFAULT 0,
+  `emergency`       VARCHAR(32)  DEFAULT NULL,
+  `image_ready_count` INT        NOT NULL DEFAULT 0,
+  `express_company` VARCHAR(64)  DEFAULT NULL,
+  `express_no`      VARCHAR(64)  DEFAULT NULL,
+  `sender`          VARCHAR(64)  DEFAULT NULL,
+  `arrive_time`     DATETIME(3)  DEFAULT NULL,
+  `sign_institution` VARCHAR(128) DEFAULT NULL,
+  `sign_operator`   VARCHAR(64)  DEFAULT NULL,
+  `sign_time`       DATETIME(3)  DEFAULT NULL,
+  `sign_remark`     VARCHAR(256) DEFAULT NULL,
+  `version`         INT          NOT NULL DEFAULT 0,
+  `created_by`      BIGINT       DEFAULT NULL,
+  `updated_by`      BIGINT       DEFAULT NULL,
+  `created_at`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `deleted`         TINYINT(1)   NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_claim_sign_batch_no` (`batch_no`),
+  KEY `idx_claim_sign_batch_tenant_status` (`tenant_id`,`sign_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收批次（线上自动+线下人工）';
+
+CREATE TABLE `t_claim_sign_batch_item` (
+  `id`         BIGINT       NOT NULL,
+  `tenant_id`  BIGINT       NOT NULL,
+  `batch_id`   BIGINT       NOT NULL,
+  `claim_id`   BIGINT       DEFAULT NULL,
+  `claim_no`   VARCHAR(64)  DEFAULT NULL,
+  `image_ready` TINYINT(1)  NOT NULL DEFAULT 0,
+  `policy_no`  VARCHAR(64)  DEFAULT NULL,
+  `plan_id`    BIGINT       DEFAULT NULL,
+  `insured_name` VARCHAR(128) DEFAULT NULL,
+  `insured_id_no` VARCHAR(64) DEFAULT NULL,
+  `identity_type` VARCHAR(32) DEFAULT NULL,
+  `counting_result` INT DEFAULT NULL,
+  `image_count` INT DEFAULT NULL,
+  `image_upload_count` INT DEFAULT NULL,
+  `image_upload_time` DATETIME(3) DEFAULT NULL,
+  `image_uploader` VARCHAR(64) DEFAULT NULL,
+  `out_insure_time` DATETIME(3) DEFAULT NULL,
+  `claim_type` VARCHAR(32) DEFAULT NULL,
+  `source_channel` VARCHAR(64) DEFAULT NULL,
+  `business_key` VARCHAR(128) DEFAULT NULL,
+  `case_status` VARCHAR(32) DEFAULT 'PENDING',
+  `created_case_id` BIGINT DEFAULT NULL,
+  `created_by` BIGINT       DEFAULT NULL,
+  `updated_by` BIGINT       DEFAULT NULL,
+  `created_at` DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at` DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `deleted`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `version`    INT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_claim_sign_batch_item` (`batch_id`,`claim_id`),
+  UNIQUE KEY `uk_sign_item_business_key` (`tenant_id`,`business_key`),
+  KEY `idx_claim_sign_batch_item_claim` (`claim_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收批次明细';
+
+CREATE TABLE `t_claim_sign_track` (
+  `id`          BIGINT       NOT NULL,
+  `tenant_id`   BIGINT       NOT NULL,
+  `batch_id`    BIGINT       NOT NULL,
+  `claim_id`    BIGINT       DEFAULT NULL,
+  `sign_status` VARCHAR(32)  DEFAULT NULL,
+  `action_type` VARCHAR(32)  NOT NULL,
+  `message`     VARCHAR(256) DEFAULT NULL,
+  `remark`      VARCHAR(256) DEFAULT NULL,
+  `operator`    VARCHAR(64)  DEFAULT NULL,
+  `occurred_at` DATETIME(3)  NOT NULL,
+  `created_by`  BIGINT       DEFAULT NULL,
+  `updated_by`  BIGINT       DEFAULT NULL,
+  `created_at`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  `deleted`     TINYINT(1)   NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_claim_sign_track_batch` (`batch_id`,`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='签收轨迹（append-only，无version列）';
+

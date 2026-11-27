@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """procuraAI 生产化加固门禁（A10.29）。
 
-守护 init-only DDL 的 6 张新表、必备列/唯一约束、内存实现不再注册为 bean，
-以及 9 个端口都有非内存实现。--self-test 用注入式负向反证证明不是假绿。
+守护 init-only DDL 的 9 张新表（含 ContractReviewed 事件闭环 3 表）、必备列/唯一约束、
+内存实现不再注册为 bean，以及 10 个端口都有非内存实现。--self-test 用注入式负向反证证明不是假绿。
 """
 
 from __future__ import annotations
@@ -24,7 +24,11 @@ TABLES = (
     "t_proc_human_decision",
     "t_proc_global_kill_switch",
     "t_proc_governance_trace",
+    "t_proc_contract_outbox",
+    "t_proc_contract_inbox",
+    "t_proc_contract_dlq",
 )
+EVENT_CHAIN_TABLES = ("t_proc_contract_outbox", "t_proc_contract_inbox", "t_proc_contract_dlq")
 COLUMNS = ("id", "tenant_id", "created_by", "updated_by", "created_at", "updated_at", "deleted", "version")
 PORTS = (
     "ContractReviewStore",
@@ -36,6 +40,7 @@ PORTS = (
     "SourcingProjectRepository",
     "QualificationRepository",
     "RiskAlertRepository",
+    "ContractReviewedEventStore",
 )
 MODULES = (
     "bone-procurement-contract",
@@ -79,6 +84,14 @@ def check(texts: dict[str, str]) -> tuple[bool, list[str]]:
                 msgs.append(f"{PREFIX} {table} 缺少必备列 {col}")
         if re.search(r"DROP\s+TABLE\s+IF\s+EXISTS", ddl[ddl.find(table) - 200 : ddl.find(table)], re.I) is None:
             msgs.append(f"{PREFIX} {table} 未遵循 init-only DROP + CREATE 约定")
+    for table in EVENT_CHAIN_TABLES:
+        block = table_block(ddl, table)
+        if not block:
+            continue
+        if not re.search(
+            r"UNIQUE\s+KEY\s+`?uk_[^`\s]*`?\s*\([^)]*tenant_id[^)]*review_id", block, re.I
+        ):
+            msgs.append(f"{PREFIX} {table} 缺少 (tenant_id, review_id) 唯一键")
     review = table_block(ddl, "t_proc_contract_review")
     if review:
         if "`idempotency_key`" not in review:
@@ -114,6 +127,15 @@ def self_test(texts: dict[str, str]) -> int:
         ("用 @Service 绕过 bean 检测", lambda t: {**t, next(k for k in t if "InMemory" in k): "@Service\n" + t[next(k for k in t if "InMemory" in k)]}, "内存实现仍注册为 bean"),
         ("用 @Bean 绕过 bean 检测", lambda t: {**t, next(k for k in t if "InMemory" in k): "@Bean\n" + t[next(k for k in t if "InMemory" in k)]}, "内存实现仍注册为 bean"),
         ("抹掉审查端口持久化实现", lambda t: {k: (v.replace("implements ContractReviewStore", "implements RemovedStore") if "ContractReviewStore" in v else v) for k, v in t.items()}, "无持久化实现"),
+        ("删除事件闭环表", lambda t: {**t, "ddl": re.sub(
+            r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?t_proc_contract_inbox`?",
+            "CREATE TABLE `t_proc_removed_inbox`", t["ddl"], count=1, flags=re.I)}, "缺少 init-only 表"),
+        ("抹掉事件闭环唯一键", lambda t: {**t, "ddl": t["ddl"].replace(
+            "UNIQUE KEY `uk_proc_contract_dlq` (`tenant_id`,`review_id`)",
+            "KEY `idx_removed_dlq` (`review_id`)", 1)}, "缺少 (tenant_id, review_id) 唯一键"),
+        ("抹掉事件存储端口持久化实现", lambda t: {k: (v.replace(
+            "implements ContractReviewedEventStore", "implements RemovedEventStore")
+            if "ContractReviewedEventStore" in v else v) for k, v in t.items()}, "无持久化实现"),
     ]
     ok = True
     for desc, mutate, expect in cases:
@@ -141,7 +163,7 @@ def main() -> int:
     passed, msgs = check(texts)
     for m in msgs:
         print(m)
-    print(f"[{PREFIX}] {'PASS' if passed else 'FAIL'} — 6 表 / 双唯一键 / 9 端口持久化实现")
+    print(f"[{PREFIX}] {'PASS' if passed else 'FAIL'} — 9 表 / 双唯一键 / 10 端口持久化实现")
     return 0 if passed else 1
 
 

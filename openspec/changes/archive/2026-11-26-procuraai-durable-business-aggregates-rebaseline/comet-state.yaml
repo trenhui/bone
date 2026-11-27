@@ -1,0 +1,2678 @@
+# comet-execution: managed-run
+change_id: f65d3467-fa23-4e2c-89ab-a903fb6f18c2
+workflow: full
+language: zh-CN
+phase: archive
+context_compression: off
+build_mode: autonomous
+build_pause: null
+subagent_dispatch: null
+tdd_mode: tdd
+review_mode: standard
+isolation: current
+verify_mode: null
+auto_transition: true
+base_ref: d1742235a8f81f93dff343ce685a00363f0a7fe0
+design_doc: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline/design.md
+plan: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+branch_status: pending
+created_at: 2026-11-26
+verified_at: 2026-11-26
+archive_confirmation: confirmed
+archived: true
+bound_branch: dev
+direct_override: false
+handoff_context: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+handoff_hash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+classic_profile: null
+classic_migration: null
+run_checkpoint:
+  schema: comet.workflow-run-checkpoint.v2
+  hash: 9da9e5a45fa809fc8b3cdd57a9f854a933b8557952818e50d57b66bb1672f3ce
+  run:
+    protocolVersion: 1
+    schemaVersion: 1
+    runId: procuraai-durable-business-aggregates-rebaseline
+    revision: 1
+    workflow:
+      id: comet-classic-full
+      version: "1"
+      hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    definitionHashes:
+      '["comet-classic-full","1"]': ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+    initialStateHash: bbba96cfde61bed8a56ed106a6daf362c7dc72e5108549fe1dbee837a7fcd701
+    input:
+      change: procuraai-durable-business-aggregates-rebaseline
+      changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      workspaceBaseline:
+        ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+    state:
+      archiveConfirmation: confirmed
+      archived: true
+      autoTransition: true
+      baseRef: d1742235a8f81f93dff343ce685a00363f0a7fe0
+      boundBranch: dev
+      branchStatus: pending
+      buildMode: autonomous
+      buildPause: null
+      checkEpoch: 6
+      classicMigration: null
+      classicProfile: null
+      contextCompression: off
+      createdAt: 2026-11-26
+      designDoc: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline/design.md
+      directOverride: false
+      handoffContext: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+      handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+      isolation: current
+      language: zh-CN
+      phase: archive
+      plan: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+      reviewMode: standard
+      subagentDispatch: null
+      tddMode: tdd
+      verificationReport: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+      verifiedAt: 2026-11-26
+      verifyFailures: 0
+      verifyMode: null
+      verifyResult: pass
+      workflow: full
+    status: running
+    sequence: 24
+    actions:
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-2fcb6498bdbf56f083b0886535639431151d290d8576c08622b1449fcb7903e0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:1
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: ad2c046d22611a35d5ae05638b0fc1b7ab5c441356eae21f8478e6468041f3f8
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:1
+          attempt: 1
+          claimToken: portable-2fcb6498bdbf56f083b0886535639431151d290d8576c08622b1449fcb7903e0
+          inputHash: ad2c046d22611a35d5ae05638b0fc1b7ab5c441356eae21f8478e6468041f3f8
+          outcomeId: 1b5ef5fb-d98e-4cb6-85e4-1d8afa1cc9c4
+          output:
+            event: open-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 3f5f5c4cc6c8feed0dcc78f12ecccfdd0305c3dcc6f2eb928e0e025fb6903725
+            outcomeId: 1b5ef5fb-d98e-4cb6-85e4-1d8afa1cc9c4
+        reconciliations: []
+        ref: comet-open
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.open
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-open-revalidate
+          token: portable-cf3b735599e22a68a98a889864a7123fd39dfb1ded4386fa3c2c7b892e4a5981
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:4
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: 41f757688ea1977197e0df12e0f183d45e34dc03014d73ca0af758b0ca13aad2
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:4
+          attempt: 2
+          claimToken: portable-cf3b735599e22a68a98a889864a7123fd39dfb1ded4386fa3c2c7b892e4a5981
+          inputHash: 41f757688ea1977197e0df12e0f183d45e34dc03014d73ca0af758b0ca13aad2
+          outcomeId: procuraai-durable-business-aggregates-rebaseline:4:2:executor-result
+          output:
+            contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: c5fe6ed9b45d49288a52a5bb7adf36e629c355e1d56c480ee268ae6640c0dde8
+            outcomeId: procuraai-durable-business-aggregates-rebaseline:4:2:executor-result
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: 该 claim 由本地调用 comet guard open --apply 时漏传 --approval-hash
+                引起，命令在参数校验阶段返回 Usage 错误后即退出；pgrep 未见任何 comet open/revalidate
+                执行器，Runtime recovery.record.status=missing
+                且无收据。可证原尝试完全未执行，不涉及对已执行结果的美化。
+            resolution: not-executed
+        ref: classic-open-revalidate
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.open.revalidate
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-state
+          token: portable-9775d1d31360e8956cc8cf70449a2252fee06a15bfd8331eb41c6535ba4fd142
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:5
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: f809b17f135e171482be1741c556a074e520ebdfea0eaae6b84e02bfa33c780b
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:5
+          attempt: 2
+          claimToken: portable-9775d1d31360e8956cc8cf70449a2252fee06a15bfd8331eb41c6535ba4fd142
+          inputHash: f809b17f135e171482be1741c556a074e520ebdfea0eaae6b84e02bfa33c780b
+          outcomeId: b6f743b0-f703-4952-9a11-8f071f0e4c47
+          output:
+            handoffContext: openspec/changes/procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+            handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+            proposal: 候选方案 B（基于 origin/dev 新基线重放）：新增独立 Maven 模块 bone-procurement-business，承载
+              Bid/Quotation/Award/CAPA 四类聚合、应用服务与 SDK 仓储适配器；新增 4 张 t_proc_*
+              表、增量迁移脚本、数据库规范同步，并按 A10.17 同步 CI/脚本/一键脚本三入口与注入必红探针。人工授标与 CAPA
+              关闭只认登录态身份；AI 评分/排序只作建议；终态不可回写，PII 不落库。取舍：A 方案进程内仓储不耐久，C
+              方案扩展既有实体无法表达四类不变量，故选 B。风险：DDL/迁移/CI 属 L3，owner
+              契约未冻结可能导致字段调整，门禁漏同步会造成假绿；缓解为沿用已取得的 L3 授权、只落不变量必需列、缺一入口即不实施。Spec
+              Patch：无；Open 已更新两个 modified capabilities（9
+              需求）。不执行生产库操作，不做评测转正或模型效果声明。
+            requirementsEvidence:
+              contentHash: 0af723b63ed5722cde16867b1a67f08294b2587a4c996ac5ada6e69f1db6fe8a
+              ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            sourceEvidence:
+              contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+              ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 11de22fb9e7711f872ea1e7c07cdbde8b86ef3f7cd933227d4e7bb06f0a83927
+            outcomeId: b6f743b0-f703-4952-9a11-8f071f0e4c47
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: comet state propose-design 返回 exit 70 Timed out waiting for file
+                lock；核对 Run 仅有 running claim，无 design.confirm wait、无
+                handoffContext/designDoc 输出，持锁 pid 34871 经 kill -0 确认 DEAD，锁已 mv
+                至
+                /tmp/comet-runtime-write-lock-stale-20261126.json。原尝试未产生任何设计提案副作用。
+            resolution: not-executed
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.design.handoff
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-ce849d7246e2e51eeb1928d8db1f7458af710490816207ddeada821e629a7457
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:7
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: 3e4818f6e98ee00e98c48cebb382f14f92f3ab194df0ec095b81e5f095b19146
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:7
+          attempt: 1
+          claimToken: portable-ce849d7246e2e51eeb1928d8db1f7458af710490816207ddeada821e629a7457
+          inputHash: 3e4818f6e98ee00e98c48cebb382f14f92f3ab194df0ec095b81e5f095b19146
+          outcomeId: 772e9d32-ccaf-41b5-96fb-b066c7e42417
+          output:
+            designDoc: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: e2968f4383c56383d360bfaed9b156f15be4f1b7bd82026fa8cc85098717d1b4
+            outcomeId: 772e9d32-ccaf-41b5-96fb-b066c7e42417
+        reconciliations: []
+        ref: comet-design
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.design.document
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-a167b4fe09b79fde26a210c1536cd2474f8dedceb7dc1ad9a6ebf898549659e0
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:9
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: 1130fdd563aca9ce8b5033a01772214f515012f3e78fb4caf1352abe53f9ecda
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:9
+          attempt: 1
+          claimToken: portable-a167b4fe09b79fde26a210c1536cd2474f8dedceb7dc1ad9a6ebf898549659e0
+          inputHash: 1130fdd563aca9ce8b5033a01772214f515012f3e78fb4caf1352abe53f9ecda
+          outcomeId: d3463d7f-c5ef-4008-b277-882c4781c154
+          output:
+            boundBranch: dev
+            buildMode: autonomous
+            directOverride: false
+            isolation: current
+            reviewMode: standard
+            subagentDispatch: null
+            tddMode: tdd
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: d0b149666ea16fb29407b2eebfce900073473ea279d14b197d0d12075f4773fa
+            outcomeId: d3463d7f-c5ef-4008-b277-882c4781c154
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.build.configure
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-f927acfc0aedda6b7474987180ae62ecee7812f18562a37e00f48bd97080d8bf
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:11
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: a4462d2d6e191f5643daeb59b36d3e01978d10b9c0b9097ae324e110846e0b2f
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:11
+          attempt: 1
+          claimToken: portable-f927acfc0aedda6b7474987180ae62ecee7812f18562a37e00f48bd97080d8bf
+          inputHash: a4462d2d6e191f5643daeb59b36d3e01978d10b9c0b9097ae324e110846e0b2f
+          outcomeId: 6f408f32-1b0a-4f35-9e3a-ba60d0143d05
+          output:
+            designEvidence:
+              contentHash: b7da73901cc3ac2831d8df7472667941ab8d503f39f587eb1b1db32a7c739dba
+              ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+            plan: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+            planEvidence:
+              contentHash: 841d15305e267a1ebac63b2299826ef4e860acc7fb852f3eff6bfc439074457e
+              ref: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+            taskRevision: 419956b681018ecdf62feb4711fcb77754fcfae59db26fe7eda0aede76593444
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 5b9b22142392e50941595bed7c8ed31b2228193f3952d491b6a65544085dc912
+            outcomeId: 6f408f32-1b0a-4f35-9e3a-ba60d0143d05
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.build.plan
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          sessionId: classic-builder/procuraai-durable-business-aggregates-rebaseline:13/1
+          token: portable-f7f51fc98d6f9cf3a72d545d8cdeef71cc6b36b7fadf42659b4958e3a8c008a9
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:13
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: ff89ba6fa2a90c3927cbf3aee0006d5ac2c2ab7831f251caa1ccd2788dcff246
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:13
+          attempt: 1
+          claimToken: portable-f7f51fc98d6f9cf3a72d545d8cdeef71cc6b36b7fadf42659b4958e3a8c008a9
+          inputHash: ff89ba6fa2a90c3927cbf3aee0006d5ac2c2ab7831f251caa1ccd2788dcff246
+          outcomeId: 1b6d4b2f-fafd-48c3-a86e-6723fd17d3c5
+          output:
+            event: build-complete
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2064181c780d361879249ebf439232fddb8bdc5367e7c4db03cb23190dbbb93b
+            outcomeId: 1b6d4b2f-fafd-48c3-a86e-6723fd17d3c5
+        reconciliations: []
+        ref: comet-build
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.build.execute
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-d0cc2902a2d35f12e73026f452f48c3d178517ca615544ba8c4f63920645e0b7
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:14
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: cb77a3408c304a8ee7b1b947959e25b62bd5f5cc2e15966c91874c4eec707564
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:14
+          attempt: 2
+          claimToken: portable-d0cc2902a2d35f12e73026f452f48c3d178517ca615544ba8c4f63920645e0b7
+          inputHash: cb77a3408c304a8ee7b1b947959e25b62bd5f5cc2e15966c91874c4eec707564
+          outcomeId: 9d1322dc-68cc-4843-8cb7-c97b9470d4b0
+          output:
+            argv:
+              - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+              - -o
+              - -f
+              - bone-apps/bone-procurement/pom.xml
+              - test
+            changedDuringExecution: []
+            checkEpoch: 2
+            contentHash: df20ea572571ee32f8836994ecb1eaa95f648591c84357892c1d60ef064897a7
+            cwd: .
+            environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+            exitCode: 0
+            inputAfter: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+            inputBefore: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+            manifestHash: 0b2774506aeca1df2da6dd96d6ded58c0eae59e34d0be0f260f629b0940d07b1
+            manifestRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/28fa7ec3-b7c2-4c9f-829b-e0f2e5542d3b.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/38af0654-cc86-4c1e-ae4a-dec1ad970372.log
+            reusable: false
+            reused: false
+            scope: build
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: cabffefb8d8494ede23e57633c16ff346ffcd3c8d564c0eb88bc21a4a61f5dbd
+            outcomeId: 9d1322dc-68cc-4843-8cb7-c97b9470d4b0
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: not-executed 仅指 SDK 记账未落地，不代表命令物理未执行：原 guard build 调用因前台 120 秒超时被
+                SIGTERM 终止，pgrep 无 mvn/comet guard 进程，Runtime recovery 的 logRef
+                与 manifestRef 均 exists=false，因此没有任何可采信收据。随后以完整超时重跑真实检查并以新收据记账。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.build.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-guard
+          token: portable-b361f699916eae308f068b43d6789018c449689658bffb0328e38d705740bf2a
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:16
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: fa68811fe1ed6ca4829b6ba87e28e5122ec0d6e6527c102a1d16a3736d7bba2b
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:16
+          attempt: 1
+          claimToken: portable-b361f699916eae308f068b43d6789018c449689658bffb0328e38d705740bf2a
+          inputHash: fa68811fe1ed6ca4829b6ba87e28e5122ec0d6e6527c102a1d16a3736d7bba2b
+          outcomeId: de662f27-54a3-4f9d-9133-2307acd89f76
+          output:
+            event: verification-ready
+            verificationReport: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 12517b827a22ea60994463eae61bc2948bcc66ad81c96ce5890a62b517ebccb2
+            outcomeId: de662f27-54a3-4f9d-9133-2307acd89f76
+        reconciliations: []
+        ref: comet-verify
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.verify.run
+        type: invoke_skill
+      - attempt: 2
+        claim:
+          executorId: comet-classic-check
+          token: portable-6ec4d7c2673b63d6d3b73d0a38809b9bfeb80eea5720d8d689bf063504930b9e
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:18
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: 32cdbdf315535af1c3dcfb998a951c82e461a5772f11cfca808d5ed7b7a985e6
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:18
+          attempt: 2
+          claimToken: portable-6ec4d7c2673b63d6d3b73d0a38809b9bfeb80eea5720d8d689bf063504930b9e
+          inputHash: 32cdbdf315535af1c3dcfb998a951c82e461a5772f11cfca808d5ed7b7a985e6
+          outcomeId: 6f96e78d-ca19-4bf5-a795-6f29662b8b09
+          output:
+            argv:
+              - bash
+              - -c
+              - python3 tools/check_procura_business_aggregates.py && python3
+                tools/check_procura_business_aggregates.py --self-test &&
+                python3 tools/check_procura_alignment.py && python3
+                tools/check_procura_alignment.py --self-test && python3
+                scripts/check-migration-manifest.py && comet classic openspec --
+                validate procuraai-durable-business-aggregates-rebaseline
+                --strict
+            changedDuringExecution: []
+            checkEpoch: 3
+            contentHash: f0d56c05721375df3d55b707db9a23946ff510edeaf633183ad3017c72e6f7c2
+            cwd: .
+            deliveryInputs: {}
+            environment: db172a2db400fca3df3e6b135c2b34495c4b73586e1c63a22cca9df83251b5ac
+            exitCode: 0
+            inputAfter: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+            inputBefore: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+            manifestHash: 0b2774506aeca1df2da6dd96d6ded58c0eae59e34d0be0f260f629b0940d07b1
+            manifestRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/9cee6b5d-e86e-46ac-86ac-164f40bb55e3.manifest
+            receiptRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/8e9ee165-60a9-4eaf-9cb1-14c20fdd33a7.log
+            reusable: false
+            reused: false
+            scope: verify
+            tier: full
+            timeoutMs: 900000
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 546bf4e79b698cbee21adf945abdf02e89a8cdda17ec74c43da061982192a5cc
+            outcomeId: 6f96e78d-ca19-4bf5-a795-6f29662b8b09
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: not-executed 仅指 SDK 记账未落地，不代表命令物理未执行：原检查子进程日志已生成且内容全通过，但
+                record.status=started、无完整结果对象，Runtime
+                明确日志不能代替收据。原执行器已停止，重新执行完整命令以取得合法收据。
+            resolution: not-executed
+        ref: classic-check
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.verify.check
+        type: call_tool
+      - attempt: 1
+        claim:
+          executorId: comet-classic-state
+          token: portable-64bf2f38d45e03e8a4e681a4f4af3b9cb8218ed08df7cad9baf16ed386392bd8
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:20
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: 0e236e41d554c78df54526fdbb6fb040bbaf673a236a50a7a7308e80e5c5c3f2
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:20
+          attempt: 1
+          claimToken: portable-64bf2f38d45e03e8a4e681a4f4af3b9cb8218ed08df7cad9baf16ed386392bd8
+          inputHash: 0e236e41d554c78df54526fdbb6fb040bbaf673a236a50a7a7308e80e5c5c3f2
+          outcomeId: b169cc0a-0461-4af0-b4d2-20772d0eef38
+          output:
+            prBaseBranch: dev
+            remote: origin
+            summary: procuraAI 持久业务聚合补齐（origin/dev 新基线重放）：新增 bone-procurement-business 四聚合与
+              SDK 持久化，四表 DDL/迁移/规范同步，三入口门禁与注入探针接入；采购 reactor 与 33 例模块测试、业务聚合 15
+              项负向探针、A10 160/160、OpenSpec strict 全部通过，交付 push 到 origin/dev。
+            targetBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 2d1e440da546c4a676aa1cfdf1644d14772f6479baafdb8573004496f3052b3a
+            outcomeId: b169cc0a-0461-4af0-b4d2-20772d0eef38
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.archive.prepare
+        type: invoke_skill
+      - attempt: 1
+        claim:
+          executorId: comet-classic-archive-preflight
+          token: portable-e8b3899d4187adc389be60c09b7629272c6cc11ad714be288e1e7dde10476ef9
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:22
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: 1b3ff264c695de6c4ecbaea4bc91bb63b4807deaf376ca51583a769bfe6ba439
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:22
+          attempt: 1
+          claimToken: portable-e8b3899d4187adc389be60c09b7629272c6cc11ad714be288e1e7dde10476ef9
+          inputHash: 1b3ff264c695de6c4ecbaea4bc91bb63b4807deaf376ca51583a769bfe6ba439
+          outcomeId: a467ccde-6ada-4d90-90b6-b683d6fdec61
+          output:
+            baseCommit: d1742235a8f81f93dff343ce685a00363f0a7fe0
+            deliveryAction: push
+            prBaseBranch: dev
+            remote: origin
+            remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+            targetBranch: dev
+            verifiedBranch: dev
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 824c78e65332da9c8be5f0213029da5b0410abdd1f06a068fda97440a61c0396
+            outcomeId: a467ccde-6ada-4d90-90b6-b683d6fdec61
+        reconciliations: []
+        ref: classic-archive-preflight
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.archive.preflight
+        type: call_tool
+      - attempt: 2
+        claim:
+          executorId: comet-classic-archive
+          token: portable-04bee7b22461a4328056acda356add7da274a1dc8f42cd7d30f9d02c219f99e2
+        executionOrigin:
+          workflow:
+            hash: ee198afdb53add0c23f98202aae8cdbe4079b9f4ebf7a62ed4ab8411ed591db5
+            id: comet-classic-full
+            version: "1"
+        id: procuraai-durable-business-aggregates-rebaseline:23
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: b2ea6cb73e15f2e8eca2b6562a5cdff2b45bea1e3b87c34effab4841183d5aae
+        outcome:
+          actionId: procuraai-durable-business-aggregates-rebaseline:23
+          artifacts:
+            - sha256: 2e996ae2a5fdc2d1155da7224163156ad4d3ee701b4b4c0989bedfc67b948453
+              uri: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline/.comet/archive-manifest.json
+          attempt: 2
+          claimToken: portable-04bee7b22461a4328056acda356add7da274a1dc8f42cd7d30f9d02c219f99e2
+          inputHash: b2ea6cb73e15f2e8eca2b6562a5cdff2b45bea1e3b87c34effab4841183d5aae
+          outcomeId: 6f66e818-792d-4641-9b5e-73955dd806bc
+          output:
+            archiveDirectory: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline
+          status: succeeded
+        protocolVersion: 1
+        receipts:
+          - hash: 996505c4f4b629497fc062a7ef8df4785fffcc69c008150e4f436643e8588870
+            outcomeId: 6f66e818-792d-4641-9b5e-73955dd806bc
+        reconciliations:
+          - attempt: 1
+            evidence:
+              summary: Guard 调用因 SDK running action 直接返回 BLOCKED；活动 change 目录仍存在、archive 目录下无
+                2026-11-26-procuraai-durable-business-aggregates-rebaseline、主
+                spec 无 delta、record.status=missing 且无收据；无 comet archive
+                执行器进程。锁文件 pid 70625 经 kill -0 确认 DEAD，已 mv 至
+                /tmp/openspec-archive-lock-rb-stale-20261126.json。原归档尝试完全未执行。
+            resolution: not-executed
+        ref: classic-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: succeeded
+        stepId: full.archive.execute
+        type: call_tool
+      - attempt: 1
+        id: procuraai-durable-business-aggregates-rebaseline:24
+        input:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs: {}
+        inputHash: f39f43036d0082cdd83dcfcb0d323215d3dfca1827b0d5cf0294f9f54e0d08bb
+        protocolVersion: 1
+        receipts: []
+        reconciliations: []
+        ref: comet-archive
+        requiredCapabilities: []
+        retry: manual
+        runId: procuraai-durable-business-aggregates-rebaseline
+        status: pending
+        stepId: full.archive.deliver
+        type: invoke_skill
+    actionContexts:
+      procuraai-durable-business-aggregates-rebaseline:1:
+        results: {}
+        sequence: 1
+      procuraai-durable-business-aggregates-rebaseline:11:
+        results: {}
+        sequence: 11
+      procuraai-durable-business-aggregates-rebaseline:13:
+        results: {}
+        sequence: 13
+      procuraai-durable-business-aggregates-rebaseline:14:
+        results: {}
+        sequence: 14
+      procuraai-durable-business-aggregates-rebaseline:16:
+        results: {}
+        sequence: 16
+      procuraai-durable-business-aggregates-rebaseline:18:
+        results: {}
+        sequence: 18
+      procuraai-durable-business-aggregates-rebaseline:20:
+        results: {}
+        sequence: 20
+      procuraai-durable-business-aggregates-rebaseline:22:
+        results: {}
+        sequence: 22
+      procuraai-durable-business-aggregates-rebaseline:23:
+        results: {}
+        sequence: 23
+      procuraai-durable-business-aggregates-rebaseline:24:
+        results: {}
+        sequence: 24
+      procuraai-durable-business-aggregates-rebaseline:4:
+        results: {}
+        sequence: 4
+      procuraai-durable-business-aggregates-rebaseline:5:
+        results: {}
+        sequence: 5
+      procuraai-durable-business-aggregates-rebaseline:7:
+        results: {}
+        sequence: 7
+      procuraai-durable-business-aggregates-rebaseline:9:
+        results: {}
+        sequence: 9
+    waits:
+      - id: procuraai-durable-business-aggregates-rebaseline:3
+        stepId: full.open.confirm
+        sequence: 3
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+              ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+        proposalHash: cde8d957d539ea386fe303bf6cc0cfb4152ffe2b5d179e4475b43e42713ddd71
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-open-05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+          choice: approved
+          proposalHash: cde8d957d539ea386fe303bf6cc0cfb4152ffe2b5d179e4475b43e42713ddd71
+      - id: procuraai-durable-business-aggregates-rebaseline:6
+        stepId: full.design.confirm
+        sequence: 6
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+              handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+              proposal: 候选方案 B（基于 origin/dev 新基线重放）：新增独立 Maven 模块 bone-procurement-business，承载
+                Bid/Quotation/Award/CAPA 四类聚合、应用服务与 SDK 仓储适配器；新增 4 张 t_proc_*
+                表、增量迁移脚本、数据库规范同步，并按 A10.17 同步 CI/脚本/一键脚本三入口与注入必红探针。人工授标与 CAPA
+                关闭只认登录态身份；AI 评分/排序只作建议；终态不可回写，PII 不落库。取舍：A 方案进程内仓储不耐久，C
+                方案扩展既有实体无法表达四类不变量，故选 B。风险：DDL/迁移/CI 属 L3，owner
+                契约未冻结可能导致字段调整，门禁漏同步会造成假绿；缓解为沿用已取得的 L3 授权、只落不变量必需列、缺一入口即不实施。Spec
+                Patch：无；Open 已更新两个 modified capabilities（9
+                需求）。不执行生产库操作，不做评测转正或模型效果声明。
+              requirementsEvidence:
+                contentHash: 0af723b63ed5722cde16867b1a67f08294b2587a4c996ac5ada6e69f1db6fe8a
+                ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+              sourceEvidence:
+                contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+                ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+        proposalHash: 4e8df99f4f21f31ac5de06d25a66e14402974d5bb55c7d0117f90f83a6649b1a
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: classic-design-4e8df99f4f21f31ac5de06d25a66e14402974d5bb55c7d0117f90f83a6649b1a-approved
+          choice: approved
+          proposalHash: 4e8df99f4f21f31ac5de06d25a66e14402974d5bb55c7d0117f90f83a6649b1a
+      - id: procuraai-durable-business-aggregates-rebaseline:10
+        stepId: full.build.confirm
+        sequence: 10
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+        proposalHash: 1de8f865df4a984edd0c93b1dd7885bcee88bcb9bef5b20a37f69e24065e0cd2
+        choices:
+          - approved
+          - rejected
+        results: {}
+        decision:
+          id: 360a286a-91c5-4be9-a061-d559728ea5c3
+          choice: approved
+          proposalHash: 1de8f865df4a984edd0c93b1dd7885bcee88bcb9bef5b20a37f69e24065e0cd2
+      - id: procuraai-durable-business-aggregates-rebaseline:21
+        stepId: full.archive.confirm
+        sequence: 21
+        status: resolved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: procuraAI 持久业务聚合补齐（origin/dev 新基线重放）：新增 bone-procurement-business 四聚合与
+                SDK 持久化，四表 DDL/迁移/规范同步，三入口门禁与注入探针接入；采购 reactor 与 33 例模块测试、业务聚合
+                15 项负向探针、A10 160/160、OpenSpec strict 全部通过，交付 push 到 origin/dev。
+              targetBranch: dev
+        proposalHash: 3f18417346d03a0e8d1a1c9d7a769feec3d5bdd01c5c284ebd867f93b1fb63f0
+        choices:
+          - local
+          - push
+          - pr
+          - reverify
+          - later
+        results: {}
+        decision:
+          id: classic-archive-3f18417346d03a0e8d1a1c9d7a769feec3d5bdd01c5c284ebd867f93b1fb63f0-push
+          choice: push
+          proposalHash: 3f18417346d03a0e8d1a1c9d7a769feec3d5bdd01c5c284ebd867f93b1fb63f0
+    evidenceWaits:
+      - id: procuraai-durable-business-aggregates-rebaseline:2
+        stepId: full.open.evidence
+        sequence: 2
+        kind: classic-open-artifacts
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+          contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+          submissionId: 5da1ba62-8d35-474c-8aa8-559c0e55e251
+      - id: procuraai-durable-business-aggregates-rebaseline:8
+        stepId: full.design.evidence
+        sequence: 8
+        kind: classic-design-document
+        status: resolved
+        results: {}
+        receipt:
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+          contentHash: b7da73901cc3ac2831d8df7472667941ab8d503f39f587eb1b1db32a7c739dba
+          submissionId: 138252ed-8ab0-45f8-a2e5-c90cd8e59910
+      - id: procuraai-durable-business-aggregates-rebaseline:12
+        stepId: full.build.plan.evidence
+        sequence: 12
+        kind: classic-build-plan
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+          contentHash: 841d15305e267a1ebac63b2299826ef4e860acc7fb852f3eff6bfc439074457e
+          submissionId: 5b182049-c925-466f-ba3c-c9224e4de5c8
+      - id: procuraai-durable-business-aggregates-rebaseline:15
+        stepId: full.build.check.evidence
+        sequence: 15
+        kind: classic-build-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/38af0654-cc86-4c1e-ae4a-dec1ad970372.log
+          contentHash: df20ea572571ee32f8836994ecb1eaa95f648591c84357892c1d60ef064897a7
+          submissionId: 9da4f672-82bf-4f0f-b40b-1ebb457862d5
+      - id: procuraai-durable-business-aggregates-rebaseline:17
+        stepId: full.verify.report.evidence
+        sequence: 17
+        kind: classic-verification-report
+        status: resolved
+        results: {}
+        receipt:
+          ref: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+          contentHash: be0fe63a4e2b1f4d76c8b214801df3ba010a93b6dae00a0cdb30084b55ff523c
+          submissionId: b8553f57-c339-4067-be1e-1ba9f12fe9f8
+      - id: procuraai-durable-business-aggregates-rebaseline:19
+        stepId: full.verify.check.evidence
+        sequence: 19
+        kind: classic-verify-check
+        status: resolved
+        results: {}
+        receipt:
+          ref: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/8e9ee165-60a9-4eaf-9cb1-14c20fdd33a7.log
+          contentHash: f0d56c05721375df3d55b707db9a23946ff510edeaf633183ad3017c72e6f7c2
+          submissionId: ff1f8baa-23df-4ea4-9181-417d0d000a64
+    ready: []
+    joins: {}
+    outputs: {}
+    children: []
+    lineage: []
+  sourceRevision: 52
+  sourceHash: 5eee1b9128cda80c7ab3bbc4042257add835537667b8d6a8c8282c99e36a3d7a
+  pool:
+    version: 3
+    values:
+      - event: open-complete
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.open:
+              event: open-complete
+            full.open.evidence:
+              contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+              ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+        ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.design.handoff:
+              handoffContext: openspec/changes/procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+              handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+              proposal: 候选方案 B（基于 origin/dev 新基线重放）：新增独立 Maven 模块 bone-procurement-business，承载
+                Bid/Quotation/Award/CAPA 四类聚合、应用服务与 SDK 仓储适配器；新增 4 张 t_proc_*
+                表、增量迁移脚本、数据库规范同步，并按 A10.17 同步 CI/脚本/一键脚本三入口与注入必红探针。人工授标与 CAPA
+                关闭只认登录态身份；AI 评分/排序只作建议；终态不可回写，PII 不落库。取舍：A 方案进程内仓储不耐久，C
+                方案扩展既有实体无法表达四类不变量，故选 B。风险：DDL/迁移/CI 属 L3，owner
+                契约未冻结可能导致字段调整，门禁漏同步会造成假绿；缓解为沿用已取得的 L3 授权、只落不变量必需列、缺一入口即不实施。Spec
+                Patch：无；Open 已更新两个 modified capabilities（9
+                需求）。不执行生产库操作，不做评测转正或模型效果声明。
+              requirementsEvidence:
+                contentHash: 0af723b63ed5722cde16867b1a67f08294b2587a4c996ac5ada6e69f1db6fe8a
+                ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+              sourceEvidence:
+                contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+                ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - handoffContext: openspec/changes/procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+        handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+        proposal: 候选方案 B（基于 origin/dev 新基线重放）：新增独立 Maven 模块 bone-procurement-business，承载
+          Bid/Quotation/Award/CAPA 四类聚合、应用服务与 SDK 仓储适配器；新增 4 张 t_proc_*
+          表、增量迁移脚本、数据库规范同步，并按 A10.17 同步 CI/脚本/一键脚本三入口与注入必红探针。人工授标与 CAPA
+          关闭只认登录态身份；AI 评分/排序只作建议；终态不可回写，PII 不落库。取舍：A 方案进程内仓储不耐久，C
+          方案扩展既有实体无法表达四类不变量，故选 B。风险：DDL/迁移/CI 属 L3，owner
+          契约未冻结可能导致字段调整，门禁漏同步会造成假绿；缓解为沿用已取得的 L3 授权、只落不变量必需列、缺一入口即不实施。Spec
+          Patch：无；Open 已更新两个 modified capabilities（9 需求）。不执行生产库操作，不做评测转正或模型效果声明。
+        requirementsEvidence:
+          contentHash: 0af723b63ed5722cde16867b1a67f08294b2587a4c996ac5ada6e69f1db6fe8a
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+        sourceEvidence:
+          contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - designDoc: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+      - contentHash: b7da73901cc3ac2831d8df7472667941ab8d503f39f587eb1b1db32a7c739dba
+        ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+      - boundBranch: dev
+        buildMode: autonomous
+        directOverride: false
+        isolation: current
+        reviewMode: standard
+        subagentDispatch: null
+        tddMode: tdd
+      - choice: approved
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.build.configure:
+              boundBranch: dev
+              buildMode: autonomous
+              directOverride: false
+              isolation: current
+              reviewMode: standard
+              subagentDispatch: null
+              tddMode: tdd
+      - designEvidence:
+          contentHash: b7da73901cc3ac2831d8df7472667941ab8d503f39f587eb1b1db32a7c739dba
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+        plan: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+        planEvidence:
+          contentHash: 841d15305e267a1ebac63b2299826ef4e860acc7fb852f3eff6bfc439074457e
+          ref: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+        taskRevision: 419956b681018ecdf62feb4711fcb77754fcfae59db26fe7eda0aede76593444
+      - contentHash: 841d15305e267a1ebac63b2299826ef4e860acc7fb852f3eff6bfc439074457e
+        ref: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+      - event: build-complete
+      - argv:
+          - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+          - -o
+          - -f
+          - bone-apps/bone-procurement/pom.xml
+          - test
+        changedDuringExecution: []
+        checkEpoch: 2
+        contentHash: df20ea572571ee32f8836994ecb1eaa95f648591c84357892c1d60ef064897a7
+        cwd: .
+        environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+        exitCode: 0
+        inputAfter: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+        inputBefore: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+        manifestHash: 0b2774506aeca1df2da6dd96d6ded58c0eae59e34d0be0f260f629b0940d07b1
+        manifestRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/28fa7ec3-b7c2-4c9f-829b-e0f2e5542d3b.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/38af0654-cc86-4c1e-ae4a-dec1ad970372.log
+        reusable: false
+        reused: false
+        scope: build
+        tier: full
+        timeoutMs: 900000
+      - contentHash: df20ea572571ee32f8836994ecb1eaa95f648591c84357892c1d60ef064897a7
+        ref: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/38af0654-cc86-4c1e-ae4a-dec1ad970372.log
+      - contentHash: be0fe63a4e2b1f4d76c8b214801df3ba010a93b6dae00a0cdb30084b55ff523c
+        ref: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+      - event: verification-ready
+        verificationReport: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+      - argv:
+          - bash
+          - -c
+          - python3 tools/check_procura_business_aggregates.py && python3
+            tools/check_procura_business_aggregates.py --self-test && python3
+            tools/check_procura_alignment.py && python3
+            tools/check_procura_alignment.py --self-test && python3
+            scripts/check-migration-manifest.py && comet classic openspec --
+            validate procuraai-durable-business-aggregates-rebaseline --strict
+        changedDuringExecution: []
+        checkEpoch: 3
+        contentHash: f0d56c05721375df3d55b707db9a23946ff510edeaf633183ad3017c72e6f7c2
+        cwd: .
+        deliveryInputs: {}
+        environment: db172a2db400fca3df3e6b135c2b34495c4b73586e1c63a22cca9df83251b5ac
+        exitCode: 0
+        inputAfter: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+        inputBefore: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+        manifestHash: 0b2774506aeca1df2da6dd96d6ded58c0eae59e34d0be0f260f629b0940d07b1
+        manifestRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/9cee6b5d-e86e-46ac-86ac-164f40bb55e3.manifest
+        receiptRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/8e9ee165-60a9-4eaf-9cb1-14c20fdd33a7.log
+        reusable: false
+        reused: false
+        scope: verify
+        tier: full
+        timeoutMs: 900000
+      - contentHash: f0d56c05721375df3d55b707db9a23946ff510edeaf633183ad3017c72e6f7c2
+        ref: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/8e9ee165-60a9-4eaf-9cb1-14c20fdd33a7.log
+      - choice: push
+        proposal:
+          input:
+            change: procuraai-durable-business-aggregates-rebaseline
+            changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+            workspaceBaseline:
+              ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+          outputs:
+            full.archive.prepare:
+              prBaseBranch: dev
+              remote: origin
+              summary: procuraAI 持久业务聚合补齐（origin/dev 新基线重放）：新增 bone-procurement-business 四聚合与
+                SDK 持久化，四表 DDL/迁移/规范同步，三入口门禁与注入探针接入；采购 reactor 与 33 例模块测试、业务聚合
+                15 项负向探针、A10 160/160、OpenSpec strict 全部通过，交付 push 到 origin/dev。
+              targetBranch: dev
+      - prBaseBranch: dev
+        remote: origin
+        summary: procuraAI 持久业务聚合补齐（origin/dev 新基线重放）：新增 bone-procurement-business 四聚合与
+          SDK 持久化，四表 DDL/迁移/规范同步，三入口门禁与注入探针接入；采购 reactor 与 33 例模块测试、业务聚合 15
+          项负向探针、A10 160/160、OpenSpec strict 全部通过，交付 push 到 origin/dev。
+        targetBranch: dev
+      - baseCommit: d1742235a8f81f93dff343ce685a00363f0a7fe0
+        deliveryAction: push
+        prBaseBranch: dev
+        remote: origin
+        remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+        targetBranch: dev
+        verifiedBranch: dev
+      - archiveDirectory: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline
+      - sequence: 9
+        value:
+          boundBranch: dev
+          buildMode: autonomous
+          directOverride: false
+          isolation: current
+          reviewMode: standard
+          subagentDispatch: null
+          tddMode: tdd
+      - sequence: 10
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-durable-business-aggregates-rebaseline
+              changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+              workspaceBaseline:
+                ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+            outputs:
+              full.build.configure:
+                boundBranch: dev
+                buildMode: autonomous
+                directOverride: false
+                isolation: current
+                reviewMode: standard
+                subagentDispatch: null
+                tddMode: tdd
+      - sequence: 6
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-durable-business-aggregates-rebaseline
+              changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+              workspaceBaseline:
+                ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+            outputs:
+              full.design.handoff:
+                handoffContext: openspec/changes/procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+                handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+                proposal: 候选方案 B（基于 origin/dev 新基线重放）：新增独立 Maven 模块 bone-procurement-business，承载
+                  Bid/Quotation/Award/CAPA 四类聚合、应用服务与 SDK 仓储适配器；新增 4 张 t_proc_*
+                  表、增量迁移脚本、数据库规范同步，并按 A10.17 同步 CI/脚本/一键脚本三入口与注入必红探针。人工授标与 CAPA
+                  关闭只认登录态身份；AI 评分/排序只作建议；终态不可回写，PII 不落库。取舍：A 方案进程内仓储不耐久，C
+                  方案扩展既有实体无法表达四类不变量，故选 B。风险：DDL/迁移/CI 属 L3，owner
+                  契约未冻结可能导致字段调整，门禁漏同步会造成假绿；缓解为沿用已取得的 L3
+                  授权、只落不变量必需列、缺一入口即不实施。Spec Patch：无；Open 已更新两个 modified
+                  capabilities（9 需求）。不执行生产库操作，不做评测转正或模型效果声明。
+                requirementsEvidence:
+                  contentHash: 0af723b63ed5722cde16867b1a67f08294b2587a4c996ac5ada6e69f1db6fe8a
+                  ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+                sourceEvidence:
+                  contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+                  ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - sequence: 7
+        value:
+          designDoc: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+      - sequence: 8
+        value:
+          contentHash: b7da73901cc3ac2831d8df7472667941ab8d503f39f587eb1b1db32a7c739dba
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+      - sequence: 5
+        value:
+          handoffContext: openspec/changes/procuraai-durable-business-aggregates-rebaseline/.comet/handoff/design-context.json
+          handoffHash: 0538f52cf436a2efae3eb3cbbbdf5d2bad2a8000b5b46dc535883e8f1470754e
+          proposal: 候选方案 B（基于 origin/dev 新基线重放）：新增独立 Maven 模块 bone-procurement-business，承载
+            Bid/Quotation/Award/CAPA 四类聚合、应用服务与 SDK 仓储适配器；新增 4 张 t_proc_*
+            表、增量迁移脚本、数据库规范同步，并按 A10.17 同步 CI/脚本/一键脚本三入口与注入必红探针。人工授标与 CAPA
+            关闭只认登录态身份；AI 评分/排序只作建议；终态不可回写，PII 不落库。取舍：A 方案进程内仓储不耐久，C
+            方案扩展既有实体无法表达四类不变量，故选 B。风险：DDL/迁移/CI 属 L3，owner
+            契约未冻结可能导致字段调整，门禁漏同步会造成假绿；缓解为沿用已取得的 L3 授权、只落不变量必需列、缺一入口即不实施。Spec
+            Patch：无；Open 已更新两个 modified capabilities（9
+            需求）。不执行生产库操作，不做评测转正或模型效果声明。
+          requirementsEvidence:
+            contentHash: 0af723b63ed5722cde16867b1a67f08294b2587a4c996ac5ada6e69f1db6fe8a
+            ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+          sourceEvidence:
+            contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+            ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - sequence: 1
+        value:
+          event: open-complete
+      - sequence: 3
+        value:
+          choice: approved
+          proposal:
+            input:
+              change: procuraai-durable-business-aggregates-rebaseline
+              changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+              workspaceBaseline:
+                ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+            outputs:
+              full.open:
+                event: open-complete
+              full.open.evidence:
+                contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+                ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - sequence: 2
+        value:
+          contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+          ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+      - sequence: 4
+        value:
+          contentHash: 05af21ac448a704261f4a5623c23bd904205969df2b8b330273fcd19f8e95987
+      - sequence: 11
+        value:
+          designEvidence:
+            contentHash: b7da73901cc3ac2831d8df7472667941ab8d503f39f587eb1b1db32a7c739dba
+            ref: openspec/changes/procuraai-durable-business-aggregates-rebaseline/design.md
+          plan: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+          planEvidence:
+            contentHash: 841d15305e267a1ebac63b2299826ef4e860acc7fb852f3eff6bfc439074457e
+            ref: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+          taskRevision: 419956b681018ecdf62feb4711fcb77754fcfae59db26fe7eda0aede76593444
+      - sequence: 12
+        value:
+          contentHash: 841d15305e267a1ebac63b2299826ef4e860acc7fb852f3eff6bfc439074457e
+          ref: docs/superpowers/plans/procuraai-durable-business-aggregates-rebaseline.md
+      - sequence: 13
+        value:
+          event: build-complete
+      - sequence: 14
+        value:
+          argv:
+            - /Users/renhui.trh/.m2/wrapper/dists/apache-maven-3.6.3-bin/1iopthnavndlasol9gbrbg6bf2/apache-maven-3.6.3/bin/mvn
+            - -o
+            - -f
+            - bone-apps/bone-procurement/pom.xml
+            - test
+          changedDuringExecution: []
+          checkEpoch: 2
+          contentHash: df20ea572571ee32f8836994ecb1eaa95f648591c84357892c1d60ef064897a7
+          cwd: .
+          environment: cd88c3c2b128b40632dc2f1a74fb9eb660f2e4683c9989f693e90238355d4014
+          exitCode: 0
+          inputAfter: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+          inputBefore: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+          manifestHash: 0b2774506aeca1df2da6dd96d6ded58c0eae59e34d0be0f260f629b0940d07b1
+          manifestRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/28fa7ec3-b7c2-4c9f-829b-e0f2e5542d3b.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/38af0654-cc86-4c1e-ae4a-dec1ad970372.log
+          reusable: false
+          reused: false
+          scope: build
+          tier: full
+          timeoutMs: 900000
+      - sequence: 15
+        value:
+          contentHash: df20ea572571ee32f8836994ecb1eaa95f648591c84357892c1d60ef064897a7
+          ref: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/38af0654-cc86-4c1e-ae4a-dec1ad970372.log
+      - sequence: 17
+        value:
+          contentHash: be0fe63a4e2b1f4d76c8b214801df3ba010a93b6dae00a0cdb30084b55ff523c
+          ref: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+      - sequence: 16
+        value:
+          event: verification-ready
+          verificationReport: docs/superpowers/reports/2026-11-26-procuraai-durable-business-aggregates-rebaseline-verify.md
+      - sequence: 18
+        value:
+          argv:
+            - bash
+            - -c
+            - python3 tools/check_procura_business_aggregates.py && python3
+              tools/check_procura_business_aggregates.py --self-test && python3
+              tools/check_procura_alignment.py && python3
+              tools/check_procura_alignment.py --self-test && python3
+              scripts/check-migration-manifest.py && comet classic openspec --
+              validate procuraai-durable-business-aggregates-rebaseline --strict
+          changedDuringExecution: []
+          checkEpoch: 3
+          contentHash: f0d56c05721375df3d55b707db9a23946ff510edeaf633183ad3017c72e6f7c2
+          cwd: .
+          deliveryInputs: {}
+          environment: db172a2db400fca3df3e6b135c2b34495c4b73586e1c63a22cca9df83251b5ac
+          exitCode: 0
+          inputAfter: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+          inputBefore: 9af201421123d82c679edf2e623ac13fceb504077b9eadf936ad8edbf7cb0176
+          manifestHash: 0b2774506aeca1df2da6dd96d6ded58c0eae59e34d0be0f260f629b0940d07b1
+          manifestRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/9cee6b5d-e86e-46ac-86ac-164f40bb55e3.manifest
+          receiptRef: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/8e9ee165-60a9-4eaf-9cb1-14c20fdd33a7.log
+          reusable: false
+          reused: false
+          scope: verify
+          tier: full
+          timeoutMs: 900000
+      - sequence: 19
+        value:
+          contentHash: f0d56c05721375df3d55b707db9a23946ff510edeaf633183ad3017c72e6f7c2
+          ref: .comet/runtime/classic-sdk-checks/3e18f39830fe1ebf1fa820cf48c105df600b91c03ab645fb8f932566e270245d/8e9ee165-60a9-4eaf-9cb1-14c20fdd33a7.log
+      - sequence: 21
+        value:
+          choice: push
+          proposal:
+            input:
+              change: procuraai-durable-business-aggregates-rebaseline
+              changeDir: openspec/changes/procuraai-durable-business-aggregates-rebaseline
+              workspaceBaseline:
+                ref: 6b28bdbf-a7f1-4d0b-ad07-63f541f1ad70
+            outputs:
+              full.archive.prepare:
+                prBaseBranch: dev
+                remote: origin
+                summary: procuraAI 持久业务聚合补齐（origin/dev 新基线重放）：新增 bone-procurement-business 四聚合与
+                  SDK 持久化，四表 DDL/迁移/规范同步，三入口门禁与注入探针接入；采购 reactor 与 33 例模块测试、业务聚合
+                  15 项负向探针、A10 160/160、OpenSpec strict 全部通过，交付 push 到
+                  origin/dev。
+                targetBranch: dev
+      - sequence: 20
+        value:
+          prBaseBranch: dev
+          remote: origin
+          summary: procuraAI 持久业务聚合补齐（origin/dev 新基线重放）：新增 bone-procurement-business 四聚合与
+            SDK 持久化，四表 DDL/迁移/规范同步，三入口门禁与注入探针接入；采购 reactor 与 33 例模块测试、业务聚合 15
+            项负向探针、A10 160/160、OpenSpec strict 全部通过，交付 push 到 origin/dev。
+          targetBranch: dev
+      - sequence: 22
+        value:
+          baseCommit: d1742235a8f81f93dff343ce685a00363f0a7fe0
+          deliveryAction: push
+          prBaseBranch: dev
+          remote: origin
+          remoteIdentity: 89d0b3e237b940fdfadda68c1caf8025fdf8340162c1d76960f6e3e67397c1b9
+          targetBranch: dev
+          verifiedBranch: dev
+      - sequence: 23
+        value:
+          archiveDirectory: openspec/changes/archive/2026-11-26-procuraai-durable-business-aggregates-rebaseline
+    nodes:
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 1
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: 3
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 0
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 0
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 5
+        left: 6
+        right: 7
+        height: 2
+      - key: full.open.confirm
+        value: 1
+        left: 8
+        right: 4
+        height: 3
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 7
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 6
+        left: 10
+        right: 11
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 12
+        right: 7
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 13
+        right: 4
+        height: 4
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 16
+        height: 2
+      - key: full.design.handoff
+        value: 5
+        left: 11
+        right: 7
+        height: 2
+      - key: full.design.document
+        value: 6
+        left: 17
+        right: 18
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 19
+        right: 4
+        height: 4
+      - key: full.build.plan
+        value: 10
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 4
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 11
+        left: 21
+        right: 22
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 23
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 4
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 24
+        right: 25
+        height: 4
+      - key: full.build.execute
+        value: 12
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 9
+        left: 15
+        right: 27
+        height: 2
+      - key: full.build.plan.evidence
+        value: 11
+        left: null
+        right: 22
+        height: 2
+      - key: full.build.plan
+        value: 10
+        left: 28
+        right: 29
+        height: 3
+      - key: full.design.document
+        value: 6
+        left: 30
+        right: 25
+        height: 4
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 8
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 14
+        left: 32
+        right: 33
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 34
+        right: 27
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 35
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 25
+        height: 5
+      - key: full.open.evidence
+        value: 2
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 16
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: null
+        right: 39
+        height: 2
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: 40
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 41
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 42
+        height: 5
+      - key: full.open.revalidate
+        value: 3
+        left: 38
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 18
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 15
+        left: 45
+        right: 39
+        height: 2
+      - key: full.verify.check
+        value: 17
+        left: 44
+        right: 46
+        height: 3
+      - key: full.open.confirm
+        value: 1
+        left: 18
+        right: 47
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 36
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 13
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 20
+        left: 50
+        right: 51
+        height: 2
+      - key: full.build.confirm
+        value: 9
+        left: 33
+        right: 27
+        height: 2
+      - key: full.build.check.evidence
+        value: 14
+        left: 52
+        right: 53
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 54
+        right: 29
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 55
+        right: 48
+        height: 5
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: 57
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 58
+        right: 51
+        height: 3
+      - key: full.build.plan
+        value: 10
+        left: 53
+        right: 29
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 59
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 61
+        right: 48
+        height: 5
+      - key: full.archive.confirm
+        value: 19
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 21
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 22
+        left: 63
+        right: 64
+        height: 2
+      - key: full.archive.prepare
+        value: 20
+        left: 65
+        right: 51
+        height: 3
+      - key: full.build.check.evidence
+        value: 14
+        left: 66
+        right: 60
+        height: 4
+      - key: full.design.document
+        value: 6
+        left: 67
+        right: 48
+        height: 5
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 70
+        height: 2
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 72
+        right: 73
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 75
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 76
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 71
+        right: 77
+        height: 4
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: 79
+        right: 80
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 81
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 82
+        right: 77
+        height: 4
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 69
+        right: 84
+        height: 2
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: 80
+        height: 2
+      - key: full.build.plan
+        value: 33
+        left: 85
+        right: 86
+        height: 3
+      - key: full.design.document
+        value: 26
+        left: 87
+        right: 77
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 89
+        right: 90
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 91
+        right: 84
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 92
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 77
+        height: 5
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: 96
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: 97
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 98
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 99
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: 95
+        right: null
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 102
+        right: 96
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 101
+        right: 103
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 74
+        right: 104
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 93
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.prepare
+        value: 43
+        left: 107
+        right: 108
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 90
+        right: 84
+        height: 2
+      - key: full.build.check.evidence
+        value: 37
+        left: 109
+        right: 110
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 111
+        right: 86
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 112
+        right: 105
+        height: 5
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: 114
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 115
+        right: 108
+        height: 3
+      - key: full.build.plan
+        value: 33
+        left: 110
+        right: 86
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 116
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 118
+        right: 105
+        height: 5
+      - key: full.archive.confirm
+        value: 42
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.preflight
+        value: 44
+        left: null
+        right: null
+        height: 1
+      - key: full.archive.execute
+        value: 45
+        left: 120
+        right: 121
+        height: 2
+      - key: full.archive.prepare
+        value: 43
+        left: 122
+        right: 108
+        height: 3
+      - key: full.build.check.evidence
+        value: 37
+        left: 123
+        right: 117
+        height: 4
+      - key: full.design.document
+        value: 26
+        left: 124
+        right: 105
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 127
+        height: 2
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: 129
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 126
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: 132
+        right: 133
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: 134
+        right: 130
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 136
+        right: 137
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: 138
+        right: 133
+        height: 3
+      - key: full.open.confirm
+        value: 30
+        left: 139
+        right: 130
+        height: 4
+      - key: full.open.evidence
+        value: 31
+        left: null
+        right: null
+        height: 1
+      - key: full.open
+        value: 29
+        left: null
+        right: 141
+        height: 2
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 145
+        height: 2
+      - key: full.open
+        value: 29
+        left: 143
+        right: 146
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 149
+        right: 150
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 148
+        right: 151
+        height: 3
+      - key: full.open
+        value: 29
+        left: 152
+        right: 146
+        height: 4
+      - key: full.archive.prepare
+        value: 43
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check
+        value: 36
+        left: 154
+        right: 155
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: 158
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: 157
+        right: 159
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: 156
+        right: 160
+        height: 4
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 144
+        right: 162
+        height: 2
+      - key: full.verify.check.evidence
+        value: 41
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.report.evidence
+        value: 38
+        left: 164
+        right: 165
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 163
+        right: 166
+        height: 3
+      - key: full.open
+        value: 29
+        left: 151
+        right: 167
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 161
+        right: 168
+        height: 5
+      - key: full.open
+        value: 29
+        left: null
+        right: null
+        height: 1
+      - key: full.design.confirm
+        value: 25
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.document
+        value: 26
+        left: 171
+        right: 172
+        height: 2
+      - key: full.open.confirm
+        value: 30
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 175
+        height: 2
+      - key: full.open
+        value: 29
+        left: 173
+        right: 176
+        height: 3
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: null
+        right: null
+        height: 1
+      - key: full.build.confirm
+        value: 24
+        left: 178
+        right: 179
+        height: 2
+      - key: full.design.document
+        value: 26
+        left: null
+        right: null
+        height: 1
+      - key: full.design.handoff
+        value: 28
+        left: null
+        right: null
+        height: 1
+      - key: full.design.evidence
+        value: 27
+        left: 181
+        right: 182
+        height: 2
+      - key: full.design.confirm
+        value: 25
+        left: 180
+        right: 183
+        height: 3
+      - key: full.open
+        value: 29
+        left: 184
+        right: 176
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: 186
+        right: null
+        height: 2
+      - key: full.build.execute
+        value: 35
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan.evidence
+        value: 34
+        left: null
+        right: null
+        height: 1
+      - key: full.build.plan
+        value: 33
+        left: 188
+        right: 189
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 187
+        right: 190
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 176
+        height: 3
+      - key: full.design.confirm
+        value: 25
+        left: 191
+        right: 192
+        height: 4
+      - key: full.build.check
+        value: 36
+        left: null
+        right: null
+        height: 1
+      - key: full.build.configure
+        value: 23
+        left: null
+        right: null
+        height: 1
+      - key: full.build.check.evidence
+        value: 37
+        left: 194
+        right: 195
+        height: 2
+      - key: full.build.confirm
+        value: 24
+        left: 196
+        right: 190
+        height: 3
+      - key: full.verify.run
+        value: 39
+        left: null
+        right: null
+        height: 1
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: 198
+        height: 2
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 199
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 200
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 201
+        height: 5
+      - key: full.open.revalidate
+        value: 32
+        left: null
+        right: null
+        height: 1
+      - key: full.open.evidence
+        value: 31
+        left: 174
+        right: 203
+        height: 2
+      - key: full.verify.report.evidence
+        value: 38
+        left: null
+        right: null
+        height: 1
+      - key: full.verify.run
+        value: 39
+        left: 205
+        right: null
+        height: 2
+      - key: full.verify.check
+        value: 40
+        left: 204
+        right: 206
+        height: 3
+      - key: full.open
+        value: 29
+        left: 183
+        right: 207
+        height: 4
+      - key: full.design.confirm
+        value: 25
+        left: 197
+        right: 208
+        height: 5
+    maps:
+      - null
+      - 2
+      - 5
+      - 9
+      - 14
+      - 20
+      - 26
+      - 31
+      - 37
+      - 43
+      - 49
+      - 56
+      - 62
+      - 68
+      - 78
+      - 83
+      - 88
+      - 94
+      - 100
+      - 106
+      - 113
+      - 119
+      - 125
+      - 128
+      - 131
+      - 135
+      - 140
+      - 142
+      - 147
+      - 153
+      - 169
+      - 170
+      - 177
+      - 185
+      - 193
+      - 202
+      - 209
+    bindings:
+      - path:
+          - actions
+          - "0"
+          - input
+          - outputs
+        map: 0
+      - path:
+          - actions
+          - "1"
+          - input
+          - outputs
+        map: 1
+      - path:
+          - actions
+          - "2"
+          - input
+          - outputs
+        map: 2
+      - path:
+          - actions
+          - "3"
+          - input
+          - outputs
+        map: 3
+      - path:
+          - actions
+          - "4"
+          - input
+          - outputs
+        map: 4
+      - path:
+          - actions
+          - "5"
+          - input
+          - outputs
+        map: 5
+      - path:
+          - actions
+          - "6"
+          - input
+          - outputs
+        map: 6
+      - path:
+          - actions
+          - "7"
+          - input
+          - outputs
+        map: 7
+      - path:
+          - actions
+          - "8"
+          - input
+          - outputs
+        map: 8
+      - path:
+          - actions
+          - "9"
+          - input
+          - outputs
+        map: 9
+      - path:
+          - actions
+          - "10"
+          - input
+          - outputs
+        map: 10
+      - path:
+          - actions
+          - "11"
+          - input
+          - outputs
+        map: 11
+      - path:
+          - actions
+          - "12"
+          - input
+          - outputs
+        map: 12
+      - path:
+          - actions
+          - "13"
+          - input
+          - outputs
+        map: 13
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:1
+          - results
+        map: 0
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:11
+          - results
+        map: 14
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:13
+          - results
+        map: 15
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:14
+          - results
+        map: 16
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:16
+          - results
+        map: 17
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:18
+          - results
+        map: 18
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:20
+          - results
+        map: 19
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:22
+          - results
+        map: 20
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:23
+          - results
+        map: 21
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:24
+          - results
+        map: 22
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:4
+          - results
+        map: 23
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:5
+          - results
+        map: 24
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:7
+          - results
+        map: 25
+      - path:
+          - actionContexts
+          - procuraai-durable-business-aggregates-rebaseline:9
+          - results
+        map: 26
+      - path:
+          - outputs
+        map: 22
+      - path:
+          - waits
+          - "0"
+          - results
+        map: 27
+      - path:
+          - waits
+          - "1"
+          - results
+        map: 28
+      - path:
+          - waits
+          - "2"
+          - results
+        map: 29
+      - path:
+          - waits
+          - "3"
+          - results
+        map: 30
+      - path:
+          - evidenceWaits
+          - "0"
+          - results
+        map: 31
+      - path:
+          - evidenceWaits
+          - "1"
+          - results
+        map: 32
+      - path:
+          - evidenceWaits
+          - "2"
+          - results
+        map: 33
+      - path:
+          - evidenceWaits
+          - "3"
+          - results
+        map: 34
+      - path:
+          - evidenceWaits
+          - "4"
+          - results
+        map: 35
+      - path:
+          - evidenceWaits
+          - "5"
+          - results
+        map: 36
+  storageHash: 2270fd0539a2866c9afcf27129a7f3934ee77c56dc6d0924ab1f96d61da7fe65
+check_epoch: 6

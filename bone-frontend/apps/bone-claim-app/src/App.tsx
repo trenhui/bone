@@ -5,6 +5,7 @@ import { Auth } from '@bone/ui';
 import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CommandPalette } from './components/CommandPalette';
+import { GlobalCaseFinder } from './components/GlobalCaseFinder';
 import { PERMISSIONS } from './constants/permissions';
 import { CLAIM_MENU_BASENAME, STANDALONE_PATHS, isStandalonePath } from './workbench/sclaimRoutes';
 import { Case360Page } from './pages/Case360Page';
@@ -24,12 +25,14 @@ import './App.css';
  *   这条导航**不是产品导航**，不承载权限与可见性，故显式标注「独立调试」，
  *   且数据源同为 {@link CLAIM_ROUTES} —— 路由与名称仍然只有一份真源。
  */
-/** hidden 路由不是"无需权限"，而是"不进导航但仍需授权"：对齐后端 @PreAuthorize。 */
+/** 不进导航的 hidden 路由仍需授权；已进入菜单的读码页也保留守卫，防止绕过菜单直达时越权。 */
 const HIDDEN_ROUTE_REQUIRED: Record<string, string> = {
   '/ai-governance': PERMISSIONS.CLAIMS_READ,
   // 运营看板消费 GET /api/v1/claims/analytics/summary，后端 @PreAuthorize('claim:claims:read')。
   '/analytics': PERMISSIONS.CLAIMS_READ,
   '/blind-labels': PERMISSIONS.INSPECTION_WRITE,
+  // 案件签收：菜单挂 claim:claims:read；直输 /sclaim/claim/sign 绕过菜单时仍 fail-closed。
+  '/sign': PERMISSIONS.CLAIMS_READ,
 };
 
 function RouteDenied(): JSX.Element {
@@ -89,8 +92,11 @@ function ClaimRoutes(): JSX.Element {
 function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  // 按完整路径段匹配：startsWith('/case') 会把 hidden 的 '/case-query' 高亮成案件 360。
   const activePath =
-    CLAIM_ROUTES.map((r) => r.path).find((k) => location.pathname.startsWith(k)) ?? CLAIM_DEFAULT_PATH;
+    CLAIM_ROUTES.map((r) => r.path).find(
+      (k) => location.pathname === k || location.pathname.startsWith(`${k}/`),
+    ) ?? CLAIM_DEFAULT_PATH;
   // hidden 路由不占菜单项：/plan（保单配置下钻页）高亮归到其入口「保单管理」，
   // 否则菜单无项可高亮、用户会迷失当前位置。
   const selectedKey = activePath === '/plan' ? '/policy' : activePath;
@@ -163,6 +169,8 @@ export const App: React.FC<AppProps> = ({ embedded = false }) => {
       <BrowserRouter basename={CLAIM_MENU_BASENAME} future={{ v7_relativeSplatPath: true }}>
         {/* 全局命令面板（⌘/Ctrl+K）只在根布局挂一次；必须在 Router 内使用 useNavigate。 */}
         <CommandPalette />
+        {/* 案件速查在所有理赔菜单常驻：先定位案件，再进入具体工作台。 */}
+        <GlobalCaseFinder />
         <ErrorBoundary>
           {embedded ? (
             <ClaimRoutes />

@@ -70,7 +70,12 @@ public class DomainEventOutbox extends TenantAbstractEntity<Long> {
 
   public static DomainEventOutbox of(
       Long tenantId, String aggregate, Long aggregateId, String eventType, String payload) {
-    return new DomainEventOutbox(tenantId, aggregate, aggregateId, eventType, payload);
+    DomainEventOutbox outbox =
+        new DomainEventOutbox(tenantId, aggregate, aggregateId, eventType, payload);
+    // 主键在自身工厂内回填（E-8「自己设置自己」例外）：外层 application/adapter 不得篡改聚合身份，
+    // 但发件箱记录是本类的实例、由自身 factory 生成身份属正常用法（ArchUnit 规则同款豁免）。
+    outbox.setId(com.bone.core.util.DistributedIdGenerator.generateLongId());
+    return outbox;
   }
 
   /** 派发成功：刷为 SENT。 */

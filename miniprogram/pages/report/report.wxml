@@ -1,0 +1,115 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">SYNAP CLAIM</text>
+    <text class="title">理赔报案</text>
+    <text class="subtitle">带 * 为必填，提交后生成赔案号</text>
+  </view>
+
+  <view class="session-card" wx:if="{{accountName !== ''}}">
+    <text class="session-text">当前账号：{{accountName}}（{{tenantName}}）</text>
+    <text class="session-action" bindtap="handleLogout">退出</text>
+  </view>
+
+  <view class="form-card">
+    <view class="error-banner" wx:if="{{formError !== ''}}">
+      <text class="error-title">请先修正以下问题</text>
+      <text class="error-message">{{formError}}</text>
+    </view>
+
+    <view class="section-title">一、保单与出险信息</view>
+
+    <view class="field-card {{fieldErrors.policyNo !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">平台保单号</text>
+      <input class="field-input" placeholder="与保司保单号至少填一个" value="{{policyNo}}" data-field="policyNo" bindinput="handleInput" maxlength="64" />
+      <text class="field-error" wx:if="{{fieldErrors.policyNo !== ''}}">{{fieldErrors.policyNo}}</text>
+    </view>
+
+    <view class="field-card {{fieldErrors.insurerPolicyNo !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">保司保单号</text>
+      <input class="field-input" placeholder="仅拿得到保司号时填写" value="{{insurerPolicyNo}}" data-field="insurerPolicyNo" bindinput="handleInput" maxlength="64" />
+      <text class="field-error" wx:if="{{fieldErrors.insurerPolicyNo !== ''}}">{{fieldErrors.insurerPolicyNo}}</text>
+    </view>
+
+    <view class="field-card {{fieldErrors.planId !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">计划ID <text class="required">*</text></text>
+      <input class="field-input" type="number" placeholder="请输入计划ID" value="{{planId}}" data-field="planId" bindinput="handleInput" />
+      <text class="field-error" wx:if="{{fieldErrors.planId !== ''}}">{{fieldErrors.planId}}</text>
+    </view>
+
+    <view class="field-card {{fieldErrors.insuredIdHash !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">被保人标识 <text class="required">*</text></text>
+      <input class="field-input" placeholder="假名化ID" value="{{insuredIdHash}}" data-field="insuredIdHash" bindinput="handleInput" maxlength="128" />
+      <text class="field-error" wx:if="{{fieldErrors.insuredIdHash !== ''}}">{{fieldErrors.insuredIdHash}}</text>
+    </view>
+
+    <view class="field-card {{fieldErrors.outInsureTime !== '' ? 'field-card-error' : ''}}">
+      <text class="field-label">出险日期 <text class="required">*</text></text>
+      <picker mode="date" value="{{outInsureTime}}" end="{{today}}" bindchange="handleDateChange">
+        <view class="picker-view {{outInsureTime === '' ? 'picker-placeholder' : ''}}">{{outInsureTime === '' ? '请选择出险日期' : outInsureTime}}</view>
+      </picker>
+      <text class="field-error" wx:if="{{fieldErrors.outInsureTime !== ''}}">{{fieldErrors.outInsureTime}}</text>
+    </view>
+
+    <view class="field-card">
+      <text class="field-label">同意记录号</text>
+      <input class="field-input" placeholder="可选，PIPL 单独同意流水号" value="{{consentRecordId}}" data-field="consentRecordId" bindinput="handleInput" maxlength="128" />
+    </view>
+
+    <view class="section-title">二、费用明细（至少一项）</view>
+    <view class="error-banner" wx:if="{{itemsError !== ''}}">
+      <text class="error-message">{{itemsError}}</text>
+    </view>
+
+    <view class="item-card" wx:for="{{items}}" wx:key="key">
+      <view class="item-header">
+        <text class="item-index">明细 {{index + 1}}</text>
+        <text class="item-remove" data-index="{{index}}" bindtap="handleRemoveItem" wx:if="{{items.length > 1}}">删除</text>
+      </view>
+
+      <view class="item-field {{itemsErrors[index].itemName !== '' ? 'field-card-error' : ''}}">
+        <text class="field-label">项目名称 <text class="required">*</text></text>
+        <input class="field-input" placeholder="如：手术费" value="{{item.itemName}}" data-index="{{index}}" data-field="itemName" bindinput="handleItemInput" maxlength="80" />
+        <text class="field-error" wx:if="{{itemsErrors[index].itemName !== ''}}">{{itemsErrors[index].itemName}}</text>
+      </view>
+
+      <view class="item-row">
+        <view class="item-field item-col">
+          <text class="field-label">费用类别</text>
+          <picker range="{{categoryLabels}}" value="{{item.categoryIndex}}" data-index="{{index}}" bindchange="handleCategoryChange">
+            <view class="picker-view">{{categoryLabels[item.categoryIndex]}}</view>
+          </picker>
+        </view>
+        <view class="item-field item-col {{itemsErrors[index].amount !== '' ? 'field-card-error' : ''}}">
+          <text class="field-label">金额（元）<text class="required">*</text></text>
+          <input class="field-input" type="digit" placeholder="0.00" value="{{item.amount}}" data-index="{{index}}" data-field="amount" bindinput="handleItemInput" />
+          <text class="field-error" wx:if="{{itemsErrors[index].amount !== ''}}">{{itemsErrors[index].amount}}</text>
+        </view>
+      </view>
+
+      <view class="item-row">
+        <view class="item-field item-col">
+          <text class="field-label">数量</text>
+          <input class="field-input" type="digit" placeholder="选填" value="{{item.quantity}}" data-index="{{index}}" data-field="quantity" bindinput="handleItemInput" />
+        </view>
+        <view class="item-field item-col">
+          <text class="field-label">单价</text>
+          <input class="field-input" type="digit" placeholder="选填" value="{{item.unitPrice}}" data-index="{{index}}" data-field="unitPrice" bindinput="handleItemInput" />
+        </view>
+      </view>
+
+      <view class="item-field">
+        <text class="field-label">医保编码 / 费用编码</text>
+        <input class="field-input" placeholder="选填" value="{{item.itemCode}}" data-index="{{index}}" data-field="itemCode" bindinput="handleItemInput" maxlength="64" />
+      </view>
+    </view>
+
+    <button class="add-item-button" bindtap="handleAddItem" disabled="{{submitting}}">+ 添加费用明细</button>
+
+    <view class="sum-card">
+      <text class="sum-label">申请金额合计</text>
+      <text class="sum-value">¥{{totalAmount}}</text>
+    </view>
+
+    <button class="submit-button" bindtap="handleSubmit" loading="{{submitting}}" disabled="{{submitting}}">提交报案</button>
+  </view>
+</view>
