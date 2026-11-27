@@ -5298,8 +5298,8 @@
   }
  ],
  "summary": {
-  "endpoints": 618,
-  "covered": 242,
-  "uncovered": 376
+  "endpoints": 640,
+  "covered": 254,
+  "uncovered": 386
  }
 }
