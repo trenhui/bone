@@ -1677,6 +1677,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "claim-mrm-governance-e2e.py",
     "e2e_synap_claim.py",
     "expense-purchase-approval-integration-e2e.py",
     "two-scenario-full-chain-e2e.py",
@@ -1693,6 +1694,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "claim-mrm-governance-e2e.py",
     "e2e_synap_claim.py",
     "expense-purchase-approval-integration-e2e.py",
     "two-scenario-full-chain-e2e.py",
@@ -1734,6 +1736,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "claim-mrm-governance-e2e.py",
     "e2e_synap_claim.py",
     "expense-purchase-approval-integration-e2e.py",
     "two-scenario-full-chain-e2e.py",
@@ -1800,6 +1803,7 @@
    "cases": [
     "chains.py",
     "claim-full-chain-e2e.mjs",
+    "claim-mrm-governance-e2e.py",
     "two-scenario-full-chain-e2e.py",
     "workflow-org-routing-e2e.py"
    ]
@@ -4714,6 +4718,24 @@
   },
   {
    "http": "GET",
+   "path": "/api/v1/claim-ops/mrm/governance",
+   "controller": "MrmGovernanceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/MrmGovernanceController.java",
+   "cases": [
+    "claim-mrm-governance-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
+   "path": "/api/v1/claim-ops/mrm/bias-monitoring",
+   "controller": "MrmGovernanceController",
+   "file": "bone-apps/synap-claim/synap-claim-app/src/main/java/com/bone/claim/adapter/web/controller/MrmGovernanceController.java",
+   "cases": [
+    "claim-mrm-governance-e2e.py"
+   ]
+  },
+  {
+   "http": "GET",
    "path": "/api/v1/procurement/ai-readiness",
    "controller": "AiReadinessController",
    "file": "bone-apps/bone-procurement/bone-procurement-app/src/main/java/com/bone/procurement/readiness/AiReadinessController.java",
@@ -5309,8 +5331,8 @@
   }
  ],
  "summary": {
-  "endpoints": 641,
-  "covered": 256,
+  "endpoints": 643,
+  "covered": 258,
   "uncovered": 385
  }
 }
