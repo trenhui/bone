@@ -5277,6 +5277,7 @@ CREATE TABLE `t_claim_sign_batch_item` (
   `out_insure_time` DATETIME(3) DEFAULT NULL,
   `claim_type` VARCHAR(32) DEFAULT NULL,
   `source_channel` VARCHAR(64) DEFAULT NULL,
+  `claim_amount` DECIMAL(12,2) DEFAULT NULL,
   `business_key` VARCHAR(128) DEFAULT NULL,
   `case_status` VARCHAR(32) DEFAULT 'PENDING',
   `created_case_id` BIGINT DEFAULT NULL,

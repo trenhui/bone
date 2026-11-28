@@ -20,6 +20,7 @@ import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.ClaimSignBatchRepository;
 import com.bone.claim.domain.repository.ClaimStakeholderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
+import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -101,6 +102,35 @@ class ClaimSignCasePipelineTest {
     assertThat(stakeholderCaptor.getValue().getPersonIdHash()).isEqualTo("110101199001011234");
     verify(batchRepository).linkCaseForItem(anyLong(), anyLong(), anyLong(), any());
     verify(publisher).publishFrom(caseCaptor.getValue());
+  }
+
+  @Test
+  @DisplayName("赔案金额落到占位费用与案件总额，供任务分配和理算使用")
+  void claimAmountFlowsToCase() {
+    SignBatchItem withAmount =
+        SignBatchItem.withCaseElements(
+            10L,
+            77L,
+            "CL-AMOUNT",
+            "pk-tpa-sign-77-CL-AMOUNT",
+            "P-2026-001",
+            0L,
+            "张三",
+            "110101199001011234",
+            Instant.parse("2026-01-02T03:04:05Z"),
+            "OUTPATIENT",
+            "TPA_PUSH",
+            BigDecimal.valueOf(888.88));
+    when(caseRepository.findByIdempotencyKey(10L, withAmount.getBusinessKey())).thenReturn(null);
+
+    assertThat(pipeline.create(10L, 77L, withAmount).outcome()).isEqualTo(SignCaseOutcome.NEW);
+
+    ArgumentCaptor<ClaimCase> caseCaptor = ArgumentCaptor.forClass(ClaimCase.class);
+    verify(intakePort).persistIntake(any(), caseCaptor.capture());
+    assertThat(caseCaptor.getValue().getClaimAmount()).isEqualByComparingTo("888.88");
+    assertThat(caseCaptor.getValue().getItems().get(0).getAmount()).isEqualByComparingTo("888.88");
+    assertThat(caseCaptor.getValue().getItems().get(0).getValidAmount())
+        .isEqualByComparingTo("888.88");
   }
 
   @Test

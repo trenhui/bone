@@ -16,6 +16,7 @@ import com.bone.claim.domain.repository.ClaimSignBatchRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -72,7 +73,8 @@ public class ClaimSignApplicationService {
                 element.insuredIdNo(),
                 element.outInsureTime(),
                 element.claimType(),
-                element.sourceChannel()));
+                element.sourceChannel(),
+                amountOf(element.claimAmount(), command.claimAmount())));
       }
     }
     batch.transitionTo(SignStatus.WAIT_FOR_IMAGE, "AUTO_ACCEPT", "SYSTEM");
@@ -313,11 +315,25 @@ public class ClaimSignApplicationService {
   }
 
   public record AutoSignCommand(
-      String businessKey, SignChannel signChannel, List<CaseElement> caseElements) {
+      String businessKey,
+      SignChannel signChannel,
+      List<CaseElement> caseElements,
+      Long claimAmount) {
 
     public AutoSignCommand(String businessKey, SignChannel signChannel) {
-      this(businessKey, signChannel, List.of());
+      this(businessKey, signChannel, List.of(), null);
     }
+
+    public AutoSignCommand(
+        String businessKey, SignChannel signChannel, List<CaseElement> caseElements) {
+      this(businessKey, signChannel, caseElements, null);
+    }
+  }
+
+  /** 明细金额缺省时回落顶层金额；两者都缺才是真正的未知（案件金额保持 0，转人工判断）。 */
+  private static BigDecimal amountOf(Long itemAmount, Long batchAmount) {
+    Long amount = itemAmount == null ? batchAmount : itemAmount;
+    return amount == null ? null : BigDecimal.valueOf(amount);
   }
 
   public record AutoSignResult(String batchNo, long batchId, boolean created) {}
@@ -331,7 +347,30 @@ public class ClaimSignApplicationService {
       String insuredIdNo,
       Instant outInsureTime,
       String claimType,
-      String sourceChannel) {}
+      String sourceChannel,
+      Long claimAmount) {
+
+    public CaseElement(
+        String claimNo,
+        String policyNo,
+        Long planId,
+        String insuredName,
+        String insuredIdNo,
+        Instant outInsureTime,
+        String claimType,
+        String sourceChannel) {
+      this(
+          claimNo,
+          policyNo,
+          planId,
+          insuredName,
+          insuredIdNo,
+          outInsureTime,
+          claimType,
+          sourceChannel,
+          null);
+    }
+  }
 
   public record CreateOfflineBatchCommand(
       SignChannel signChannel,

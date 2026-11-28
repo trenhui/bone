@@ -56,7 +56,10 @@ public class ClaimSignController {
     AutoSignResult result =
         signService.signOnAcceptance(
             new ClaimSignApplicationService.AutoSignCommand(
-                req.businessKey(), SignChannel.ofCode(req.signChannel()), caseElements(req)));
+                req.businessKey(),
+                SignChannel.ofCode(req.signChannel()),
+                caseElements(req),
+                req.claimAmount()));
     return ApiResponse.success(
         new AutoSignResp(result.batchNo(), result.batchId(), result.created()));
   }
@@ -175,7 +178,8 @@ public class ClaimSignController {
         req.insuredIdNo(),
         req.outInsureTime(),
         req.claimType(),
-        req.sourceChannel());
+        req.sourceChannel(),
+        req.claimAmount());
   }
 
   /** 幂等键长度上限对齐 DB varchar(64)：超长直接拒绝，避免真库写入时静默失败。 */

@@ -3,7 +3,7 @@
   "frozenAt": "2026-10-30",
   "baseline": "bone-init.sql",
   "journalTable": "schema_migration_journal",
-  "executableCount": 154,
+  "executableCount": 156,
   "retired": [],
   "entries": [
     {
@@ -975,6 +975,18 @@
       "file": "0147_claim_sign_tpa_parity.sql",
       "kind": "ddl",
       "summary": "TPA 签收对齐：批次补保司三方与紧急程度，明细补证件类型与影像要素"
+    },
+    {
+      "order": 155,
+      "file": "0148_claim_sign_case_amount.sql",
+      "kind": "ddl",
+      "summary": "签收明细补 DECIMAL(12,2) claim_amount：回执金额透传到案件总额、初审任务快照与理算输入；NULL 表示未回传，不猜测金额。幂等条件 ADD COLUMN + 存储过程 SIGNAL(1644) 终态断言，同步 bone-init.sql。"
+    },
+    {
+      "order": 156,
+      "file": "0149_claim_sign_case_stage_fix.sql",
+      "kind": "mixed",
+      "summary": "纠正 TPA 回填案非法的 AUTO_PRE_EXAMINING+REVIEW 阶段组合：案件与轨迹同批改为 PRE_EXAM；幂等 UPDATE + SIGNAL(1644) 断言，回填脚本同步修正避免重跑回退。"
     }
   ],
   "ordinalConflicts": [

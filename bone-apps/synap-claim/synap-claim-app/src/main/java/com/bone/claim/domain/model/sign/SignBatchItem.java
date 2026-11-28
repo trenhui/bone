@@ -3,6 +3,7 @@ package com.bone.claim.domain.model.sign;
 import com.bone.core.tenant.TenantAbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -61,6 +62,9 @@ public class SignBatchItem extends TenantAbstractEntity<Long> {
   @Column(name = "image_uploader")
   private String imageUploader;
 
+  @Column(name = "claim_amount")
+  private BigDecimal claimAmount;
+
   @Column(name = "out_insure_time")
   private Instant outInsureTime;
 
@@ -106,6 +110,35 @@ public class SignBatchItem extends TenantAbstractEntity<Long> {
       Instant outInsureTime,
       String claimType,
       String sourceChannel) {
+    return withCaseElements(
+        tenantId,
+        batchId,
+        claimNo,
+        businessKey,
+        policyNo,
+        planId,
+        insuredName,
+        insuredIdNo,
+        outInsureTime,
+        claimType,
+        sourceChannel,
+        null);
+  }
+
+  /** 携带建案要素与申请金额：签收确认后按 business_key 幂等创建报案与赔案。 */
+  public static SignBatchItem withCaseElements(
+      long tenantId,
+      long batchId,
+      String claimNo,
+      String businessKey,
+      String policyNo,
+      Long planId,
+      String insuredName,
+      String insuredIdNo,
+      Instant outInsureTime,
+      String claimType,
+      String sourceChannel,
+      BigDecimal claimAmount) {
     SignBatchItem item = new SignBatchItem();
     item.setTenantId(tenantId);
     item.batchId = batchId;
@@ -118,6 +151,7 @@ public class SignBatchItem extends TenantAbstractEntity<Long> {
     item.outInsureTime = outInsureTime;
     item.claimType = claimType;
     item.sourceChannel = sourceChannel;
+    item.claimAmount = claimAmount;
     item.imageReady = false;
     item.caseStatus = CASE_PENDING;
     stampAuditFields(item);

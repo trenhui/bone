@@ -27,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -90,6 +91,31 @@ class ClaimSignApplicationServiceTest {
       assertThat(result.created()).isFalse();
       assertThat(result.batchNo()).isEqualTo("SG001");
       verify(batchRepository, never()).insert(any());
+    }
+
+    @Test
+    @DisplayName("顶层赔案金额回补到明细：自动建案金额不再恒为 0")
+    void batchAmountPassedToItem() {
+      var element =
+          new ClaimSignApplicationService.CaseElement(
+              "CL-3003",
+              "P-3003",
+              0L,
+              "张三",
+              "110101199001011234",
+              Instant.parse("2026-01-02T03:04:05Z"),
+              "OUTPATIENT",
+              "API_PUSH",
+              null);
+      service.signOnAcceptance(
+          new ClaimSignApplicationService.AutoSignCommand(
+              "claim-3003", SignChannel.API_PUSH, List.of(element), 12345L));
+
+      ArgumentCaptor<ClaimSignBatch> captor = ArgumentCaptor.forClass(ClaimSignBatch.class);
+      verify(batchRepository).insert(captor.capture());
+      assertThat(captor.getValue().getItems()).hasSize(1);
+      assertThat(captor.getValue().getItems().get(0).getClaimAmount())
+          .isEqualByComparingTo("12345");
     }
 
     @Test

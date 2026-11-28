@@ -72,6 +72,10 @@ public class ClaimSignCasePipeline {
             item.getOutInsureTime(),
             "",
             item.getSourceChannel());
+    BigDecimal amount =
+        item.getClaimAmount() == null || item.getClaimAmount().signum() <= 0
+            ? BigDecimal.ZERO
+            : item.getClaimAmount();
     ClaimItem placeholder =
         ClaimItem.of(
             DistributedIdGenerator.generateLongId(),
@@ -81,8 +85,13 @@ public class ClaimSignCasePipeline {
             "SIGN-IMPORT",
             ItemCategory.SERVICE,
             BigDecimal.ONE,
-            BigDecimal.ZERO,
-            BigDecimal.ZERO);
+            amount,
+            amount);
+    // 理算只累计明细级 valid_amount（案件级金额不参与计算）。回执金额是可信入参时，
+    // 自动录入同时写入合理费用，否则即使案件金额已透传，A6 仍按 0 元算出零赔付。
+    if (amount.signum() > 0) {
+      placeholder.approveValidAmount(amount);
+    }
     ClaimCase claim =
         ClaimCase.draft(
             claimId,

@@ -28,7 +28,30 @@ public final class ClaimSignRequests {
       String insuredIdNo,
       Instant outInsureTime,
       String claimType,
-      String sourceChannel) {}
+      String sourceChannel,
+      @Schema(description = "赔案金额（可空，回补顶层金额）") Long claimAmount) {
+
+    public SignCaseElementReq(
+        String claimNo,
+        String policyNo,
+        Long planId,
+        String insuredName,
+        String insuredIdNo,
+        Instant outInsureTime,
+        String claimType,
+        String sourceChannel) {
+      this(
+          claimNo,
+          policyNo,
+          planId,
+          insuredName,
+          insuredIdNo,
+          outInsureTime,
+          claimType,
+          sourceChannel,
+          null);
+    }
+  }
 
   /** 线下创建批次。 */
   public record CreateSignBatchReq(

@@ -266,7 +266,7 @@ def main() -> None:
                     case_id, claim_no, plan["report_id"], report_no,
                     f"pk-tpa-sign-{claim_no}"[:64], plan["policy_no"], 0,
                     plan["insured_id_no"], "OUTPATIENT", "AUTO_PRE_EXAMINING", "1:YCBX",
-                    "REVIEW", None, None, plan["out_time"], "TPA_PUSH", "pk_tpa",
+                    "PRE_EXAM", None, None, plan["out_time"], "TPA_PUSH", "pk_tpa",
                     plan["batch_no"], 0, "", 0, "", "", None,
                     1, plan["created_at"], 1, plan["created_at"], 0, 0,
                 ))
@@ -287,7 +287,7 @@ def main() -> None:
                 if plan["case_track_id"] not in backfill_track_ids:
                     cur.execute(case_track_sql, (
                         plan["case_track_id"], case_id, "DRAFT", "AUTO_PRE_EXAMINING",
-                        "REVIEW", "AUTO_SIGN_BACKFILL", "SYSTEM", "", message, 0,
+                        "PRE_EXAM", "AUTO_SIGN_BACKFILL", "SYSTEM", "", message, 0,
                         1, plan["created_at"], 1, plan["created_at"], 0,
                     ))
                     backfill_track_ids.add(plan["case_track_id"])

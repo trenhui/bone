@@ -33,10 +33,15 @@ public class ClaimTaskOpener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void onClaimStatusChanged(ClaimStatusChangedEvent event) {
-    if (event == null || event.toStatus() != ClaimStatus.PENDING_ADJUST) {
+    if (event == null
+        || (event.toStatus() != ClaimStatus.PENDING_ADJUST
+            && event.toStatus() != ClaimStatus.AUTO_PRE_EXAMINING)) {
       return;
     }
     try {
+      // 自动签收链路停在 AUTO_PRE_EXAMINING，不会走到 PENDING_ADJUST；若只监听后者，
+      // 自动初审案件在待办里根本没有任务，只能靠人工补建。两个入口共用 openForClaim 的
+      // 「同案同类型生效任务」幂等，后续转 PENDING_ADJUST 时不会重复建第二条。
       // AFTER_COMMIT 后线程上下文已清空：写路径必须显式声明租户（ADR-0029 失败关闭），
       // 否则 SDK 的 AUTO 租户注入拿不到租户，插入会失败或被拒。
       TenantContextRunner.runAs(
