@@ -13,9 +13,10 @@
   4. 走网关 POST /api/v1/file/files 上传 bone-file，再 POST /api/v1/claims/{id}/evidences
      登记 fileRef + contentHash；按 contentHash 幂等，已有影像不重复登记。
 
-分类纪律：imagePkType=5 在 TPA 是「其他资料」大杂烩，不能当 DocType。逐张按源站
-imageName + 实际内容人工核实后写死在下表；未收录的一律落 OTHER（fail-closed），
-绝不把风景照/动物照冒充医疗票据。源站没有影像的案件登记 NO_SOURCE_IMAGES，不造假。
+分类纪律：不使用「赔案号+文件名」手写映射，统一走 sign_image_classifier.resolve：
+  服务端 DocTypeClassifier 同款“文件名 + 版式信号 + TPA 元数据”融合分类，内容哈希
+  命中的已核实单证按内容指纹归类；证据不足 fail-closed 落 OTHER，绝不把风景照/
+  动物照冒充医疗票据。源站没有影像的案件登记 NO_SOURCE_IMAGES，不造假。
 """
 
 from __future__ import annotations
@@ -32,6 +33,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from sign_image_classifier import extract_image_signals, resolve
+
 ROOT = Path(__file__).resolve().parents[2] / "outputs" / "tpa-claim-crawl"
 ENV = Path(__file__).resolve().parents[2] / ".env"
 TPA = "https://tpa-test.pukangbao.com"
@@ -39,34 +42,6 @@ BONE = "http://127.0.0.1:18888"
 # 网关 18888 转发 multipart 大文件会卡住（实测 2MB/60s 只上传 558KB 后超时），
 # bone-file 8107 直连 0.4s 完成；两者共用同一 JWT 密钥，故上传走直连、业务登记走网关。
 BONE_FILE = "http://127.0.0.1:8107"
-
-# (赔案号, 源站 imageName) -> Bone DocType；逐张按影像内容核实。
-DOC_TYPE_OVERRIDES: dict[tuple[str, str], str] = {
-    # 264203068 四案共用两张收费票据：AAAA 为电子发票（普通发票），BBBB 为广东省医疗收费票据。
-    ("264203068001", "AAAA.png"): "INVOICE",
-    ("264203068001", "BBBB.png"): "INVOICE",
-    ("264203068002", "AAAA.png"): "INVOICE",
-    ("264203068002", "BBBB.png"): "INVOICE",
-    ("264203068003", "AAAA.png"): "INVOICE",
-    ("264203068003", "BBBB.png"): "INVOICE",
-    ("264203068004", "AAAA.png"): "INVOICE",
-    ("264203068004", "BBBB.png"): "INVOICE",
-    # 266400020008：6 张里 3 张是风景/动物照（源站测试数据污染），按 OTHER 原样登记。
-    ("266400020008", "641.BMP"): "OTHER",
-    ("266400020008", "4081c418b456da14b12e3d59d67188d5.jpeg"): "OTHER",
-    ("266400020008", "3fe6db1a8d291be39192f9a06c74ce99.png"): "OTHER",
-    ("266400020008", "1CA9AC0A80B895BFF0524A577696E054.jpg"): "SIGNATURE",
-    ("266400020008", "3-泰瑞人寿保险-理赔申请书.jpg"): "LIST",
-    ("266400020008", "2-河南医疗门诊收费票据.jpg"): "INVOICE",
-    # 以下三案已有 evidence，登记时按 contentHash 自动跳过；映射保留以便重跑/换库。
-    ("266400019001", "1CA9AC0A80B895BFF0524A577696E054.jpg"): "SIGNATURE",
-    ("266400023001", "7-身份证-正面-00.jpg"): "ID_CARD",
-    ("266400023001", "6-病历本.jpg"): "MEDICAL_RECORD",
-    ("266400023001", "3-泰瑞人寿保险-理赔申请书.jpg"): "LIST",
-    ("266400023002", "7-身份证-正面-00.jpg"): "ID_CARD",
-    ("266400023002", "6-病历本.jpg"): "MEDICAL_RECORD",
-    ("266400023002", "3-泰瑞人寿保险-理赔申请书.jpg"): "LIST",
-}
 
 
 class TpaClient:
@@ -279,11 +254,15 @@ def main() -> None:
         for row in rows:
             digest = str(row.get("sha256") or "")
             name = str(row.get("imageName") or "")
-            doc_type = DOC_TYPE_OVERRIDES.get((cid, name), "OTHER")
+            signals = extract_image_signals(ROOT / row["localFile"]) if row.get("downloaded") else None
+            doc_type, why, force_type = resolve(name, digest, row.get("imageType"), signals)
             item = {
                 "imageName": name,
                 "sourceImageId": row.get("sourceImageId"),
                 "docType": doc_type,
+                "classifyReason": why,
+                "forcedDocType": force_type,
+                "imageSignals": signals,
                 "sha256": digest,
                 "downloaded": bool(row.get("downloaded")),
             }
@@ -302,11 +281,23 @@ def main() -> None:
                 # Idempotency-Key 必须是 ASCII（HTTP 头 latin-1），源站 imageName 含中文，
                 # 因此用赔案号 + 内容哈希生成稳定键。
                 idem = f"pk-tpa-sign-img-{cid}-{digest[:16]}"[:64]
+                register_req = {
+                    "fileRef": object_name,
+                    "contentHash": digest,
+                    "verifyValid": "UNKNOWN",
+                    "originalName": name,
+                    "imageType": str(row.get("imageType") or ""),
+                    "imageSignals": signals,
+                }
+                if force_type:
+                    # 内容指纹/表单规则已核实，显式指定；其余交给服务端融合分类。
+                    register_req["docType"] = doc_type
+                else:
+                    register_req["autoClassify"] = True
                 status, body = bone_api(
                     token,
                     f"/api/v1/claims/{case_id}/evidences",
-                    {"fileRef": object_name, "contentHash": digest,
-                     "docType": doc_type, "verifyValid": "UNKNOWN"},
+                    register_req,
                     method="POST", idem=idem,
                 )
                 item.update({
