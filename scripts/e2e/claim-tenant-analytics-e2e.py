@@ -48,6 +48,20 @@ def _payload(body):
     return None
 
 
+def _numeric(value):
+    """claim 全局 Jackson 把 Long 序列化为十进制字符串；计数/租户号两种形态都要认。
+
+    拒绝 bool / None / 非十进制串，避免把坏值放宽成「非负整数」。
+    """
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.lstrip("-").isdigit():
+        return int(value)
+    return None
+
+
 def main():
     section("租户分析端点只读语义与服务端强制隔离")
     note(f"BASE={config.BASE}  USER={config.USER}  —— 纯只读端点，不造数、无残留")
@@ -68,9 +82,10 @@ def main():
 
     # ---- 正向契约 ----
     tid = data.get("tenantId")
+    n_tid = _numeric(tid)
     check(
         "tenantId 由服务端下发且为非负整数",
-        isinstance(tid, int) and not isinstance(tid, bool) and tid >= 0,
+        n_tid is not None and n_tid >= 0,
         f"tenantId={tid!r}",
     )
     check(
@@ -82,16 +97,16 @@ def main():
     )
     groups = data.get("byDecisionResult")
     converged = data.get("converged")
+    n_converged = _numeric(converged)
     check(
         "converged 非负且分组结果是对象",
-        isinstance(converged, int)
-        and converged >= 0
-        and isinstance(groups, dict),
+        n_converged is not None and n_converged >= 0 and isinstance(groups, dict),
         f"converged={converged!r} byDecisionResult={str(groups)[:160]}",
     )
+    n_fallback = _numeric(data.get("fallbackCount"))
     check(
         "FALLBACK 计数非负",
-        isinstance(data.get("fallbackCount"), int) and data["fallbackCount"] >= 0,
+        n_fallback is not None and n_fallback >= 0,
         f"fallbackCount={data.get('fallbackCount')!r}",
     )
     rate = data.get("shadowAutomationRate")
@@ -147,13 +162,14 @@ def main():
     # ---- 口径对照：租户是全集的子集 ----
     st7, body7 = http.call("GET", f"{FULL_PATH}?from={frm}&to={to}")
     full = _payload(body7)
-    full_converged = (full or {}).get("converged")
+    full_converged = _numeric((full or {}).get("converged"))
     check(
         "当前租户已收敛数不超过全量口径",
         st7 == 200
         and full is not None
-        and isinstance(full_converged, int)
-        and int(converged) <= full_converged,
+        and full_converged is not None
+        and n_converged is not None
+        and n_converged <= full_converged,
         f"tenantConverged={converged!r} fullConverged={full_converged!r} status={st7}",
     )
     return 0

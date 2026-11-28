@@ -70,7 +70,7 @@ public class EvidenceController {
       ImageSignalsReq imageSignals) {}
 
   /** 存量材料重新分类请求（docType 为空时按文件名 + 版式信号自动识别）。 */
-  public record ReclassifyReq(List<@Valid Item> items) {
+  public record ReclassifyReq(@NotNull(message = "明细不能为空") List<@Valid Item> items) {
     public record Item(
         @NotNull(message = "材料ID不能为空") Long evidenceId,
         String originalName,

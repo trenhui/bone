@@ -47,6 +47,9 @@ export default function CommandPalette({ menuConfig, onNavigate }: CommandPalett
       const el = e.target as HTMLElement | null;
       const typing = Boolean(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable));
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        // 子应用自带命令面板（如界面设计器）时让位：两个 window keydown 监听同时响应
+        // 会弹出两层 Modal，后者的命令项被前者提示文案盖住而点不到。
+        if (document.body.hasAttribute('data-bone-local-command-palette')) return;
         e.preventDefault();
         setOpen((prev) => !prev);
         return;

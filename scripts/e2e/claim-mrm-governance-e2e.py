@@ -119,10 +119,11 @@ def main():
         f"status={cc.get('status')!r} conclusion={cc.get('conclusion')!r} sampleCount={cc.get('sampleCount')!r}",
     )
 
-    # 只读契约：同参数两次 GET 逐字一致（无隐藏状态写入）
+    # 只读契约：同参数两次 GET 的 data 逐字一致（信封 timestamp 每次请求都会刷新，不纳入比对）
     st2, body2 = http.call("GET", PATH_GOVERNANCE)
-    check("治理查询只读：两次 GET 逐字一致", st2 == 200 and body2 == body,
-          f"status={st2} same={body2 == body}")
+    same_data = st2 == 200 and isinstance(body2, dict) and body2.get("data") == data
+    check("治理查询只读：两次 GET 的 data 逐字一致", same_data,
+          f"status={st2} same={same_data}")
 
     # C2/C3：偏差监测 + 样本不足 fail-closed + 维度边界 + 下限保护
     st3, body3 = http.call("GET", PATH_BIAS + "?dimension=CHANNEL")

@@ -20,6 +20,8 @@ import org.springframework.context.annotation.Import;
       "com.bone.procurement.sourcing.domain.repository",
       "com.bone.procurement.qualification.domain.repository",
       "com.bone.procurement.risk.domain.repository",
+      // 招投标四类聚合的 SDK 仓储位于 business.infrastructure（非 domain.repository）。
+      "com.bone.procurement.business.infrastructure",
       // 合同审查/治理仓储接口位于各模块 infrastructure 包（非 domain.repository）；
       // 其适配器受功能开关控制，开启时必须能被 SDK 注册，否则全能力配置启动即失败。
       "com.bone.procurement.contract.infrastructure",

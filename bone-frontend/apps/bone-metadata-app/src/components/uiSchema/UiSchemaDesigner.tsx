@@ -346,6 +346,12 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   /* 命令面板键盘导航：当前高亮项 ref（用于滚入视口） */
   const cmdActiveRef = useRef<HTMLDivElement | null>(null);
 
+  // 设计器自带 Ctrl+K 命令面板：挂载期间声明所有权，shell 全局面板让位（避免双层 Modal 互相遮挡）。
+  useEffect(() => {
+    document.body.setAttribute('data-bone-local-command-palette', 'designer');
+    return () => { document.body.removeAttribute('data-bone-local-command-palette'); };
+  }, []);
+
   // 命令面板每次打开或筛选变化，键盘游标归零（避免残留旧游标越界）
   useEffect(() => { if (cmdOpen) setCmdActive(0); }, [cmdOpen]);
   useEffect(() => { setCmdActive(0); }, [cmdQuery]);
