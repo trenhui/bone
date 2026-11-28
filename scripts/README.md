@@ -425,7 +425,7 @@ if __name__ == "__main__":
 | `hooks/` | 是（须登记本文件） | 入库版 git hook，由 `setup-hooks.sh` 安装 |
 | `tests/` | 是（`test_*.py`） | 门禁自身单测与契约测试，`check.sh [42]` 全量跑；`bone.py selftest` 亦可 |
 | `migration/` | 是（须登记 manifest） | 顺序与完整性由 `check-migration-manifest.py` 托管 |
-| `claim_sign_backfill/` | 是（须登记本文件） | TPA 签收明细回填入口 `claim_sign_backfill/import_sign_batches.py`、对齐字段回填 `claim_sign_backfill/backfill_tpa_parity_fields.py`、全量抓取 `claim_sign_backfill/fetch_sign_all.py`（真机 Sa-Token 拉签收批次+赔案明细，只读）、影像补齐 `claim_sign_backfill/fetch_sign_images.py`（抓 TPA 影像→bone-file→evidence，按 contentHash 幂等）、自动分类镜像 `claim_sign_backfill/sign_image_classifier.py`、全量补全 `claim_sign_backfill/complete_sign_cases.py`（源站字段+影像+证据重判，可重跑）、自动化缺口验证 `claim_sign_backfill/verify_automation_gaps.py`（金额透传/初审任务/阶段自洽/跨案累计账与资金占额，18 项断言）；数据仍在 `outputs/tpa-claim-crawl/` |
+| `claim_sign_backfill/` | 是（须登记本文件） | TPA 签收明细回填入口 `claim_sign_backfill/import_sign_batches.py`、对齐字段回填 `claim_sign_backfill/backfill_tpa_parity_fields.py`、全量抓取 `claim_sign_backfill/fetch_sign_all.py`（真机 Sa-Token 拉签收批次+赔案明细，只读）、影像补齐 `claim_sign_backfill/fetch_sign_images.py`（抓 TPA 影像→bone-file→evidence，按 contentHash 幂等）、自动分类镜像 `claim_sign_backfill/sign_image_classifier.py`、全量补全 `claim_sign_backfill/complete_sign_cases.py`（源站字段+影像+证据重判，可重跑）、自动化缺口验证 `claim_sign_backfill/verify_automation_gaps.py`（金额透传/初审任务/阶段自洽/跨案累计账与资金占额，18 项断言）、保单/人员配置全量抓取 `claim_sign_backfill/fetch_policy_audit_all.py`（我的审核 4 案 + 团险保单 712 行/690 唯一号 + 7 计划 + 2 保单人员额度，只读、SHA-256 清单）、同步 `claim_sign_backfill/sync_policy_config_to_bone.py`（正规 API 幂等写保单/计划/假名化额度，默认 dry-run）；数据仍在 `outputs/tpa-claim-crawl/` |
 | `seed/uat/build/` | **否** | 生成产物 |
 | `archive/` | **否** | 归档区，见 `archive/README.md` |
 | `tmp/`、`logs/`、`__pycache__/` | **否** | git 忽略 |
