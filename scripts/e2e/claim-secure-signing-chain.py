@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 """案件签收全链路 E2E：线上自动签收 + 线下四态批次签收 + 自动建案结果查询。
 
-为什么需要它
-------------
-`ClaimSignController` 的 8 个端点此前只有手动 curl 联调，没有纳入 E2E 用例登记，
-影响分析门禁据此判定「本次变更涉及但零覆盖」。本脚本按真实用户路径串起闭环：
-外部推送自动签收 → 创建线下批次 → 导入名单 → 影像登记 → 二次确认
-→ 列表 / 详情 / 轨迹回读，并断言自动建案摘要可见。
-
-判据：任一步非 2xx 即判失败并打印响应体（不静默吞错）。
-
+判据：任一步非预期状态即判失败并打印响应体（不静默吞错）。
 用法：
   python3 scripts/e2e/claim-secure-signing-chain.py
+可选：SIGN_E2E_CASE_ID 指定线下名单引用的既有案件 ID。
 """
 import json
-import subprocess
+import os
 import time
+import urllib.error
+import urllib.request
 
-GW = "http://127.0.0.1:18888"
-STAMP = str(int(time.time()))[-8:]
+BASE = "http://127.0.0.1:18888"
+STAMP = str(int(time.time()))[-9:]
+EXISTING_CASE_ID = os.environ.get("SIGN_E2E_CASE_ID", "750000000200000029")
 
 # 端点路径集中声明；影响分析按这里的字面量做「端点 ↔ 用例」映射。
 PATHS = {
@@ -35,40 +31,35 @@ PATHS = {
 }
 
 
-def curl(args, timeout=30):
-    cmd = ["curl", "-s", "--noproxy", "*", "-m", str(timeout)] + args
-    try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
-        return p.stdout
-    except subprocess.TimeoutExpired:
-        return ""
-
-
 def req(token, method, path, body=None, headers=None, expect="2"):
-    args = ["-o", "/tmp/_claim_sign_body.txt", "-w", "%{http_code}"]
+    data = json.dumps(body).encode() if body is not None else None
+    hdr = dict(headers or {})
     if token:
-        args += ["-H", "Authorization: Bearer " + token]
-    for k, v in (headers or {}).items():
-        args += ["-H", k + ": " + v]
-    if body is not None:
-        args += ["-H", "Content-Type: application/json", "-X", method, "-d", json.dumps(body)]
-    else:
-        args += ["-X", method]
-    args.append(GW + path)
-    code = curl(args).strip()
+        hdr["Authorization"] = "Bearer " + token
+    if data is not None:
+        hdr["Content-Type"] = "application/json"
+    request = urllib.request.Request(BASE + path, data=data, headers=hdr, method=method)
     try:
-        raw = open("/tmp/_claim_sign_body.txt", encoding="utf-8", errors="ignore").read()
-    except OSError:
-        raw = ""
-    ok = code.startswith(expect)
+        with urllib.request.urlopen(request, timeout=45) as response:
+            code, raw = response.status, response.read().decode("utf-8", "ignore")
+    except urllib.error.HTTPError as error:
+        code, raw = error.code, error.read().decode("utf-8", "ignore")
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = {"_raw": raw[:400]}
+    ok = str(code).startswith(expect)
     print("  [%s] %s %s %s" % ("OK " if ok else "BAD", code, method, path))
     if not ok:
         print("        " + raw[:400].replace("\n", " "))
         raise AssertionError("%s %s -> %s" % (method, path, code))
-    try:
-        return code, json.loads(raw)
-    except Exception:
-        return code, {"_raw": raw}
+    return code, parsed
+
+
+def id_number(prefix17):
+    weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+    check = "10X98765432"
+    return prefix17 + check[sum(int(c) * w for c, w in zip(prefix17, weights)) % 11]
 
 
 def main():
@@ -76,52 +67,87 @@ def main():
                    {"username": "admin", "password": "123456"})
     token = login["data"]["token"]
 
-    # 线上自动签收：携带建案要素，回执应生成新案件。
+    # 线上自动签收：携带建案要素，回执应生成新案件；同键重放必须跳过。
     idem = "sign-chain-auto-" + STAMP
-    _, auto = req(token, "POST", PATHS["auto_sign"], {
-        "businessKey": idem,
-        "signChannel": "EXTERNAL_PUSH",
+    auto_body = {
+        "businessKey": "SIGN-CHAIN-BIZ-" + STAMP,
+        "signChannel": "API_PUSH",
         "caseElements": [{
             "claimNo": "SIGN-CHAIN-" + STAMP,
             "policyNo": "P-SIGN-CHAIN-" + STAMP,
             "planId": 0,
-            "insuredName": "链路测试",
-            "insuredIdNo": "110101199001099999",
+            "insuredName": "链路测试" + STAMP[-4:],
+            "insuredIdNo": id_number("11010119900101001"),
             "outInsureTime": "2026-01-09T00:00:00Z",
             "claimType": "OUTPATIENT",
             "sourceChannel": "E2E",
         }],
-    }, {"Idempotency-Key": idem})
+    }
+    _, auto = req(token, "POST", PATHS["auto_sign"], auto_body,
+                  {"Idempotency-Key": idem})
+    assert auto["data"]["created"] is True, auto
+    batch_id = str(auto["data"]["batchId"])
 
+    _, replay = req(token, "POST", PATHS["auto_sign"], auto_body,
+                    {"Idempotency-Key": idem})
+    assert replay["data"]["created"] is False, replay
+    assert str(replay["data"]["batchId"]) == batch_id, replay
+
+    _, detail = req(token, "GET", PATHS["detail"].format(batchId=batch_id))
+    assert detail["data"]["signStatus"] == "FINISHED", detail
+    assert detail["data"]["source"] == "ONLINE" and detail["data"]["signType"] == "AUTO", detail
+
+    _, items = req(token, "GET", PATHS["items"].format(batchId=batch_id))
+    assert len(items["data"]) == 1 and items["data"][0]["caseStatus"] == "NEW", items
+    assert items["data"][0]["caseId"], items
+
+    _, tracks = req(token, "GET", PATHS["tracks"].format(batchId=batch_id))
+    actions = [x["actionType"] for x in tracks["data"]]
+    assert "AUTO_SIGN" in actions and "AUTO_CASE_CREATED" in actions, actions
+
+    # 线下四态：创建批次 → 导入名单 → 登记影像 → 二次确认。
     _, created = req(token, "POST", PATHS["create_batch"], {
-        "businessKey": "sign-chain-batch-" + STAMP,
-        "signChannel": "OFFLINE",
-        "source": "TPA",
-        "remark": "E2E 线下签收批次",
+        "businessKey": "sign-chain-offline-" + STAMP,
+        "signChannel": "EXPRESS",
+        "expressCompany": "E2E快递",
+        "expressNo": "EX" + STAMP,
+        "sender": "链路测试",
+        "insuranceCompany": "链路测试保司",
     })
-    batch_id = str(created["data"]["batchId"])
+    offline_id = str(created["data"])
 
-    req(token, "POST", PATHS["participants"].format(batchId=batch_id), {
-        "items": [{"claimNo": "SIGN-CHAIN-ITEM-" + STAMP, "claimId": None}],
-    })
-    req(token, "POST", PATHS["image"].format(batchId=batch_id), {
-        "imageReady": True,
-        "remark": "E2E 影像齐备",
-    })
-    req(token, "POST", PATHS["confirm"].format(batchId=batch_id), {
-        "remark": "E2E 二次确认签收通过",
-    })
+    _, d = req(token, "GET", PATHS["detail"].format(batchId=offline_id))
+    assert d["data"]["signStatus"] == "WAIT_FOR_PARTICIPANT", d
+
+    req(token, "POST", PATHS["participants"].format(batchId=offline_id),
+        {"claimIds": [EXISTING_CASE_ID]})
+    _, d = req(token, "GET", PATHS["detail"].format(batchId=offline_id))
+    assert d["data"]["signStatus"] == "WAIT_FOR_IMAGE", d
+
+    req(token, "POST", PATHS["image"].format(batchId=offline_id))
+    _, d = req(token, "GET", PATHS["detail"].format(batchId=offline_id))
+    assert d["data"]["signStatus"] == "WAIT_FOR_CONFIRMATION", d
+
+    _, confirm = req(token, "POST", PATHS["confirm"].format(batchId=offline_id),
+                     {"remark": "E2E 线下签收二次确认通过，资料齐全"},
+                     {"Idempotency-Key": "sign-chain-confirm-" + STAMP})
+    assert confirm["data"] is not None, confirm
+
+    _, d = req(token, "GET", PATHS["detail"].format(batchId=offline_id))
+    assert d["data"]["signStatus"] == "FINISHED", d
+
+    _, off_tracks = req(token, "GET", PATHS["tracks"].format(batchId=offline_id))
+    off_actions = [x["actionType"] for x in off_tracks["data"]]
+    assert all(a in off_actions for a in
+               ["CREATE", "IMPORT_PARTICIPANTS", "IMAGE_READY", "CONFIRM"]), off_actions
+
+    # 终态重复登记应被状态机拒绝。
+    req(token, "POST", PATHS["image"].format(batchId=offline_id), expect="4")
 
     _, listed = req(token, "GET", PATHS["list"] + "?page=1&size=20")
-    _, detail = req(token, "GET", PATHS["detail"].format(batchId=batch_id))
-    _, items = req(token, "GET", PATHS["items"].format(batchId=batch_id))
-    _, tracks = req(token, "GET", PATHS["tracks"].format(batchId=batch_id))
-    summary = detail.get("data", {})
-    assert "createdCaseCount" in summary, "详情缺少自动建案摘要"
-    assert isinstance(items.get("data"), list), "赔案明细不是数组"
-    assert tracks.get("data"), "轨迹为空"
-    print("E2E_CLAIM_SIGN_CHAIN_OK autoCreated=%s batch=%s items=%d tracks=%d" % (
-        auto.get("data", {}).get("created"), batch_id, len(items["data"]), len(tracks["data"])))
+    assert listed["data"]["total"], listed
+    print("E2E_CLAIM_SIGN_CHAIN_OK autoBatch=%s caseId=%s offlineBatch=%s" % (
+        batch_id, items["data"][0]["caseId"], offline_id))
 
 
 if __name__ == "__main__":
