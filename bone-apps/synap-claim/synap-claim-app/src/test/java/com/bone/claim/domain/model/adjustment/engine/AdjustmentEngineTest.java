@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.claim.domain.model.adjustment.Accumulation;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
@@ -24,6 +26,29 @@ import org.junit.jupiter.api.Test;
 class AdjustmentEngineTest {
 
   private static final BigDecimal NO_CAP = new BigDecimal("100000000");
+
+  @Test
+  @DisplayName("快照必须是合法 JSON：grouping.degraded 不得留尾随逗号（审计复算可解析）")
+  void snapshotIsValidJson() throws Exception {
+    LiabilityRule rule =
+        rule(
+            "90",
+            ratios(entry(FeePools.Bucket.REASONABLE, "90", null)),
+            DeductibleRule.none(),
+            NO_CAP);
+    AdjustmentEngine.Outcome outcome =
+        AdjustmentEngine.calculate(
+            AdjustmentEngine.Request.of(1L, rows("100.00", "0", "0"), rule, Accumulation.FIRST));
+
+    JsonNode tree =
+        new ObjectMapper().readTree(outcome.snapshot()); // 失败时 JUnit 报告会显示完整 snapshot，便于定位非法字符
+    assertThat(tree.path("grouping").path("degraded").isArray()).isTrue();
+    assertThat(tree.path("lines").isArray()).as(outcome.snapshot()).isTrue();
+    assertThat(tree.path("lines").get(0).path("bucket").asText())
+        .as(outcome.snapshot())
+        .isEqualTo("REASONABLE");
+    assertThat(tree.path("total").decimalValue()).isEqualByComparingTo(outcome.totalAmount());
+  }
 
   // ===================== 附录 A：三个示例的数值复算 =====================
 

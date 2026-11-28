@@ -2,7 +2,7 @@ package com.bone.claim.infrastructure.mrm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry.LoadStatus;
+import com.bone.claim.application.port.out.MrmModelCardPort.LoadStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

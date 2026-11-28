@@ -1,5 +1,8 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.MrmModelCardPort;
+import com.bone.claim.application.port.out.MrmModelCardPort.DriftObservation;
+import com.bone.claim.application.port.out.MrmModelCardPort.LoadStatus;
 import com.bone.claim.domain.model.evaluation.AiConfidenceCalibration;
 import com.bone.claim.domain.model.evaluation.AiConfidenceCalibration.CalibrationReport;
 import com.bone.claim.domain.model.evaluation.AiConfidenceCalibration.CalibrationSample;
@@ -10,9 +13,6 @@ import com.bone.claim.domain.model.evaluation.AiModelCard.InventoryReport;
 import com.bone.claim.domain.model.evaluation.AiModelCard.ModelCard;
 import com.bone.claim.domain.model.evaluation.BlindLabelTask;
 import com.bone.claim.domain.repository.BlindLabelTaskRepository;
-import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry;
-import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry.DriftObservation;
-import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry.LoadStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -57,7 +57,7 @@ public class MrmGovernanceApplicationService {
   private static final String DIMENSION_INSTITUTION_LEVEL = "INSTITUTION_LEVEL";
   private static final int RATE_SCALE = 4;
 
-  private final MrmModelCardRegistry registry;
+  private final MrmModelCardPort registry;
   private final BlindLabelTaskRepository blindLabelTaskRepository;
   private final ObjectMapper mapper = new ObjectMapper();
 

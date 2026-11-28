@@ -6,6 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.port.out.MrmModelCardPort.DriftObservation;
+import com.bone.claim.application.port.out.MrmModelCardPort.LoadStatus;
 import com.bone.claim.domain.model.evaluation.AiConfidenceCalibration.Verdict;
 import com.bone.claim.domain.model.evaluation.AiModelCard;
 import com.bone.claim.domain.model.evaluation.AiModelCard.DriftVerdict;
@@ -14,8 +16,6 @@ import com.bone.claim.domain.model.evaluation.AiModelCard.Verification;
 import com.bone.claim.domain.model.evaluation.BlindLabelTask;
 import com.bone.claim.domain.repository.BlindLabelTaskRepository;
 import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry;
-import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry.DriftObservation;
-import com.bone.claim.infrastructure.mrm.MrmModelCardRegistry.LoadStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;

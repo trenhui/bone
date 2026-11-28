@@ -1,6 +1,8 @@
 package com.bone.claim.adapter.web.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -16,8 +18,8 @@ public final class ClaimSignRequests {
       @Schema(description = "业务唯一标识（幂等真源）") @NotBlank String businessKey,
       @Schema(description = "推送渠道") @NotBlank String signChannel,
       @Schema(description = "案件号（可空）") String claimNo,
-      @Schema(description = "赔案金额（可空）") Long claimAmount,
-      @Schema(description = "随回执携带的建案要素，缺省只建签收批次") List<SignCaseElementReq> caseElements) {}
+      @Schema(description = "赔案金额（可空）") @Min(value = 0, message = "赔案金额不能为负") Long claimAmount,
+      @Schema(description = "随回执携带的建案要素，缺省只建签收批次") @Valid List<SignCaseElementReq> caseElements) {}
 
   /** 线上自动签收随回执携带的建案要素（实名明文，仅限受控环境）。 */
   public record SignCaseElementReq(
@@ -29,7 +31,8 @@ public final class ClaimSignRequests {
       Instant outInsureTime,
       String claimType,
       String sourceChannel,
-      @Schema(description = "赔案金额（可空，回补顶层金额）") Long claimAmount) {
+      @Schema(description = "赔案金额（可空，回补顶层金额）") @Min(value = 0, message = "赔案金额不能为负")
+          Long claimAmount) {
 
     public SignCaseElementReq(
         String claimNo,

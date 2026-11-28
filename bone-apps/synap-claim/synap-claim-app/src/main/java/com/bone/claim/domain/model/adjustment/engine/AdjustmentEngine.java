@@ -1918,11 +1918,18 @@ public final class AdjustmentEngine {
         sb.append(',');
       }
       first = false;
-      sb.append('"').append(dimension.name()).append('"');
+      sb.append('"').append(jsonText(dimension.name())).append('"');
     }
-    sb.append("],");
-    appendArray(sb, "degraded", degradedDimensions);
-    sb.append('}');
+    sb.append("],\"degraded\":[");
+    // groupingJson 是独立对象文本：这里不能复用 appendArray（它会补尾随逗号并把每个元素按字符串处理），
+    // 否则整段 formula_snapshot 变成非法 JSON，审计/复算侧的标准解析器直接失败。
+    for (int i = 0; i < degradedDimensions.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append('"').append(jsonText(degradedDimensions.get(i))).append('"');
+    }
+    sb.append("]}");
     return sb.toString();
   }
 
@@ -2012,7 +2019,7 @@ public final class AdjustmentEngine {
         .append(
             request.accumulation().dailyWindow() == null
                 ? "null"
-                : "\"" + request.accumulation().dailyWindow() + "\"")
+                : "\"" + jsonText(request.accumulation().dailyWindow().toString()) + "\"")
         .append(',');
     sb.append("\"dailyRemaining\":")
         .append(daily.remaining() == null ? "null" : num(Money.round(daily.remaining())))
@@ -2021,7 +2028,7 @@ public final class AdjustmentEngine {
     // 只记"总额变少"而不记按哪一版目录、以哪天为基准判的，事后无法区分"真在目录外"与"取错了目录版本/日期"。
     append(sb, "catalogCode", catalog.catalogCode());
     sb.append("\"catalogAsOf\":")
-        .append(catalog.asOf() == null ? "null" : "\"" + catalog.asOf() + "\"")
+        .append(catalog.asOf() == null ? "null" : "\"" + jsonText(catalog.asOf().toString()) + "\"")
         .append(',');
     sb.append("\"catalogExcludedCount\":").append(catalog.excludedItemIds().size()).append(',');
     sb.append("\"catalogExcludedAmount\":")
@@ -2066,8 +2073,9 @@ public final class AdjustmentEngine {
     // 快照里的 lines 保持**池级**口径（逐费用项明细落 t_adj_calculation_line，不在这里展开）：
     // 一者 formula_snapshot 是 VARCHAR(4000) 的复算快照，逐行展开会让一张多明细发票直接溢出；
     // 二者快照的语义是"复算所需的责任参数与池级归因"，逐行审计溯源由明细行表承担，两处各司其职。
-    // 池级聚合保证既有场景的快照字节不变（formula_hash 因此保持稳定）。
-    appendArray(
+    // 快照保持池级口径，逐项审计仍由明细行表承担。
+    // lineJson 返回的是完整 JSON 对象；不能复用 appendArray（那会把对象再包一层引号并破坏 JSON）。
+    appendRawArray(
         sb, "lines", poolLevelLines(lines).stream().map(AdjustmentEngine::lineJson).toList());
     sb.append("\"items\":").append(itemsJson(request.rows()));
     sb.append('}');
@@ -2125,7 +2133,7 @@ public final class AdjustmentEngine {
         line.feeCode().isEmpty() ? "" : ",\"feeCode\":\"" + jsonText(line.feeCode()) + "\"";
     return "{"
         + "\"bucket\":\""
-        + line.bucket()
+        + jsonText(line.bucket())
         + "\",\"calc\":"
         + num(line.feeCalculate())
         + ",\"deduct\":"
@@ -2135,9 +2143,9 @@ public final class AdjustmentEngine {
         + ",\"payout\":"
         + num(line.feePayout())
         + ",\"zero\":\""
-        + line.zeroReason()
+        + jsonText(String.valueOf(line.zeroReason()))
         + "\",\"cappedBy\":\""
-        + line.cappedBy()
+        + jsonText(String.valueOf(line.cappedBy()))
         + "\""
         + feeTag
         + "}";
@@ -2181,7 +2189,7 @@ public final class AdjustmentEngine {
       }
       first = false;
       sb.append("{\"item\":\"")
-          .append(row.getItemName())
+          .append(jsonText(row.getItemName()))
           .append("\",\"valid\":")
           .append(num(Money.round(Money.nz(row.getItemValidAmount()))))
           .append(",\"inScope\":")
@@ -2202,7 +2210,11 @@ public final class AdjustmentEngine {
   }
 
   private static void append(StringBuilder sb, String key, String value) {
-    sb.append('"').append(key).append("\":\"").append(value == null ? "" : value).append("\",");
+    sb.append('"')
+        .append(jsonText(key))
+        .append("\":\"")
+        .append(jsonText(value == null ? "" : value))
+        .append("\",");
   }
 
   /**
@@ -2241,12 +2253,24 @@ public final class AdjustmentEngine {
   }
 
   private static void appendArray(StringBuilder sb, String key, List<String> values) {
-    sb.append('"').append(key).append("\":[");
+    sb.append('"').append(jsonText(key)).append("\":[");
     for (int i = 0; i < values.size(); i++) {
       if (i > 0) {
         sb.append(',');
       }
-      sb.append('"').append(values.get(i)).append('"');
+      sb.append('"').append(jsonText(values.get(i))).append('"');
+    }
+    sb.append("],");
+  }
+
+  /** 原样拼接已经序列化好的 JSON 值（对象/数组），与字符串数组的 appendArray 严格区分。 */
+  private static void appendRawArray(StringBuilder sb, String key, List<String> jsonValues) {
+    sb.append('"').append(jsonText(key)).append("\":[");
+    for (int i = 0; i < jsonValues.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append(jsonValues.get(i));
     }
     sb.append("],");
   }

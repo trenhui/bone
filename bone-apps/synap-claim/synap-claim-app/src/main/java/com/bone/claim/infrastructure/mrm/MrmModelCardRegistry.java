@@ -1,5 +1,6 @@
 package com.bone.claim.infrastructure.mrm;
 
+import com.bone.claim.application.port.out.MrmModelCardPort;
 import com.bone.claim.domain.model.evaluation.AiModelCard;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,17 +25,7 @@ import org.springframework.stereotype.Component;
  * 并清空可观测值（fail-closed）：不可信的配置不生效，也不冒充「已验证」。配置替换只需改文件，不需要改 Java / 发版；不提供任何写入口。
  */
 @Component
-public class MrmModelCardRegistry {
-
-  /** 清单装载状态：只有真正登记了卡才是 LOADED。 */
-  public enum LoadStatus {
-    LOADED,
-    NO_MODEL_CARDS,
-    CONFIG_UNAVAILABLE
-  }
-
-  /** PSI 漂移观测：psi 为 null 表示没有观测，不能显示成「在容差内」。 */
-  public record DriftObservation(BigDecimal psi, BigDecimal watchRatio, BigDecimal threshold) {}
+public class MrmModelCardRegistry implements MrmModelCardPort {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final DriftObservation NO_OBSERVATION = new DriftObservation(null, null, null);
